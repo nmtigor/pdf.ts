@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/chromecom.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2013 Mozilla Foundation
  *
@@ -21,10 +25,9 @@
 import type { Locale } from "@fe-lib/Locale.ts";
 import { MouseButton } from "@fe-lib/dom.ts";
 import { CHROME, PDFJSDev } from "@fe-src/global.ts";
-import type { PassiveLoadingCbs } from "./app.ts";
-import { DefaultExternalServices, viewerApp } from "./app.ts";
+import type { PDFViewerApplication } from "./app.ts";
 import { AppOptions, UserOptions, ViewOnLoad } from "./app_options.ts";
-import { DownloadManager } from "./download_manager.ts";
+import { BaseExternalServices } from "./external_services.ts";
 import { GenericScripting } from "./generic_scripting.ts";
 import { GenericL10n } from "./genericl10n.ts";
 import type { IScripting } from "./interfaces.ts";
@@ -32,6 +35,7 @@ import type { OverlayManager } from "./overlay_manager.ts";
 import type { HistoryState } from "./pdf_history.ts";
 import { BasePreferences } from "./preferences.ts";
 import { CursorTool } from "./ui_utils.ts";
+import { D_web } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 /*#static*/ if (PDFJSDev || !CHROME) {
@@ -57,10 +61,16 @@ declare var chrome: any;
   }
 
   AppOptions.set("defaultUrl", defaultUrl);
-  // Ensure that viewerApp.initialBookmark reflects the current hash,
+})();
+
+let viewerApp = { initialized: false } as PDFViewerApplication;
+export function initCom(app: PDFViewerApplication) {
+  viewerApp = app;
+
+  // Ensure that PDFViewerApplication.initialBookmark reflects the current hash,
   // in case the URL rewrite above results in a different hash.
   viewerApp.initialBookmark = location.hash.slice(1);
-})();
+}
 
 type _ResolvePDFFileCb = (
   url: string,
@@ -103,14 +113,9 @@ export const ChromeCom = {
    * Resolves a PDF file path and attempts to detects length.
    *
    * @param file Absolute URL of PDF file.
-   * @param overlayManager Manager for the viewer overlays.
    * @param callback A callback with resolved URL and file length.
    */
-  resolvePDFFile(
-    file: string,
-    overlayManager: OverlayManager,
-    callback: _ResolvePDFFileCb,
-  ) {
+  resolvePDFFile(file: string, callback: _ResolvePDFFileCb) {
     // Expand drive:-URLs to filesystem URLs (Chrome OS)
     file = file.replace(
       /^drive:/i,
@@ -134,21 +139,18 @@ export const ChromeCom = {
         // Even without this check, the file load in frames is still blocked,
         // but this may change in the future (https://crbug.com/550151).
         if (origin && !/^file:|^chrome-extension:/.test(origin)) {
-          viewerApp._documentError(
-            "Blocked " +
-              origin +
-              " from loading " +
-              file +
-              ". Refused to load a local file in a non-local page " +
-              "for security reasons.",
-          );
+          viewerApp._documentError(undefined, {
+            message:
+              `Blocked ${origin} from loading ${file}. Refused to load ` +
+              "a local file in a non-local page for security reasons.",
+          });
           return;
         }
         isAllowedFileSchemeAccess((isAllowedAccess?: boolean) => {
           if (isAllowedAccess) {
             callback(file);
           } else {
-            requestAccessToLocalFile(file, overlayManager, callback);
+            requestAccessToLocalFile(file, viewerApp.overlayManager, callback);
           }
         });
       });
@@ -231,9 +233,8 @@ function requestAccessToLocalFile(
     // Use Chrome's definition of UI language instead of PDF.js's #lang=...,
     // because the shown string should match the UI at chrome://extensions.
     // These strings are from chrome/app/resources/generated_resources_*.xtb.
-    const P_base = "../../../res/pdf/pdf.ts-web";
     const jo_ =
-      (await import(`${P_base}/chrome-i18n-allow-access-to-file-urls.json`, {
+      (await import(`/${D_web}/chrome-i18n-allow-access-to-file-urls.json`, {
         assert: { type: "json" },
       })).default;
     const i18nFileAccessLabel =
@@ -383,7 +384,7 @@ interface ManagedPrefs_ extends UserOptions {
   disablePageMode?: boolean;
 }
 
-class ChromePreferences extends BasePreferences {
+export class Preferences extends BasePreferences {
   protected override async _writeToStorage(prefObj: UserOptions) {
     return new Promise<void>((resolve) => {
       if (prefObj === this.defaults) {
@@ -476,33 +477,28 @@ class ChromePreferences extends BasePreferences {
   }
 }
 
-class ChromeExternalServices extends DefaultExternalServices {
-  override initPassiveLoading(callbacks: PassiveLoadingCbs) {
-    // defaultUrl is set in viewer.js
+export class MLManager {
+  async guess() {
+    return undefined;
+  }
+}
+
+export class ExternalServices extends BaseExternalServices {
+  override initPassiveLoading() {
     ChromeCom.resolvePDFFile(
       AppOptions.defaultUrl!,
-      viewerApp.overlayManager,
-      (url, length, originalUrl) => {
-        callbacks.onOpenWithURL(url, length, originalUrl);
+      function (url, length, originalUrl) {
+        viewerApp.open({ url, length, originalUrl });
       },
     );
-  }
-
-  override createDownloadManager() {
-    return new DownloadManager();
-  }
-
-  override createPreferences() {
-    return new ChromePreferences();
   }
 
   override async createL10n() {
     return new GenericL10n(navigator.language as Locale);
   }
 
-  override createScripting({ sandboxBundleSrc = "" }): IScripting {
-    return new GenericScripting(sandboxBundleSrc);
+  override createScripting(): IScripting {
+    return new GenericScripting(AppOptions.sandboxBundleSrc!);
   }
 }
-viewerApp.externalServices = new ChromeExternalServices();
 /*80--------------------------------------------------------------------------*/

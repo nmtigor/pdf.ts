@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/core_utils_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -21,15 +25,16 @@ import {
   assertEquals,
   assertStrictEquals,
   assertThrows,
-} from "@std/testing/asserts.ts";
+} from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
-import { XRefMock } from "../../test_utils.ts";
+import { XRefMock } from "@pdf.ts-test/test_utils.ts";
 import {
   arrayBuffersToBytes,
   encodeToXmlString,
   escapePDFName,
   escapeString,
   getInheritableProperty,
+  getSizeInBytes,
   isAscii,
   isWhiteSpace,
   log2,
@@ -508,6 +513,74 @@ describe("core_utils", () => {
           "\xfe\xff\x30\x53\x30\x93\x30\x6b\x30\x61\x30\x6f\x4e\x16\x75\x4c\x30\x6e",
         );
       });
+    });
+  });
+
+  describe("isAscii", () => {
+    it("handles ascii/non-ascii strings", () => {
+      assertEquals(isAscii("hello world"), true);
+      assertEquals(isAscii("こんにちは世界の"), false);
+      assertEquals(
+        isAscii("hello world in Japanese is こんにちは世界の"),
+        false,
+      );
+    });
+  });
+
+  describe("stringToUTF16HexString", () => {
+    it("should encode a string in UTF16 hexadecimal format", () => {
+      assertEquals(
+        stringToUTF16HexString("hello world"),
+        "00680065006c006c006f00200077006f0072006c0064",
+      );
+
+      assertEquals(
+        stringToUTF16HexString("こんにちは世界の"),
+        "30533093306b3061306f4e16754c306e",
+      );
+    });
+  });
+
+  describe("stringToUTF16String", () => {
+    it("should encode a string in UTF16", () => {
+      assertEquals(
+        stringToUTF16String("hello world"),
+        "\0h\0e\0l\0l\0o\0 \0w\0o\0r\0l\0d",
+      );
+
+      assertEquals(
+        stringToUTF16String("こんにちは世界の"),
+        "\x30\x53\x30\x93\x30\x6b\x30\x61\x30\x6f\x4e\x16\x75\x4c\x30\x6e",
+      );
+    });
+
+    it("should encode a string in UTF16BE with a BOM", () => {
+      assertEquals(
+        stringToUTF16String("hello world", /* bigEndian = */ true),
+        "\xfe\xff\0h\0e\0l\0l\0o\0 \0w\0o\0r\0l\0d",
+      );
+
+      assertEquals(
+        stringToUTF16String("こんにちは世界の", /* bigEndian = */ true),
+        "\xfe\xff\x30\x53\x30\x93\x30\x6b\x30\x61\x30\x6f\x4e\x16\x75\x4c\x30\x6e",
+      );
+    });
+  });
+
+  describe("getSizeInBytes", () => {
+    it("should get the size in bytes to use to represent a positive integer", () => {
+      assertEquals(getSizeInBytes(0), 0);
+      for (let i = 1; i <= 0xff; i++) {
+        assertEquals(getSizeInBytes(i), 1);
+      }
+
+      for (let i = 0x100; i <= 0xffff; i += 0x100) {
+        assertEquals(getSizeInBytes(i), 2);
+      }
+
+      for (let i = 0x10000; i <= 0xffffff; i += 0x10000) {
+        assertEquals(getSizeInBytes(i), 3);
+      }
     });
   });
 });

@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_scripting_manager.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2021 Mozilla Foundation
  *
@@ -17,16 +21,17 @@
  * limitations under the License.
  */
 
-import { CHROME, GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import { TESTING } from "@fe-src/global.ts";
 import type { FieldObject, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import { shadow } from "../pdf.ts-src/pdf.ts";
-import type { DefaultExternalServices, ScriptingDocProperties } from "./app.ts";
+import type { ScriptingDocProperties } from "./app.ts";
 import type { EventBus, EventMap } from "./event_utils.ts";
 import type { IScripting } from "./interfaces.ts";
 import type { PDFViewer } from "./pdf_viewer.ts";
 import type { PageLayout } from "./ui_utils.ts";
 import { apiPageLayoutToViewerModes, RenderingStates } from "./ui_utils.ts";
+import type { BaseExternalServices } from "./external_services.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface PDFScriptingManagerOptions {
@@ -36,16 +41,11 @@ interface PDFScriptingManagerOptions {
   eventBus: EventBus;
 
   /**
-   * The path and filename of the scripting bundle.
-   */
-  sandboxBundleSrc: string | undefined;
-
-  /**
    * The factory that is used when
    * initializing scripting; must contain a `createScripting` method.
    * PLEASE NOTE: Primarily intended for the default viewer use-case.
    */
-  externalServices?: DefaultExternalServices;
+  externalServices?: BaseExternalServices;
 
   /**
    * The function that is used to lookup
@@ -91,22 +91,28 @@ export class PDFScriptingManager {
   }
 
   #eventBus;
-  #sandboxBundleSrc;
   #externalServices;
   #docProperties;
 
-  constructor({
-    eventBus,
-    sandboxBundleSrc,
-    externalServices,
-    docProperties,
-  }: PDFScriptingManagerOptions) {
+  constructor(
+    { eventBus, externalServices, docProperties }: PDFScriptingManagerOptions,
+  ) {
     this.#eventBus = eventBus;
-    /*#static*/ if (PDFJSDev || GENERIC || CHROME) {
-      this.#sandboxBundleSrc = sandboxBundleSrc;
-    }
     this.#externalServices = externalServices;
     this.#docProperties = docProperties;
+
+    /*#static*/ if (TESTING) {
+      Object.defineProperty(this, "sandboxTrip", {
+        value: () =>
+          setTimeout(
+            () =>
+              this.#scripting?.dispatchEventInSandbox({
+                name: "sandboxtripbegin",
+              }),
+            0,
+          ),
+      });
+    }
   }
 
   async setDocument(pdfDocument?: PDFDocumentProxy) {
@@ -309,6 +315,15 @@ export class PDFScriptingManager {
 
     const { id, siblings, command, value } = detail;
     if (!id) {
+      /*#static*/ if (TESTING) {
+        if (command === "sandboxTripEnd") {
+          window.setTimeout(() => {
+            window.dispatchEvent(new CustomEvent("sandboxtripend"));
+          }, 0);
+          return;
+        }
+      }
+
       switch (command) {
         case "clear":
           console.clear();
@@ -463,9 +478,7 @@ export class PDFScriptingManager {
     if (this.#scripting) {
       throw new Error("#initScripting: Scripting already exists.");
     }
-    return this.#externalServices!.createScripting({
-      sandboxBundleSrc: this.#sandboxBundleSrc,
-    });
+    return this.#externalServices!.createScripting();
   }
 
   async #destroyScripting() {

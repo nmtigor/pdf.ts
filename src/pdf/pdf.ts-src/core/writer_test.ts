@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/writer_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -40,9 +44,6 @@ describe("Writer", () => {
         newRef: Ref.get(789, 0),
         startXRef: 314,
         fileIds: ["id", ""],
-        // rootRef: null,
-        // infoRef: null,
-        // encryptRef: null,
         filename: "foo.pdf",
         info: {},
       };
@@ -51,25 +52,49 @@ describe("Writer", () => {
         originalData,
         xrefInfo,
         newRefs,
-      } as any);
+        useXrefStream: true,
+      });
       data = bytesToString(data);
 
-      const expected = "\nabc\n" +
+      let expected = "\nabc\n" +
         "defg\n" +
         "789 0 obj\n" +
-        "<< /Size 790 /Prev 314 /Type /XRef /Index [0 1 123 1 456 1 789 1] " +
-        "/ID [(id) (\x01#Eg\x89\xab\xcd\xef\xfe\xdc\xba\x98vT2\x10)] " +
-        "/W [1 1 2] /Length 16>> stream\n" +
-        "\x00\x01\xff\xff" +
-        "\x01\x01\x00\x2d" +
-        "\x01\x05\x00\x4e" +
-        "\x01\x0a\x00\x00\n" +
+        "<< /Prev 314 /Size 790 /Type /XRef /Index [123 1 456 1 789 1] " +
+        "/W [1 1 1] /ID [(id) (\x01#Eg\x89\xab\xcd\xef\xfe\xdc\xba\x98vT2\x10)] " +
+        "/Length 9>> stream\n" +
+        "\x01\x01\x2d" +
+        "\x01\x05\x4e" +
+        "\x01\x0a\x00\n" +
         "endstream\n" +
         "endobj\n" +
         "startxref\n" +
         "10\n" +
         "%%EOF\n";
+      assertEquals(data, expected);
 
+      data = await incrementalUpdate({
+        originalData,
+        xrefInfo,
+        newRefs,
+        useXrefStream: false,
+      });
+      data = bytesToString(data);
+
+      expected = "\nabc\n" +
+        "defg\n" +
+        "xref\n" +
+        "123 1\n" +
+        "0000000001 00045 n\r\n" +
+        "456 1\n" +
+        "0000000005 00078 n\r\n" +
+        "789 1\n" +
+        "0000000010 00000 n\r\n" +
+        "trailer\n" +
+        "<< /Prev 314 /Size 789 " +
+        "/ID [(id) (\x01#Eg\x89\xab\xcd\xef\xfe\xdc\xba\x98vT2\x10)]>>\n" +
+        "startxref\n" +
+        "10\n" +
+        "%%EOF\n";
       assertEquals(data, expected);
     });
 
@@ -79,10 +104,6 @@ describe("Writer", () => {
       const xrefInfo: XRefInfo = {
         newRef: Ref.get(789, 0),
         startXRef: 314,
-        // fileIds: null,
-        // rootRef: null,
-        // infoRef: null,
-        // encryptRef: null,
         filename: "foo.pdf",
         info: {},
       };
@@ -91,22 +112,21 @@ describe("Writer", () => {
         originalData,
         xrefInfo,
         newRefs,
-      } as any);
+        useXrefStream: true,
+      });
       data = bytesToString(data);
 
       const expected = "\nabc\n" +
         "789 0 obj\n" +
-        "<< /Size 790 /Prev 314 /Type /XRef /Index [0 1 123 1 789 1] " +
-        "/W [1 1 2] /Length 12>> stream\n" +
-        "\x00\x01\xff\xff" +
-        "\x01\x01\x00\x2d" +
-        "\x01\x05\x00\x00\n" +
+        "<< /Prev 314 /Size 790 /Type /XRef /Index [123 1 789 1] " +
+        "/W [1 1 1] /Length 6>> stream\n" +
+        "\x01\x01\x2d" +
+        "\x01\x05\x00\n" +
         "endstream\n" +
         "endobj\n" +
         "startxref\n" +
         "5\n" +
         "%%EOF\n";
-
       assertEquals(data, expected);
     });
   });
@@ -183,10 +203,6 @@ describe("Writer", () => {
       const xrefInfo: XRefInfo = {
         newRef: Ref.get(131415, 0),
         startXRef: 314,
-        // fileIds: null,
-        // rootRef: null,
-        // infoRef: null,
-        // encryptRef: null,
         filename: "foo.pdf",
         info: {},
       };
@@ -202,7 +218,8 @@ describe("Writer", () => {
         acroForm,
         xfaData,
         xref: {} as XRef,
-      } as any);
+        useXrefStream: true,
+      });
       data = bytesToString(data);
 
       const expected = "\n" +
@@ -216,14 +233,13 @@ describe("Writer", () => {
         "endstream\n" +
         "endobj\n" +
         "131415 0 obj\n" +
-        "<< /Size 131416 /Prev 314 /Type /XRef /Index [0 1 789 1 101112 1 131415 1] /W [1 1 2] /Length 16>> stream\n" +
-        "\u0000\u0001ÿÿ\u0001\u0001\u0000\u0000\u0001[\u0000\u0000\u0001¹\u0000\u0000\n" +
+        "<< /Prev 314 /Size 131416 /Type /XRef /Index [789 1 101112 1 131415 1] /W [1 1 0] /Length 6>> stream\n" +
+        "\x01\x01\x01[\x01¹\n" +
         "endstream\n" +
         "endobj\n" +
         "startxref\n" +
         "185\n" +
         "%%EOF\n";
-
       assertEquals(data, expected);
     });
   });

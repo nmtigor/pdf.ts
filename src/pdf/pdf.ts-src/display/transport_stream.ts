@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/transport_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -31,10 +35,11 @@ import { isPdfFile } from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface StreamInitP_ {
-  length: number;
-  initialData: ArrayLike<number> | undefined;
-  progressiveDone: boolean | undefined;
-  contentDispositionFilename: string | undefined;
+  //kkkk TOCLEANUP
+  // length: number;
+  // initialData: ArrayLike<number> | undefined;
+  // progressiveDone: boolean | undefined;
+  // contentDispositionFilename: string | undefined;
   disableRange: boolean | undefined;
   disableStream: boolean | undefined;
 }
@@ -52,14 +57,17 @@ export class PDFDataTransportStream implements IPDFStream {
   _fullRequestReader?: PDFDataTransportStreamReader;
   #rangeReaders: PDFDataTransportStreamRangeReader[] = [];
 
-  constructor({
-    length,
-    initialData,
-    progressiveDone = false,
-    contentDispositionFilename,
-    disableRange = false,
-    disableStream = false,
-  }: StreamInitP_, pdfDataRangeTransport: PDFDataRangeTransport) {
+  constructor(
+    pdfDataRangeTransport: PDFDataRangeTransport,
+    { disableRange = false, disableStream = false }: StreamInitP_,
+  ) {
+    assert(
+      pdfDataRangeTransport,
+      'PDFDataTransportStream - missing required "pdfDataRangeTransport" argument.',
+    );
+    const { length, initialData, progressiveDone, contentDispositionFilename } =
+      pdfDataRangeTransport;
+
     this.#progressiveDone = progressiveDone;
     this._contentDispositionFilename = contentDispositionFilename;
 
@@ -78,29 +86,29 @@ export class PDFDataTransportStream implements IPDFStream {
     this._isRangeSupported = !disableRange;
     this._contentLength = length;
 
-    this.#pdfDataRangeTransport.addRangeListener(
+    pdfDataRangeTransport.addRangeListener(
       (begin: number, chunk: ArrayBufferLike) => {
         this.#onReceiveData({ begin, chunk });
       },
     );
 
-    this.#pdfDataRangeTransport.addProgressListener(
+    pdfDataRangeTransport.addProgressListener(
       (loaded: number, total?: number) => {
         this.#onProgress({ loaded, total });
       },
     );
 
-    this.#pdfDataRangeTransport.addProgressiveReadListener(
+    pdfDataRangeTransport.addProgressiveReadListener(
       (chunk: ArrayBufferLike) => {
         this.#onReceiveData({ chunk });
       },
     );
 
-    this.#pdfDataRangeTransport.addProgressiveDoneListener(() => {
+    pdfDataRangeTransport.addProgressiveDoneListener(() => {
       this._onProgressiveDone();
     });
 
-    this.#pdfDataRangeTransport.transportReady();
+    pdfDataRangeTransport.transportReady();
   }
 
   #onReceiveData({ begin, chunk }: { begin?: number; chunk: ArrayBufferLike }) {

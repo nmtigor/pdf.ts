@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/annotation_layer_builder.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2014 Mozilla Foundation
  *
@@ -18,13 +22,11 @@
  */
 
 import { html } from "@fe-lib/dom.ts";
+import type { FieldObjectsPromise } from "../alias.ts";
 import type { AnnotationLayerP } from "../pdf.ts-src/display/annotation_layer.ts";
-import { MetadataEx } from "../pdf.ts-src/display/api.ts";
 import type {
-  AnnotActions,
   AnnotationStorage,
   AnnotIntent,
-  FieldObject,
   PageViewport,
   PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
@@ -35,7 +37,6 @@ import { PresentationModeState } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface AnnotationLayerBuilderOptions {
-  pageDiv: HTMLDivElement;
   pdfPage: PDFPageProxy;
   annotationStorage?: AnnotationStorage | undefined;
 
@@ -49,21 +50,13 @@ interface AnnotationLayerBuilderOptions {
   downloadManager?: IDownloadManager | undefined;
   enableScripting?: boolean;
   hasJSActionsPromise?: Promise<boolean> | undefined;
-  fieldObjectsPromise:
-    | Promise<
-      | boolean
-      | AnnotActions
-      | Record<string, FieldObject[]>
-      | MetadataEx
-      | undefined
-    >
-    | undefined;
+  fieldObjectsPromise: FieldObjectsPromise | undefined;
   annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
   accessibilityManager: TextAccessibilityManager | undefined;
+  onAppend?: (div: HTMLDivElement) => void;
 }
 
 export class AnnotationLayerBuilder {
-  pageDiv;
   pdfPage;
   linkService;
   downloadManager;
@@ -75,6 +68,7 @@ export class AnnotationLayerBuilder {
   _fieldObjectsPromise;
   _annotationCanvasMap;
   _accessibilityManager;
+  #onAppend;
 
   annotationLayer: AnnotationLayer | undefined;
   div?: HTMLDivElement;
@@ -86,7 +80,6 @@ export class AnnotationLayerBuilder {
     | undefined;
 
   constructor({
-    pageDiv,
     pdfPage,
     linkService,
     downloadManager,
@@ -98,8 +91,8 @@ export class AnnotationLayerBuilder {
     fieldObjectsPromise,
     annotationCanvasMap,
     accessibilityManager,
+    onAppend,
   }: AnnotationLayerBuilderOptions) {
-    this.pageDiv = pageDiv;
     this.pdfPage = pdfPage;
     this.linkService = linkService;
     this.downloadManager = downloadManager;
@@ -112,6 +105,7 @@ export class AnnotationLayerBuilder {
       Promise.resolve(undefined);
     this._annotationCanvasMap = annotationCanvasMap;
     this._accessibilityManager = accessibilityManager;
+    this.#onAppend = onAppend;
 
     this._eventBus = linkService.eventBus;
   }
@@ -148,7 +142,7 @@ export class AnnotationLayerBuilder {
     // if there is at least one annotation.
     const div = (this.div = html("div"));
     div.className = "annotationLayer";
-    this.pageDiv.append(div);
+    this.#onAppend?.(div);
 
     if (annotations.length === 0) {
       this.hide();

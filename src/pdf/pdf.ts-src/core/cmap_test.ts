@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/cmap_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -24,23 +28,32 @@ import {
   assertNotEquals,
   assertThrows,
   fail,
-} from "@std/testing/asserts.ts";
+} from "@std/assert/mod.ts";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import type { TestServer } from "@pdf.ts-test/test_utils.ts";
+import {
+  CMAP_URL,
+  createTemporaryDenoServer,
+} from "@pdf.ts-test/test_utils.ts";
 import { DefaultCMapReaderFactory } from "../display/api.ts";
 import { CMapData } from "../display/base_factory.ts";
-import { CMAP_URL } from "../../test_utils.ts";
 import { type CharCodeOut, CMap, CMapFactory, IdentityCMap } from "./cmap.ts";
 import { Name } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
+import { D_cmap_url } from "../../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("cmap", () => {
+  let tempServer: TestServer;
+
   let fetchBuiltInCMap: (name: string) => Promise<CMapData>;
 
   beforeAll(() => {
+    tempServer = createTemporaryDenoServer();
+
     // Allow CMap testing in Node.js, e.g. for Travis.
     const CMapReaderFactory = new DefaultCMapReaderFactory({
-      baseUrl: CMAP_URL,
+      baseUrl: CMAP_URL(tempServer),
     });
 
     fetchBuiltInCMap = (name: string) => CMapReaderFactory.fetch({ name });
@@ -48,6 +61,10 @@ describe("cmap", () => {
 
   afterAll(() => {
     fetchBuiltInCMap = undefined as any;
+
+    const { server } = tempServer;
+    server.shutdown();
+    tempServer = undefined as any;
   });
 
   it("parses beginbfchar", async () => {
@@ -231,7 +248,7 @@ describe("cmap", () => {
   it("attempts to load a built-in CMap with inconsistent API parameters", async () => {
     function tmpFetchBuiltInCMap(name: string) {
       const CMapReaderFactory = new DefaultCMapReaderFactory({
-        baseUrl: CMAP_URL,
+        baseUrl: CMAP_URL(tempServer),
         isCompressed: false,
       });
       return CMapReaderFactory.fetch({ name });
@@ -249,7 +266,7 @@ describe("cmap", () => {
       const message = reason.message;
       assert(message.startsWith("Unable to load CMap at: "));
       assert(
-        message.endsWith("/res/pdf/pdf.ts-external/bcmaps/Adobe-Japan1-1"),
+        message.endsWith(`/${D_cmap_url}/Adobe-Japan1-1`),
       );
     }
   });

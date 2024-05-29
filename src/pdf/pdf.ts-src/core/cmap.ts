@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/cmap.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -722,9 +726,11 @@ namespace NsCMapFactory {
     const cMap = new CMap(true);
 
     if (compressionType === CMapCompressionType.BINARY) {
-      return new BinaryCMapReader().process(cMapData, cMap, (useCMap) => {
-        return extendCMap(cMap, fetchBuiltInCMap, useCMap);
-      });
+      return new BinaryCMapReader().process(
+        cMapData,
+        cMap,
+        (useCMap) => extendCMap(cMap, fetchBuiltInCMap, useCMap),
+      );
     }
     if (compressionType === CMapCompressionType.NONE) {
       const lexer = new Lexer(new Stream(cMapData));

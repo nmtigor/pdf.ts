@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/editor/stamp.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2022 Mozilla Foundation
  *
@@ -75,8 +79,11 @@ export class StampEditor extends AnnotationEditor {
     this.#bitmapFile = params.bitmapFile;
   }
 
-  static override initialize(l10n: IL10n) {
-    AnnotationEditor.initialize(l10n);
+  static override initialize(
+    l10n: IL10n,
+    uiManager: AnnotationEditorUIManager,
+  ) {
+    AnnotationEditor.initialize(l10n, uiManager);
   }
 
   static get supportedTypes() {
@@ -235,7 +242,7 @@ export class StampEditor extends AnnotationEditor {
       return;
     }
 
-    if (this.#bitmapId) {
+    if (this.#bitmapId && this.#canvas === undefined) {
       this.#getBitmap();
     }
 
@@ -256,7 +263,8 @@ export class StampEditor extends AnnotationEditor {
       this.#bitmapPromise ||
       this.#bitmap ||
       this.#bitmapUrl ||
-      this.#bitmapFile
+      this.#bitmapFile ||
+      this.#bitmapId
     );
   }
 
@@ -277,6 +285,8 @@ export class StampEditor extends AnnotationEditor {
 
     super.render();
     this.div!.hidden = true;
+
+    this.addAltTextButton();
 
     if (this.#bitmap) {
       this.#createCanvas();
@@ -339,17 +349,10 @@ export class StampEditor extends AnnotationEditor {
     // There are multiple ways to add an image to the page, so here we just
     // count the number of times an image is added to the page whatever the way
     // is.
-    this._uiManager._eventBus.dispatch("reporttelemetry", {
-      source: this,
-      details: {
-        type: "editing",
-        subtype: this.editorType,
-        data: {
-          action: "inserted_image",
-        },
-      },
+    this._reportTelemetry({
+      action: "inserted_image",
     });
-    this.addAltTextButton();
+
     if (this.#bitmapFileName) {
       canvas.setAttribute("aria-label", this.#bitmapFileName);
     }
@@ -439,9 +442,45 @@ export class StampEditor extends AnnotationEditor {
     }
     canvas.width = width;
     canvas.height = height;
-    const bitmap = this.#isSvg
-      ? this.#bitmap
-      : this.#scaleBitmap(width, height);
+    const bitmap: ImageBitmap | HTMLImageElement = this.#isSvg
+      ? this.#bitmap!
+      : this.#scaleBitmap(width, height)!;
+
+    if (this._uiManager.hasMLManager && !this.hasAltText()) {
+      const offscreen = new OffscreenCanvas(width, height);
+      const ctx = offscreen.getContext("2d")!;
+      ctx.drawImage(
+        bitmap,
+        0,
+        0,
+        bitmap.width,
+        bitmap.height,
+        0,
+        0,
+        width,
+        height,
+      );
+      offscreen.convertToBlob().then((blob) => {
+        const fileReader = new FileReader();
+        fileReader.onload = () => {
+          const url = fileReader.result;
+          this._uiManager
+            .mlGuess({
+              service: "image-to-text",
+              request: {
+                imageData: url,
+              },
+            })
+            .then((response) => {
+              const altText = response?.output || "";
+              if (this.parent && altText && !this.hasAltText()) {
+                this.altTextData = { altText, decorative: false };
+              }
+            });
+        };
+        fileReader.readAsDataURL(blob);
+      });
+    }
     const ctx = canvas.getContext("2d")!;
     ctx.filter = this._uiManager.hcmFilter;
     ctx.drawImage(
@@ -575,7 +614,7 @@ export class StampEditor extends AnnotationEditor {
       return serialized;
     }
 
-    const { decorative, altText } = this.altTextData;
+    const { decorative, altText } = this.altTextData!;
     if (!decorative && altText) {
       serialized.accessibilityData = { type: "Figure", alt: altText };
     }

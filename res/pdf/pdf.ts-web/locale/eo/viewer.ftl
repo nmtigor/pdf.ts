@@ -82,17 +82,17 @@ pdfjs-cursor-hand-tool-button =
     .title = Aktivigi ilon de mano
 pdfjs-cursor-hand-tool-button-label = Ilo de mano
 pdfjs-scroll-page-button =
-    .title = Uzi ŝovadon de paĝo
-pdfjs-scroll-page-button-label = Ŝovado de paĝo
+    .title = Uzi rulumon de paĝo
+pdfjs-scroll-page-button-label = Rulumo de paĝo
 pdfjs-scroll-vertical-button =
-    .title = Uzi vertikalan ŝovadon
-pdfjs-scroll-vertical-button-label = Vertikala ŝovado
+    .title = Uzi vertikalan rulumon
+pdfjs-scroll-vertical-button-label = Vertikala rulumo
 pdfjs-scroll-horizontal-button =
-    .title = Uzi horizontalan ŝovadon
-pdfjs-scroll-horizontal-button-label = Horizontala ŝovado
+    .title = Uzi horizontalan rulumon
+pdfjs-scroll-horizontal-button-label = Horizontala rulumo
 pdfjs-scroll-wrapped-button =
-    .title = Uzi ambaŭdirektan ŝovadon
-pdfjs-scroll-wrapped-button-label = Ambaŭdirekta ŝovado
+    .title = Uzi ambaŭdirektan rulumon
+pdfjs-scroll-wrapped-button-label = Ambaŭdirekta rulumo
 pdfjs-spread-none-button =
     .title = Ne montri paĝojn po du
 pdfjs-spread-none-button-label = Unupaĝa vido
@@ -226,6 +226,21 @@ pdfjs-find-match-diacritics-checkbox-label = Respekti supersignojn
 pdfjs-find-entire-word-checkbox-label = Tutaj vortoj
 pdfjs-find-reached-top = Komenco de la dokumento atingita, daŭrigado ekde la fino
 pdfjs-find-reached-bottom = Fino de la dokumento atingita, daŭrigado ekde la komenco
+# Variables:
+#   $current (Number) - the index of the currently active find result
+#   $total (Number) - the total number of matches in the document
+pdfjs-find-match-count =
+    { $total ->
+        [one] { $current } el { $total } kongruo
+       *[other] { $current } el { $total } kongruoj
+    }
+# Variables:
+#   $limit (Number) - the maximum number of matches
+pdfjs-find-match-count-limit =
+    { $limit ->
+        [one] Pli ol { $limit } kongruo
+       *[other] Pli ol { $limit } kongruoj
+    }
 pdfjs-find-not-found = Frazo ne trovita
 
 ## Predefined zoom values
@@ -286,6 +301,25 @@ pdfjs-editor-ink-button-label = Desegni
 pdfjs-editor-stamp-button =
     .title = Aldoni aŭ modifi bildojn
 pdfjs-editor-stamp-button-label = Aldoni aŭ modifi bildojn
+pdfjs-editor-highlight-button =
+    .title = Elstarigi
+pdfjs-editor-highlight-button-label = Elstarigi
+pdfjs-highlight-floating-button =
+    .title = Elstarigi
+
+## Remove button for the various kind of editor.
+
+pdfjs-editor-remove-ink-button =
+    .title = Forigi desegnon
+pdfjs-editor-remove-freetext-button =
+    .title = Forigi tekston
+pdfjs-editor-remove-stamp-button =
+    .title = Forigi bildon
+pdfjs-editor-remove-highlight-button =
+    .title = Forigi elstaraĵon
+
+##
+
 # Editor Parameters
 pdfjs-editor-free-text-color-input = Koloro
 pdfjs-editor-free-text-size-input = Grando
@@ -295,6 +329,10 @@ pdfjs-editor-ink-opacity-input = Maldiafaneco
 pdfjs-editor-stamp-add-image-button =
     .title = Aldoni bildon
 pdfjs-editor-stamp-add-image-button-label = Aldoni bildon
+# This refers to the thickness of the line used for free highlighting (not bound to text)
+pdfjs-editor-free-highlight-thickness-input = Dikeco
+pdfjs-editor-free-highlight-thickness-title =
+    .title = Ŝanĝi dikecon dum elstarigo de netekstaj elementoj
 pdfjs-free-text =
     .aria-label = Tekstan redaktilon
 pdfjs-free-text-default-content = Ektajpi…
@@ -324,3 +362,37 @@ pdfjs-editor-alt-text-textarea =
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
 
+pdfjs-editor-resizer-label-top-left = Supra maldekstra angulo — ŝangi grandon
+pdfjs-editor-resizer-label-top-middle = Supra mezo — ŝanĝi grandon
+pdfjs-editor-resizer-label-top-right = Supran dekstran angulon — ŝanĝi grandon
+pdfjs-editor-resizer-label-middle-right = Dekstra mezo — ŝanĝi grandon
+pdfjs-editor-resizer-label-bottom-right = Malsupra deksta angulo — ŝanĝi grandon
+pdfjs-editor-resizer-label-bottom-middle = Malsupra mezo — ŝanĝi grandon
+pdfjs-editor-resizer-label-bottom-left = Malsupra maldekstra angulo — ŝanĝi grandon
+pdfjs-editor-resizer-label-middle-left = Maldekstra mezo — ŝanĝi grandon
+
+## Color picker
+
+# This means "Color used to highlight text"
+pdfjs-editor-highlight-colorpicker-label = Elstarigi koloron
+pdfjs-editor-colorpicker-button =
+    .title = Ŝanĝi koloron
+pdfjs-editor-colorpicker-dropdown =
+    .aria-label = Elekto de koloroj
+pdfjs-editor-colorpicker-yellow =
+    .title = Flava
+pdfjs-editor-colorpicker-green =
+    .title = Verda
+pdfjs-editor-colorpicker-blue =
+    .title = Blua
+pdfjs-editor-colorpicker-pink =
+    .title = Roza
+pdfjs-editor-colorpicker-red =
+    .title = Ruĝa
+
+## Show all highlights
+## This is a toggle button to show/hide all the highlights.
+
+pdfjs-editor-highlight-show-all-button-label = Montri ĉiujn
+pdfjs-editor-highlight-show-all-button =
+    .title = Montri ĉiujn

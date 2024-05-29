@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/generic_scripting.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -30,7 +34,7 @@ import type {
 
 export async function docProperties(pdfDocument: PDFDocumentProxy) {
   const url = "",
-    baseUrl = url.split("#")[0];
+    baseUrl = url.split("#", 1)[0];
   // eslint-disable-next-line prefer-const
   let { info, metadata, contentDispositionFilename, contentLength } =
     await pdfDocument.getMetadata();

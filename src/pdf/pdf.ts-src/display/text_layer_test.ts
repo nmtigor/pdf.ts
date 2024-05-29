@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/text_layer_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2022 Mozilla Foundation
  *
@@ -18,19 +22,37 @@
  */
 
 import { assertEquals, assertInstanceOf } from "@std/assert/mod.ts";
-import { describe, it } from "@std/testing/bdd.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import type { TestServer } from "@pdf.ts-test/test_utils.ts";
+import {
+  buildGetDocumentParams,
+  createTemporaryDenoServer,
+} from "@pdf.ts-test/test_utils.ts";
 import { getDocument } from "../display/api.ts";
-import { buildGetDocumentParams } from "../../test_utils.ts";
 import { renderTextLayer, TextLayerRenderTask } from "./text_layer.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("textLayer", () => {
-  // kkkk "ReferenceError: document is not defined"
+  let tempServer: TestServer;
+
+  beforeAll(() => {
+    tempServer = createTemporaryDenoServer();
+  });
+
+  afterAll(() => {
+    const { server } = tempServer;
+    server.shutdown();
+    tempServer = undefined as any;
+  });
+
+  // kkkk "document is not defined"
   it.ignore("creates textLayer from ReadableStream", async () => {
     // if (isNodeJS) {
     //   pending("document.createElement is not supported in Node.js.");
     // }
-    const loadingTask = getDocument(buildGetDocumentParams("basicapi.pdf"));
+    const loadingTask = getDocument(
+      buildGetDocumentParams(tempServer, "basicapi.pdf"),
+    );
     const pdfDocument = await loadingTask.promise;
     const page = await pdfDocument.getPage(1);
 

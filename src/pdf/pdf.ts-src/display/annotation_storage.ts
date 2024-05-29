@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/annotation_storage.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -17,14 +21,17 @@
  * limitations under the License.
  */
 
+import type { uint } from "@fe-lib/alias.ts";
 import { fail } from "@fe-lib/util/trace.ts";
 import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
+import type { AnnotationEditorName } from "../shared/util.ts";
 import { objectFromMap } from "../shared/util.ts";
 import type {
   AnnotStorageRecord,
   AnnotStorageValue,
   ASVKey,
 } from "./annotation_layer.ts";
+import type { TFD_AnnotationEditor } from "./editor/editor.ts";
 import { AnnotationEditor } from "./editor/editor.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -56,7 +63,7 @@ export class AnnotationStorage {
   onSetModified?: () => void;
   onResetModified?: () => void;
   onAnnotationEditor:
-    | ((type?: "freetext" | "ink" | "stamp" | undefined) => void)
+    | ((type?: AnnotationEditorName | undefined) => void)
     | undefined;
 
   /**
@@ -207,6 +214,56 @@ export class AnnotationStorage {
     return map.size > 0
       ? { map, hash: hash.hexdigest(), transfer }
       : SerializableEmpty;
+  }
+
+  get editorStats(): Record<AnnotationEditorName, TFD_AnnotationEditor> {
+    let stats: Record<
+      AnnotationEditorName,
+      Map<string, Map<unknown, uint>> | TFD_AnnotationEditor | undefined
+    >;
+    const typeToEditor = new Map<
+      AnnotationEditorName,
+      typeof AnnotationEditor
+    >();
+    for (const value of this.#storage.values()) {
+      if (!(value instanceof AnnotationEditor)) {
+        continue;
+      }
+      const editorStats = value.telemetryFinalData;
+      if (!editorStats) {
+        continue;
+      }
+      const { type } = editorStats;
+      if (!typeToEditor.has(type)) {
+        typeToEditor.set(
+          type,
+          Object.getPrototypeOf(value).constructor as typeof AnnotationEditor,
+        );
+      }
+      stats ||= Object.create(null);
+      const map = (stats[type] ||= new Map()) as Map<
+        string,
+        Map<unknown, uint>
+      >;
+      for (const [key, val] of Object.entries(editorStats)) {
+        if (key === "type") {
+          continue;
+        }
+        let counters = map.get(key);
+        if (!counters) {
+          counters = new Map();
+          map.set(key, counters);
+        }
+        const count = counters.get(val) ?? 0;
+        counters.set(val, count + 1);
+      }
+    }
+    for (const [type, editor] of typeToEditor) {
+      stats![type] = editor.computeTelemetryFinalData(
+        stats![type] as Map<string, Map<unknown, uint>>,
+      );
+    }
+    return stats! as Record<AnnotationEditorName, TFD_AnnotationEditor>;
   }
 }
 

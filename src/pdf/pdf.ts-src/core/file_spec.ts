@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/file_spec.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2021 Mozilla Foundation
  *
@@ -51,7 +55,7 @@ export class FileSpec {
   root;
   fs;
   description;
-  contentAvailable;
+  #contentAvailable = false;
 
   #filename?: string;
   get filename() {
@@ -67,7 +71,7 @@ export class FileSpec {
 
   contentRef?: string | undefined;
 
-  constructor(root: Dict, xref: XRef) {
+  constructor(root: Dict, xref?: XRef, skipContent = false) {
     if (!(root instanceof Dict)) {
       return;
     }
@@ -82,15 +86,17 @@ export class FileSpec {
     if (root.has("RF")) {
       warn("Related file specifications are not supported");
     }
-    this.contentAvailable = true;
-    if (!root.has("EF")) {
-      this.contentAvailable = false;
-      warn("Non-embedded file specifications are not supported");
+    if (!skipContent) {
+      if (root.has("EF")) {
+        this.#contentAvailable = true;
+      } else {
+        warn("Non-embedded file specifications are not supported");
+      }
     }
   }
 
   get content() {
-    if (!this.contentAvailable) {
+    if (!this.#contentAvailable) {
       return undefined;
     }
     if (!this.contentRef && this.root) {

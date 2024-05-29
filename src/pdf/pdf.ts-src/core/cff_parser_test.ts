@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/cff_parser_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -422,11 +426,7 @@ describe("CFFCompiler", () => {
   function testParser(bytes: number[]) {
     const bytes_1 = new Uint8Array(bytes);
     return new CFFParser(
-      {
-        getBytes: () => {
-          return bytes_1;
-        },
-      } as any,
+      { getBytes: () => bytes_1 } as Stream,
       {} as FontProps,
       SEAC_ANALYSIS_ENABLED,
     );

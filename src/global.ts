@@ -3,19 +3,21 @@
  * @license Apache-2.0
  ******************************************************************************/
 
+import { space } from "./lib/util/general.ts";
 import { Hover, Pointer } from "./lib/alias.ts";
 import type { HTMLVCo } from "./lib/cv.ts";
 import { assert } from "./lib/util/trace.ts";
 /*80--------------------------------------------------------------------------*/
 
 // deno-fmt-ignore
-// preprocessor names
+/* preprocessor names */
 export const 
   INOUT = true // contracts
 , DEV = true // debug build
-  , TRACE = true
+  , COLR = true
   , INFO = true
-  , COLR = false
+  , STEP = true
+  , TRACE = true
   
   , RESIZ = true // "resize", ResizeObserver
   , INTRS = true // IntersectionObserver
@@ -32,8 +34,9 @@ export const
 , TESTING = true
 , CYPRESS = false
 
-, _INFO = DEV && INFO
 , _COLR = DEV && COLR
+, _INFO = DEV && INFO
+, _STEP = DEV && STEP && !TESTING
 , _TRACE = DEV && TRACE && !TESTING
 
 , MOZCENTRAL = false
@@ -110,7 +113,7 @@ export const global = new class {
   get dent() {
     let ret;
     if (this.#dent === 0) ret = "";
-    else ret = new Array(this.#dent).fill(" ", 0).join("");
+    else ret = space(this.#dent);
     return ret;
   }
   get indent() {

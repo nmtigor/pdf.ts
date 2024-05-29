@@ -52,6 +52,8 @@
 !issue7847_radial.pdf
 !issue8844.pdf
 !issue17056.pdf
+!issue17679.pdf
+!issue17679_2.pdf
 !issue14953.pdf
 !issue15367.pdf
 !issue15372.pdf
@@ -61,6 +63,7 @@
 !issue7507.pdf
 !issue6931_reduced.pdf
 !issue14847.pdf
+!issue17846.pdf
 !doc_actions.pdf
 !issue7580.pdf
 !issue7598.pdf
@@ -300,6 +303,7 @@
 !helloworld-bad.pdf
 !zerowidthline.pdf
 !colorspace_cos.pdf
+!issue17554.pdf
 !issue13242.pdf
 !js-colors.pdf
 !annotation-line-without-appearance-empty-Rect.pdf
@@ -458,6 +462,7 @@
 !issue15716.pdf
 !bug1671312_reduced.pdf
 !bug1671312_ArialNarrow.pdf
+!issue17848.pdf
 !issue6108.pdf
 !issue6113.pdf
 !openoffice.pdf
@@ -509,6 +514,7 @@
 !issue11549_reduced.pdf
 !issue8097_reduced.pdf
 !issue15262.pdf
+!issue17904.pdf
 !bug1743245.pdf
 !quadpoints.pdf
 !transparent.pdf
@@ -619,3 +625,19 @@
 !issue17069.pdf
 !issue17215.pdf
 !bug1863910.pdf
+!bug1865341.pdf
+!bug1872721.pdf
+!bug1871353.pdf
+!bug1871353.1.pdf
+!file_pdfjs_form.pdf
+!issue17492.pdf
+!issue17540.pdf
+!bug1669097.pdf
+!issue17671.pdf
+!bug1868759.pdf
+!issue17730.pdf
+!bug1883609.pdf
+!issue17808.pdf
+!issue17871_bottom_right.pdf
+!issue17871_top_right.pdf
+!bug1889122.pdf

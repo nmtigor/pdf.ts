@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/annotation_editor_params.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2022 Mozilla Foundation
  *
@@ -40,10 +44,12 @@ export class AnnotationEditorParams {
     editorInkThickness,
     editorInkOpacity,
     editorStampAddImage,
+    editorFreeHighlightThickness,
+    editorHighlightShowAll,
   }: ViewerConfiguration["annotationEditorParams"]) {
     const dispatchEvent = (
       typeStr: AnnotationEditorParamsType,
-      value?: string | number,
+      value?: string | number | boolean,
     ) => {
       this.eventBus.dispatch("switchannotationeditorparams", {
         source: this,
@@ -75,24 +81,47 @@ export class AnnotationEditorParams {
     editorStampAddImage.on("click", () => {
       dispatchEvent(AnnotationEditorParamsType.CREATE);
     });
+    editorFreeHighlightThickness.on("input", function (this: HTMLInputElement) {
+      dispatchEvent(
+        AnnotationEditorParamsType.HIGHLIGHT_THICKNESS,
+        this.valueAsNumber,
+      );
+    });
+    editorHighlightShowAll.on("click", function (this: HTMLInputElement) {
+      const checked = this.getAttribute("aria-pressed") === "true";
+      this.setAttribute("aria-pressed", !checked as any);
+      dispatchEvent(AnnotationEditorParamsType.HIGHLIGHT_SHOW_ALL, !checked);
+    });
 
     this.eventBus._on("annotationeditorparamschanged", (evt) => {
       for (const [type, value] of evt.details) {
         switch (type) {
           case AnnotationEditorParamsType.FREETEXT_SIZE:
-            editorFreeTextFontSize.value = <string> value;
+            editorFreeTextFontSize.value = value as string;
             break;
           case AnnotationEditorParamsType.FREETEXT_COLOR:
-            editorFreeTextColor.value = <string> value;
+            editorFreeTextColor.value = value as string;
             break;
           case AnnotationEditorParamsType.INK_COLOR:
-            editorInkColor.value = <string> value;
+            editorInkColor.value = value as string;
             break;
           case AnnotationEditorParamsType.INK_THICKNESS:
-            editorInkThickness.value = <string> value;
+            editorInkThickness.value = value as string;
             break;
           case AnnotationEditorParamsType.INK_OPACITY:
-            editorInkOpacity.value = <string> value;
+            editorInkOpacity.value = value as string;
+            break;
+          case AnnotationEditorParamsType.HIGHLIGHT_THICKNESS:
+            editorFreeHighlightThickness.value = value as string;
+            break;
+          case AnnotationEditorParamsType.HIGHLIGHT_FREE:
+            editorFreeHighlightThickness.disabled = !value;
+            break;
+          case AnnotationEditorParamsType.HIGHLIGHT_SHOW_ALL:
+            editorHighlightShowAll.setAttribute(
+              "aria-pressed",
+              value as string,
+            );
             break;
         }
       }

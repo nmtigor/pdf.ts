@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/primitives_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2017 Mozilla Foundation
  *
@@ -30,7 +34,7 @@ import {
   RefSetCache,
 } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
-import { XRefMock } from "../../test_utils.ts";
+import { XRefMock } from "@pdf.ts-test/test_utils.ts";
 import {
   assert,
   assertEquals,

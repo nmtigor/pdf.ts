@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/pattern.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -1051,7 +1055,7 @@ export class MeshShading extends BaseShading {
       colorsPacked[j++] = c[1];
       colorsPacked[j++] = c[2];
     }
-    this.colors = <any> colorsPacked;
+    this.colors = colorsPacked as any;
 
     const figures = this.figures;
     for (i = 0, ii = figures.length; i < ii; i++) {
@@ -1067,16 +1071,23 @@ export class MeshShading extends BaseShading {
 
   /** @implement */
   getIR() {
-    return <MeshIR> [
+    const { bounds } = this;
+    // Ensure that the shading has non-zero width and height, to prevent errors
+    // in `pattern_helper.js` (fixes issue17848.pdf).
+    if (bounds![2] - bounds![0] === 0 || bounds![3] - bounds![1] === 0) {
+      throw new FormatError(`Invalid MeshShading bounds: [${bounds}].`);
+    }
+
+    return [
       "Mesh",
       this.shadingType,
-      <Float32Array> <unknown> this.coords,
-      <Uint8Array> <unknown> this.colors,
+      this.coords as unknown as Float32Array,
+      this.colors as unknown as Uint8Array,
       this.figures,
-      this.bounds,
+      bounds,
       this.bbox,
       this.background,
-    ];
+    ] as MeshIR;
   }
 }
 

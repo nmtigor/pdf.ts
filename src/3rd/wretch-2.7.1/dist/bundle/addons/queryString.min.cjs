@@ -9,7 +9,7 @@ const n = (n, r, e, o) => {
       const n = o.polyfill("URLSearchParams", 1, 1);
       for (const e in r) {
         const o = r[e];
-        if (r[e] instanceof Array) for (const r of o) n.append(e, t(r));
+        if (r[e] instanceof Array) { for (const r of o) n.append(e, t(r)); }
         else n.append(e, t(o));
       }
       s = n.toString();

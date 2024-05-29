@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/document_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2017 Mozilla Foundation
  *
@@ -19,7 +23,7 @@
 
 import { assertEquals } from "@std/testing/asserts.ts";
 import { describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory, XRefMock } from "../../test_utils.ts";
+import { createIdFactory, XRefMock } from "@pdf.ts-test/test_utils.ts";
 import { FieldObject } from "./annotation.ts";
 import { Catalog } from "./catalog.ts";
 import { PDFDocument } from "./document.ts";

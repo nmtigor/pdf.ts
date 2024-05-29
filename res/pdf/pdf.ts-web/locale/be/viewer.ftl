@@ -226,6 +226,23 @@ pdfjs-find-match-diacritics-checkbox-label = З улікам дыякрытык
 pdfjs-find-entire-word-checkbox-label = Словы цалкам
 pdfjs-find-reached-top = Дасягнуты пачатак дакумента, працяг з канца
 pdfjs-find-reached-bottom = Дасягнуты канец дакумента, працяг з пачатку
+# Variables:
+#   $current (Number) - the index of the currently active find result
+#   $total (Number) - the total number of matches in the document
+pdfjs-find-match-count =
+    { $total ->
+        [one] { $current } з { $total } супадзенняў
+        [few] { $current } з { $total } супадзенняў
+       *[many] { $current } з { $total } супадзенняў
+    }
+# Variables:
+#   $limit (Number) - the maximum number of matches
+pdfjs-find-match-count-limit =
+    { $limit ->
+        [one] Больш за { $limit } супадзенне
+        [few] Больш за { $limit } супадзенні
+       *[many] Больш за { $limit } супадзенняў
+    }
 pdfjs-find-not-found = Выраз не знойдзены
 
 ## Predefined zoom values
@@ -286,6 +303,29 @@ pdfjs-editor-ink-button-label = Маляваць
 pdfjs-editor-stamp-button =
     .title = Дадаць або змяніць выявы
 pdfjs-editor-stamp-button-label = Дадаць або змяніць выявы
+pdfjs-editor-highlight-button =
+    .title = Вылучэнне
+pdfjs-editor-highlight-button-label = Вылучэнне
+pdfjs-highlight-floating-button =
+    .title = Вылучэнне
+pdfjs-highlight-floating-button1 =
+    .title = Падфарбаваць
+    .aria-label = Падфарбаваць
+pdfjs-highlight-floating-button-label = Падфарбаваць
+
+## Remove button for the various kind of editor.
+
+pdfjs-editor-remove-ink-button =
+    .title = Выдаліць малюнак
+pdfjs-editor-remove-freetext-button =
+    .title = Выдаліць тэкст
+pdfjs-editor-remove-stamp-button =
+    .title = Выдаліць выяву
+pdfjs-editor-remove-highlight-button =
+    .title = Выдаліць падфарбоўку
+
+##
+
 # Editor Parameters
 pdfjs-editor-free-text-color-input = Колер
 pdfjs-editor-free-text-size-input = Памер
@@ -295,6 +335,10 @@ pdfjs-editor-ink-opacity-input = Непразрыстасць
 pdfjs-editor-stamp-add-image-button =
     .title = Дадаць выяву
 pdfjs-editor-stamp-add-image-button-label = Дадаць выяву
+# This refers to the thickness of the line used for free highlighting (not bound to text)
+pdfjs-editor-free-highlight-thickness-input = Таўшчыня
+pdfjs-editor-free-highlight-thickness-title =
+    .title = Змяняць таўшчыню пры вылучэнні іншых элементаў, акрамя тэксту
 pdfjs-free-text =
     .aria-label = Тэкставы рэдактар
 pdfjs-free-text-default-content = Пачніце набор тэксту…
@@ -324,3 +368,37 @@ pdfjs-editor-alt-text-textarea =
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
 
+pdfjs-editor-resizer-label-top-left = Верхні левы кут — змяніць памер
+pdfjs-editor-resizer-label-top-middle = Уверсе пасярэдзіне — змяніць памер
+pdfjs-editor-resizer-label-top-right = Верхні правы кут — змяніць памер
+pdfjs-editor-resizer-label-middle-right = Пасярэдзіне справа — змяніць памер
+pdfjs-editor-resizer-label-bottom-right = Правы ніжні кут — змяніць памер
+pdfjs-editor-resizer-label-bottom-middle = Пасярэдзіне ўнізе — змяніць памер
+pdfjs-editor-resizer-label-bottom-left = Левы ніжні кут — змяніць памер
+pdfjs-editor-resizer-label-middle-left = Пасярэдзіне злева — змяніць памер
+
+## Color picker
+
+# This means "Color used to highlight text"
+pdfjs-editor-highlight-colorpicker-label = Колер падфарбоўкі
+pdfjs-editor-colorpicker-button =
+    .title = Змяніць колер
+pdfjs-editor-colorpicker-dropdown =
+    .aria-label = Выбар колеру
+pdfjs-editor-colorpicker-yellow =
+    .title = Жоўты
+pdfjs-editor-colorpicker-green =
+    .title = Зялёны
+pdfjs-editor-colorpicker-blue =
+    .title = Блакітны
+pdfjs-editor-colorpicker-pink =
+    .title = Ружовы
+pdfjs-editor-colorpicker-red =
+    .title = Чырвоны
+
+## Show all highlights
+## This is a toggle button to show/hide all the highlights.
+
+pdfjs-editor-highlight-show-all-button-label = Паказаць усе
+pdfjs-editor-highlight-show-all-button =
+    .title = Паказаць усе

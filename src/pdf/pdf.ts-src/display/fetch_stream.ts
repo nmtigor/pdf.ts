@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/fetch_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -17,9 +21,9 @@
  * limitations under the License.
  */
 
-import { MOZCENTRAL } from "../../../global.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import { assert } from "@fe-lib/util/trace.ts";
+import { MOZCENTRAL } from "@fe-src/global.ts";
 import type {
   IPDFStream,
   IPDFStreamRangeReader,

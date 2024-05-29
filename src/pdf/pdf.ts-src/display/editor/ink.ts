@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/editor/ink.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2022 Mozilla Foundation
  *
@@ -59,9 +63,6 @@ export interface InkEditorSerialized extends AnnotStorageValue {
 export class InkEditor extends AnnotationEditor {
   static override readonly _type = "ink";
   static override readonly _editorType = AnnotationEditorType.INK;
-  static _defaultColor: string | undefined;
-  static _defaultOpacity = 1;
-  static _defaultThickness = 1;
 
   #baseHeight = 0;
   #baseWidth = 0;
@@ -78,6 +79,10 @@ export class InkEditor extends AnnotationEditor {
   #realWidth = 0;
   #realHeight = 0;
   #requestFrameCallback: (() => void) | undefined;
+
+  static _defaultColor: string | undefined;
+  static _defaultOpacity = 1;
+  static _defaultThickness = 1;
 
   color;
   thickness;
@@ -103,13 +108,16 @@ export class InkEditor extends AnnotationEditor {
     this._willKeepAspectRatio = true;
   }
 
-  static override initialize(l10n: IL10n) {
-    AnnotationEditor.initialize(l10n);
+  static override initialize(
+    l10n: IL10n,
+    uiManager: AnnotationEditorUIManager,
+  ) {
+    AnnotationEditor.initialize(l10n, uiManager);
   }
 
   static override updateDefaultParams(
     type: AnnotationEditorParamsType,
-    value: number | string | undefined,
+    value: number | string | boolean | undefined,
   ) {
     switch (type) {
       case AnnotationEditorParamsType.INK_THICKNESS:
@@ -141,7 +149,7 @@ export class InkEditor extends AnnotationEditor {
     }
   }
 
-  static override get defaultPropertiesToUpdate() {
+  static override get defaultPropertiesToUpdate(): PropertyToUpdate[] {
     return [
       [AnnotationEditorParamsType.INK_THICKNESS, InkEditor._defaultThickness],
       [
@@ -178,16 +186,15 @@ export class InkEditor extends AnnotationEditor {
    * Update the thickness and make this action undoable.
    */
   #updateThickness(thickness: number) {
+    const setThickness = (th: number) => {
+      this.thickness = th;
+      this.#fitToContent();
+    };
     const savedThickness = this.thickness;
     this.addCommands({
-      cmd: () => {
-        this.thickness = thickness;
-        this.#fitToContent();
-      },
-      undo: () => {
-        this.thickness = savedThickness;
-        this.#fitToContent();
-      },
+      cmd: setThickness.bind(this, thickness),
+      undo: setThickness.bind(this, savedThickness!),
+      post: this._uiManager.updateUI.bind(this._uiManager, this),
       mustExec: true,
       type: AnnotationEditorParamsType.INK_THICKNESS,
       overwriteIfSameType: true,
@@ -199,16 +206,15 @@ export class InkEditor extends AnnotationEditor {
    * Update the color and make this action undoable.
    */
   #updateColor(color: string) {
+    const setColor = (col: string | undefined) => {
+      this.color = col;
+      this.#redraw();
+    };
     const savedColor = this.color;
     this.addCommands({
-      cmd: () => {
-        this.color = color;
-        this.#redraw();
-      },
-      undo: () => {
-        this.color = savedColor;
-        this.#redraw();
-      },
+      cmd: setColor.bind(this, color),
+      undo: setColor.bind(this, savedColor),
+      post: this._uiManager.updateUI.bind(this._uiManager, this),
       mustExec: true,
       type: AnnotationEditorParamsType.INK_COLOR,
       overwriteIfSameType: true,
@@ -220,17 +226,16 @@ export class InkEditor extends AnnotationEditor {
    * Update the opacity and make this action undoable.
    */
   #updateOpacity(opacity: number) {
+    const setOpacity = (op: number | undefined) => {
+      this.opacity = op;
+      this.#redraw();
+    };
     opacity /= 100;
     const savedOpacity = this.opacity;
     this.addCommands({
-      cmd: () => {
-        this.opacity = opacity;
-        this.#redraw();
-      },
-      undo: () => {
-        this.opacity = savedOpacity;
-        this.#redraw();
-      },
+      cmd: setOpacity.bind(this, opacity),
+      undo: setOpacity.bind(this, savedOpacity),
+      post: this._uiManager.updateUI.bind(this._uiManager, this),
       mustExec: true,
       type: AnnotationEditorParamsType.INK_OPACITY,
       overwriteIfSameType: true,
@@ -474,7 +479,7 @@ export class InkEditor extends AnnotationEditor {
       this.allRawPaths.push(currentPath);
       this.paths.push(bezier);
       this.bezierPath2D.push(path2D);
-      this.rebuild();
+      this._uiManager.rebuild(this);
     };
 
     const undo = () => {
@@ -636,7 +641,7 @@ export class InkEditor extends AnnotationEditor {
 
     this.parent!.addInkEditorIfNeeded(/* isCommitting = */ true);
 
-    // When commiting, the position of this editor is changed, hence we must
+    // When committing, the position of this editor is changed, hence we must
     // move it to the right position in the DOM.
     this.moveInDOM();
     this.div!.focus({ preventScroll: true /* See issue #15744 */ });
@@ -664,10 +669,7 @@ export class InkEditor extends AnnotationEditor {
 
     event.preventDefault();
 
-    if (
-      event.pointerType !== "mouse" &&
-      !this.div!.contains(document.activeElement)
-    ) {
+    if (!this.div!.contains(document.activeElement)) {
       this.div!.focus({
         preventScroll: true, /* See issue #17327 */
       });
@@ -993,6 +995,14 @@ export class InkEditor extends AnnotationEditor {
       const points = [];
       for (let j = 0, jj = bezier.length; j < jj; j++) {
         const [first, control1, control2, second] = bezier[j];
+        if (first[0] === second[0] && first[1] === second[1] && jj === 1) {
+          // We have only one point.
+          const p0 = s * first[0] + shiftX;
+          const p1 = s * first[1] + shiftY;
+          buffer.push(p0, p1);
+          points.push(p0, p1);
+          break;
+        }
         const p10 = s * first[0] + shiftX;
         const p11 = s * first[1] + shiftY;
         const p20 = s * control1[0] + shiftX;

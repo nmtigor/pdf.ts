@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/display_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2015 Mozilla Foundation
  *
@@ -19,7 +23,7 @@
 
 import type { C2D, dot2d_t, rect_t, uint } from "@fe-lib/alias.ts";
 import type { red_t, rgb_t } from "@fe-lib/color/alias.ts";
-import { div as createDiv, html, svg as createSVG } from "@fe-lib/dom.ts";
+import { html, svg as createSVG } from "@fe-lib/dom.ts";
 import { MOZCENTRAL } from "@fe-src/global.ts";
 import type { XFAElObj } from "../core/xfa/alias.ts";
 import type { matrix_t } from "../shared/util.ts";
@@ -70,12 +74,19 @@ export class DOMFilterFactory extends BaseFilterFactory {
   #_defs: SVGDefsElement | undefined;
   #docId;
   #document;
-  #hcmFilter: SVGFilterElement | undefined;
-  #hcmKey: string | undefined;
-  #hcmUrl: string | undefined;
-  #hcmHighlightFilter?: SVGFilterElement;
-  #hcmHighlightKey?: string;
-  #hcmHighlightUrl?: string;
+
+  #_hcmCache: Map<string, unknown> | undefined;
+  get #hcmCache() {
+    return (this.#_hcmCache ||= new Map());
+  }
+
+  //kkkk TOCLEANUP
+  // #hcmFilter: SVGFilterElement | undefined;
+  // #hcmKey: string | undefined;
+  // #hcmUrl: string | undefined;
+  // #hcmHighlightFilter?: SVGFilterElement;
+  // #hcmHighlightKey?: string;
+  // #hcmHighlightUrl?: string;
   #id = 0;
 
   constructor(
@@ -92,7 +103,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
 
   get #defs() {
     if (!this.#_defs) {
-      const div = createDiv(undefined, this.#document);
+      const div = html("div", undefined, this.#document);
       div.assignStylo({
         visibility: "hidden",
         contain: "strict",
@@ -179,16 +190,28 @@ export class DOMFilterFactory extends BaseFilterFactory {
 
   override addHCMFilter(fgColor: string, bgColor: string): string {
     const key = `${fgColor}-${bgColor}`;
-    if (this.#hcmKey === key) {
-      return this.#hcmUrl!;
+    const filterName = "base";
+    let info = this.#hcmCache.get(filterName);
+    if (info?.key === key) {
+      return info.url;
     }
 
-    this.#hcmKey = key;
-    this.#hcmUrl = "none";
-    this.#hcmFilter?.remove();
+    if (info) {
+      info.filter?.remove();
+      info.key = key;
+      info.url = "none";
+      info.filter = null;
+    } else {
+      info = {
+        key,
+        url: "none",
+        filter: null,
+      };
+      this.#hcmCache.set(filterName, info);
+    }
 
     if (!fgColor || !bgColor) {
-      return this.#hcmUrl!;
+      return info.url;
     }
 
     const fgRGB = this.#getRGB(fgColor);
@@ -201,7 +224,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
       (fgColor === "#000000" && bgColor === "#ffffff") ||
       fgColor === bgColor
     ) {
-      return this.#hcmUrl;
+      return info.url;
     }
 
     // https://developer.mozilla.org/en-US/docs/Web/Accessibility/Understanding_Colors_and_Luminance
@@ -221,7 +244,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
     const table = map.join(",");
 
     const id = `g_${this.#docId}_hcm_filter`;
-    const filter = (this.#hcmHighlightFilter = this.#createFilter(id));
+    const filter = (info.filter = this.#createFilter(id));
     this.#addTransferMapConversion(table, table, table, filter);
     this.#addGrayConversion(filter);
 
@@ -241,27 +264,39 @@ export class DOMFilterFactory extends BaseFilterFactory {
       filter,
     );
 
-    this.#hcmUrl = `url(#${id})`;
-    return this.#hcmUrl;
+    info.url = `url(#${id})`;
+    return info.url;
   }
 
   override addHighlightHCMFilter(
+    filterName: string,
     fgColor: string,
     bgColor: string,
     newFgColor: string,
     newBgColor: string,
   ): string {
     const key = `${fgColor}-${bgColor}-${newFgColor}-${newBgColor}`;
-    if (this.#hcmHighlightKey === key) {
-      return this.#hcmHighlightUrl!;
+    let info = this.#hcmCache.get(filterName);
+    if (info?.key === key) {
+      return info.url;
     }
 
-    this.#hcmHighlightKey = key;
-    this.#hcmHighlightUrl = "none";
-    this.#hcmHighlightFilter?.remove();
+    if (info) {
+      info.filter?.remove();
+      info.key = key;
+      info.url = "none";
+      info.filter = null;
+    } else {
+      info = {
+        key,
+        url: "none",
+        filter: null,
+      };
+      this.#hcmCache.set(filterName, info);
+    }
 
     if (!fgColor || !bgColor) {
-      return this.#hcmHighlightUrl;
+      return info.url;
     }
 
     const [fgRGB, bgRGB] = [fgColor, bgColor].map(this.#getRGB.bind(this));
@@ -317,8 +352,8 @@ export class DOMFilterFactory extends BaseFilterFactory {
       return arr.join(",");
     };
 
-    const id = `g_${this.#docId}_hcm_highlight_filter`;
-    const filter = (this.#hcmHighlightFilter = this.#createFilter(id));
+    const id = `g_${this.#docId}_hcm_${filterName}_filter`;
+    const filter = (info.filter = this.#createFilter(id));
 
     this.#addGrayConversion(filter);
     this.#addTransferMapConversion(
@@ -328,12 +363,12 @@ export class DOMFilterFactory extends BaseFilterFactory {
       filter,
     );
 
-    this.#hcmHighlightUrl = `url(#${id})`;
-    return this.#hcmHighlightUrl;
+    info.url = `url(#${id})`;
+    return info.url;
   }
 
   override destroy(keepHCM = false) {
-    if (keepHCM && (this.#hcmUrl || this.#hcmHighlightUrl)) {
+    if (keepHCM && this.#hcmCache.size !== 0) {
       return;
     }
     if (this.#_defs) {
@@ -434,48 +469,37 @@ export async function fetchData(
       response.body?.cancel();
       throw new Error(response.statusText);
     }
-    // switch (type) {
-    //   case "arraybuffer":
-    //     return response.arrayBuffer();
-    //   case "blob":
-    //     return response.blob();
-    //   case "json":
-    //     return response.json();
-    // }
-    // return response.text();
-    return /* final switch */ {
-      arraybuffer: () => response.arrayBuffer(),
-      blob: () => response.blob(),
-      json: () => response.json(),
-      text: () => response.text(),
-    }[type]();
+    switch (type) {
+      case "arraybuffer":
+        return response.arrayBuffer();
+      case "blob":
+        return response.blob();
+      case "json":
+        return response.json();
+    }
+    return response.text();
   }
 
   // The Fetch API is not supported.
-  return new Promise<Uint8Array>((resolve, reject) => {
+  return new Promise<Uint8Array | string>((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("GET", url, /* async = */ true);
     request.responseType = type;
 
     request.onreadystatechange = () => {
-      if (request.readyState !== XMLHttpRequest.DONE) return;
-
+      if (request.readyState !== XMLHttpRequest.DONE) {
+        return;
+      }
       if (request.status === 200 || request.status === 0) {
-        let data;
         switch (type) {
           case "arraybuffer":
           case "blob":
           case "json":
-            data = request.response;
-            break;
-          default:
-            data = request.responseText;
-            break;
+            resolve(request.response);
+            return;
         }
-        if (data) {
-          resolve(data);
-          return;
-        }
+        resolve(request.responseText);
+        return;
       }
       reject(new Error(request.statusText));
     };
@@ -493,14 +517,12 @@ export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
     return fetchData(
       url,
       /* type = */ this.isCompressed ? "arraybuffer" : "text",
-    ).then((data) => {
-      return {
-        cMapData: data instanceof ArrayBuffer
-          ? new Uint8Array(data)
-          : stringToBytes(data),
-        compressionType,
-      };
-    });
+    ).then((data) => ({
+      cMapData: data instanceof ArrayBuffer
+        ? new Uint8Array(data)
+        : stringToBytes(data),
+      compressionType,
+    }));
   }
 }
 
@@ -510,9 +532,9 @@ export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
    * @implement
    */
   _fetchData(url: string) {
-    return fetchData(url, /* type = */ "arraybuffer").then((data) => {
-      return new Uint8Array(data);
-    });
+    return fetchData(url, /* type = */ "arraybuffer").then(
+      (data) => new Uint8Array(data),
+    );
   }
 }
 
@@ -799,7 +821,7 @@ export function isDataScheme(url: string) {
   return url.substring(i, i + 5).toLowerCase() === "data:";
 }
 
-export function isPdfFile(filename: unknown) {
+export function isPdfFile(filename: unknown): filename is string {
   return typeof filename === "string" && /\.pdf$/i.test(filename);
 }
 

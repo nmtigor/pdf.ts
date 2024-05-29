@@ -3,18 +3,24 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import type { dot2d_t } from "@fe-lib/alias.ts";
+export {};
 /*80--------------------------------------------------------------------------*/
 
-export type Box = {
+export type Dot = {
   x: number;
   y: number;
-  width: number;
-  height: number;
 };
 
-export type Outlines = {
-  outlines: dot2d_t[];
-  box: Box;
+export type Box = Dot & {
+  width: number;
+  height: number;
+  lastPoint?: number[];
 };
+
+//kkkk TOCLEANUP
+// export type Outlines = {
+//   outlines: dot2d_t[];
+//   box: Box;
+//   free;
+// };
 /*80--------------------------------------------------------------------------*/

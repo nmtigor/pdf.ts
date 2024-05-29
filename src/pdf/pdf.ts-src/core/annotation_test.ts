@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/annotation_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -18,7 +22,7 @@
  */
 
 import type { rect_t } from "@fe-lib/alias.ts";
-import { assertEquals, assertFalse } from "@std/assert/mod.ts";
+import { assertEquals, assertFalse, assertLess } from "@std/assert/mod.ts";
 import {
   afterAll,
   afterEach,
@@ -27,18 +31,21 @@ import {
   describe,
   it,
 } from "@std/testing/bdd.ts";
+import type { TestServer } from "@pdf.ts-test/test_utils.ts";
 import {
   CMAP_URL,
   createIdFactory,
+  createTemporaryDenoServer,
   STANDARD_FONT_DATA_URL,
   XRefMock,
-} from "../../test_utils.ts";
+} from "@pdf.ts-test/test_utils.ts";
 import { AnnotStorageRecord } from "../display/annotation_layer.ts";
 import {
   DefaultCMapReaderFactory,
   DefaultStandardFontDataFactory,
 } from "../display/api.ts";
 import { type CMapData } from "../display/base_factory.ts";
+import type { Outlines } from "../display/editor/outliner.ts";
 import {
   AnnotationBorderStyleType,
   AnnotationEditorType,
@@ -63,6 +70,7 @@ import {
 } from "./annotation.ts";
 import { LocalIdFactory } from "./document.ts";
 import { PartialEvaluator } from "./evaluator.ts";
+import { FlateStream } from "./flate_stream.ts";
 import { Lexer, Parser } from "./parser.ts";
 import { Dict, Name, Ref, RefSetCache } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
@@ -70,6 +78,8 @@ import { WorkerTask } from "./worker.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("annotation", () => {
+  let tempServer: TestServer;
+
   class PDFManagerMock {
     pdfDocument;
     evaluatorOptions = {
@@ -105,9 +115,7 @@ describe("annotation", () => {
     }
   }
 
-  const fontDataReader = new DefaultStandardFontDataFactory({
-    baseUrl: STANDARD_FONT_DATA_URL,
-  });
+  let fontDataReader: DefaultStandardFontDataFactory;
 
   class HandlerMock {
     inputs: { name: string; data: unknown }[] = [];
@@ -130,6 +138,12 @@ describe("annotation", () => {
     partialEvaluator: PartialEvaluator;
 
   beforeAll(async () => {
+    tempServer = createTemporaryDenoServer();
+
+    fontDataReader = new DefaultStandardFontDataFactory({
+      baseUrl: STANDARD_FONT_DATA_URL(tempServer),
+    });
+
     pdfManagerMock = new PDFManagerMock({
       docBaseUrl: undefined,
     });
@@ -139,7 +153,7 @@ describe("annotation", () => {
     ))!;
 
     const CMapReaderFactory = new DefaultCMapReaderFactory({
-      baseUrl: CMAP_URL,
+      baseUrl: CMAP_URL(tempServer),
     });
 
     const builtInCMapCache = new Map<string, CMapData>();
@@ -170,6 +184,10 @@ describe("annotation", () => {
     pdfManagerMock = undefined;
     idFactoryMock = undefined as any;
     partialEvaluator = undefined as any;
+
+    const { server } = tempServer;
+    server.shutdown();
+    tempServer = undefined as any;
   });
 
   describe("AnnotationFactory", () => {
@@ -579,6 +597,15 @@ describe("annotation", () => {
       borderStyle.setDashArray([0, 0]);
 
       assertEquals(borderStyle.dashArray, [3]);
+    });
+
+    it("should not set the width to zero if the dash array is empty (issue 17904)", () => {
+      const borderStyle = new AnnotationBorderStyle();
+      borderStyle.setWidth(3);
+      borderStyle.setDashArray([]);
+
+      assertEquals(borderStyle.width, 3);
+      assertEquals(borderStyle.dashArray, []);
     });
 
     it("should set and get a valid horizontal corner radius", () => {
@@ -2320,12 +2347,6 @@ describe("annotation", () => {
     });
 
     it("should compress and save text", async () => {
-      // if (isNodeJS && getNodeVersion().major === 21) {
-      //   pending(
-      //     "CompressionStream behaves differently in Node.js 21, " +
-      //       "compared to Firefox, Chrome, and Node.js 18/20."
-      //   );
-      // }
       const textWidgetRef = Ref.get(123, 0);
       const xref = new XRefMock([
         { ref: textWidgetRef, data: textWidgetDict },
@@ -2363,22 +2384,30 @@ describe("annotation", () => {
           `/V (${value}) /AP << /N 2 0 R>> /M (date)>>\nendobj\n`,
       );
 
-      // deno-fmt-ignore
-      const compressedData = [
-        120, 156, 211, 15, 169, 80, 112, 242, 117, 86, 40, 84, 112, 10, 81, 208,
-        247, 72, 205, 41, 83, 48, 85, 8, 73, 83, 48, 84, 48, 0, 66, 8, 25, 146,
-        171, 96, 164, 96, 172, 103, 96, 174, 16, 146, 162, 160, 145, 56, 194,
-        129, 166, 66, 72, 150, 130, 107, 136, 66, 160, 130, 171, 175, 51, 0,
-        222, 235, 111, 133,
-      ];
-      const compressedStream = String.fromCharCode(...compressedData);
-      //kkkk
-      // assertEquals(
-      //   newData!.data,
-      //   "2 0 obj\n<< /Subtype /Form /Resources " +
-      //     "<< /Font << /Helv 314 0 R>>>> /BBox [0 0 32 10] /Filter /FlateDecode /Length 68>> stream\n" +
-      //     `${compressedStream}\nendstream\nendobj\n`,
-      // );
+      const compressedStream = newData!.data.substring(
+        newData!.data.indexOf("stream\n") + "stream\n".length,
+        newData!.data.indexOf("\nendstream"),
+      );
+      // Ensure that the data was in fact (significantly) compressed.
+      assertLess(compressedStream.length, value.length / 3);
+
+      assertEquals(
+        newData!.data,
+        "2 0 obj\n<< /Subtype /Form /Resources " +
+          "<< /Font << /Helv 314 0 R>>>> /BBox [0 0 32 10] " +
+          `/Filter /FlateDecode /Length ${compressedStream.length}>> stream\n` +
+          `${compressedStream}\nendstream\nendobj\n`,
+      );
+
+      // Given that the exact compression-output may differ between environments
+      // and browsers, ensure that the resulting data can be correctly decoded
+      // by our `FlateStream`-implementation since that simulates opening the
+      // generated data with the PDF.js library.
+      const flateStream = new FlateStream(new StringStream(compressedStream));
+      assertEquals(
+        flateStream.getString(),
+        `/Tx BMC q BT /Helv 5 Tf 1 0 0 1 0 0 Tm 2 3.07 Td (${value}) Tj ET Q EMC`,
+      );
     });
 
     it("should get field object for usage in JS sandbox", async () => {
@@ -4709,7 +4738,7 @@ describe("annotation", () => {
       assertEquals(opList.argsArray[5]![0], [OPS.moveTo, OPS.curveTo]);
       assertEquals(opList.argsArray[5]![1], [1, 2, 3, 4, 5, 6, 7, 8]);
       // Min-max.
-      assertEquals(opList.argsArray[5]![2], [1, 1, 2, 2]);
+      assertEquals(opList.argsArray[5]![2], [1, 2, 1, 2]);
     });
   });
 
@@ -4805,7 +4834,7 @@ describe("annotation", () => {
             outlines: [
               [8, 9, 10, 11],
               [12, 13, 14, 15],
-            ],
+            ] as Outlines,
           },
         ],
       );
@@ -4856,7 +4885,7 @@ describe("annotation", () => {
               opacity: 0.5,
               color: [0, 255, 0],
               quadPoints: [1, 2, 3, 4, 5, 6, 7],
-              outlines: [[8, 9, 10, 11]],
+              outlines: [[8, 9, 10, 11]] as Outlines,
             },
           ],
         )
@@ -4876,6 +4905,104 @@ describe("annotation", () => {
         OPS.setGState,
         OPS.constructPath,
         OPS.eoFill,
+        OPS.endAnnotation,
+      ]);
+    });
+
+    it("should create a new free Highlight annotation", async () => {
+      partialEvaluator.xref = new XRefMock() as any;
+      const task = new WorkerTask("test free Highlight creation");
+      const data = await AnnotationFactory.saveNewAnnotations(
+        partialEvaluator,
+        task,
+        [
+          {
+            annotationType: AnnotationEditorType.HIGHLIGHT,
+            rect: [12, 34, 56, 78],
+            rotation: 0,
+            opacity: 1,
+            color: [0, 0, 0],
+            thickness: 3.14,
+            outlines: {
+              // deno-fmt-ignore
+              outline: Float64Array.from([
+                NaN, NaN, 8, 9, 10, 11, NaN, NaN, 12, 13, 14, 15,
+              ]),
+              points: [Float64Array.from([16, 17, 18, 19])],
+            } as Outlines,
+          },
+        ],
+      );
+
+      const base = data.annotations[0].data.replace(/\(D:\d+\)/, "(date)");
+      assertEquals(
+        base,
+        "1 0 obj\n" +
+          "<< /Type /Annot /Subtype /Ink /CreationDate (date) /Rect [12 34 56 78] " +
+          "/InkList [[16 17 18 19]] /F 4 /Rotate 0 /IT /InkHighlight /BS << /W 3.14>> " +
+          "/C [0 0 0] /CA 1 /AP << /N 2 0 R>>>>\n" +
+          "endobj\n",
+      );
+
+      const appearance = data.dependencies[0].data;
+      assertEquals(
+        appearance,
+        "2 0 obj\n" +
+          "<< /FormType 1 /Subtype /Form /Type /XObject /BBox [12 34 56 78] " +
+          "/Length 30 /Resources << /ExtGState << /R0 << /BM /Multiply>>>>>>>> " +
+          "stream\n" +
+          "0 g\n" +
+          "/R0 gs\n" +
+          "10 11 m\n" +
+          "14 15 l\n" +
+          "h f\n" +
+          "endstream\n" +
+          "endobj\n",
+      );
+    });
+
+    it("should render a new free Highlight annotation for printing", async () => {
+      partialEvaluator.xref = new XRefMock() as any;
+      const task = new WorkerTask("test free Highlight printing");
+      const highlightAnnotation = (
+        await AnnotationFactory.printNewAnnotations(
+          annotationGlobalsMock,
+          partialEvaluator,
+          task,
+          [
+            {
+              annotationType: AnnotationEditorType.HIGHLIGHT,
+              rect: [12, 34, 56, 78],
+              rotation: 0,
+              opacity: 0.5,
+              color: [0, 255, 0],
+              thickness: 3.14,
+              outlines: {
+                // deno-fmt-ignore
+                outline: Float64Array.from([
+                  NaN, NaN, 8, 9, 10, 11, NaN, NaN, 12, 13, 14, 15,
+                ]),
+                points: [Float64Array.from([16, 17, 18, 19])],
+              } as Outlines,
+            },
+          ],
+        )
+      )![0];
+
+      const { opList } = await highlightAnnotation.getOperatorList(
+        partialEvaluator,
+        task,
+        RenderingIntentFlag.PRINT,
+        false,
+      );
+
+      assertEquals(opList.argsArray.length, 6);
+      assertEquals(opList.fnArray, [
+        OPS.beginAnnotation,
+        OPS.setFillRGBColor,
+        OPS.setGState,
+        OPS.constructPath,
+        OPS.fill,
         OPS.endAnnotation,
       ]);
     });

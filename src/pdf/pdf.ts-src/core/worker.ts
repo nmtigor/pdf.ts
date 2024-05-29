@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/worker.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -56,7 +60,7 @@ import type {
   NetworkPdfManagerCtorP,
 } from "./pdf_manager.ts";
 import { LocalPdfManager, NetworkPdfManager } from "./pdf_manager.ts";
-import { Dict, Ref } from "./primitives.ts";
+import { Dict, isDict, Ref } from "./primitives.ts";
 import { StructTreeRoot } from "./struct_tree.ts";
 import { PDFWorkerStream } from "./worker_stream.ts";
 import { incrementalUpdate } from "./writer.ts";
@@ -791,6 +795,8 @@ export const WorkerMessageHandler = {
           acroFormRef,
           acroForm,
           xfaData,
+          // Use the same kind of XRef as the previous one.
+          useXrefStream: isDict(xref.topDict, "XRef"),
         }).finally(() => {
           xref.resetNewTemporaryRef();
         });
@@ -936,14 +942,15 @@ export const WorkerMessageHandler = {
     });
 
     /*#static*/ if (PDFJSDev || TESTING) {
-      handler.on("GetXFADatasets", () => {
-        return pdfManager.ensureDoc("xfaDatasets");
-      });
-      handler.on("GetXRefPrevValue", () => {
-        return pdfManager
+      handler.on("GetXFADatasets", () => pdfManager.ensureDoc("xfaDatasets"));
+      handler.on("GetXRefPrevValue", () =>
+        pdfManager
           .ensureXRef("trailer")
-          .then((trailer) => trailer!.get("Prev") as number);
-      });
+          .then((trailer) => trailer!.get("Prev") as number));
+      handler.on(
+        "GetStartXRefPos",
+        () => pdfManager.ensureDoc("startXRef"),
+      );
       handler.on(
         "GetAnnotArray",
         (data) =>

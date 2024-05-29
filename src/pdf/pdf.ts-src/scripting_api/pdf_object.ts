@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/pdf_object.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -22,6 +26,7 @@ import type { ScriptingDocProperties } from "@pdf.ts-web/app.ts";
 
 export interface SendData {
   id?: string | undefined;
+  command?: string;
 }
 
 export type Send<D extends SendData> = (data: D) => void;

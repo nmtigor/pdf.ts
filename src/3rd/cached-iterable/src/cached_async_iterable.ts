@@ -5,7 +5,7 @@
 import CachedIterable from "./cached_iterable.ts";
 /*80--------------------------------------------------------------------------*/
 
-/*
+/**
  * CachedAsyncIterable caches the elements yielded by an async iterable.
  *
  * It can be used to iterate over an iterable many times without depleting the
@@ -75,8 +75,8 @@ export default class CachedAsyncIterable<T>
       }
       this.push(this.iterator.next());
     }
-    // Return the last cached {value, done} object to allow the calling
-    // code to decide if it needs to call touchNext again.
+    /* Return the last cached {value, done} object to allow the calling code to
+    decide if it needs to call touchNext again. */
     return this[this.length - 1];
   }
 }

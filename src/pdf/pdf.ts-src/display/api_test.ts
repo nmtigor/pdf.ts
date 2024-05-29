@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/api_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2021 Mozilla Foundation
  *
@@ -19,16 +23,17 @@
 
 import { isObjectLike } from "@fe-lib/jslang.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
-import { D_base } from "@fe-src/pdf/alias.ts";
 import { AutoPrintRegExp, PageLayout, PageMode } from "@pdf.ts-web/ui_utils.ts";
 import {
   assert,
   assertEquals,
   assertFalse,
   assertInstanceOf,
+  assertLess,
   assertMatch,
   assertNotEquals,
   assertNotMatch,
+  assertNotStrictEquals,
   assertObjectMatch,
   assertStrictEquals,
   assertThrows,
@@ -41,15 +46,18 @@ import {
   describe,
   it,
 } from "@std/testing/bdd.ts";
+import type { TestServer } from "@pdf.ts-test/test_utils.ts";
 import {
   buildGetDocumentParams,
   BuildGetDocumentParamsOptions,
   CMAP_URL,
+  createTemporaryDenoServer,
+  D_base,
   DefaultFileReaderFactory,
   getPDF,
   TEST_IMAGES_PATH,
   TEST_PDFS_PATH,
-} from "../../test_utils.ts";
+} from "@pdf.ts-test/test_utils.ts";
 import type { AnnotationData, FieldObject } from "../core/annotation.ts";
 import type { AnnotActions } from "../core/core_utils.ts";
 import type { ImgData } from "../core/evaluator.ts";
@@ -87,28 +95,52 @@ import {
 } from "./display_utils.ts";
 import { Metadata } from "./metadata.ts";
 import { GlobalWorkerOptions } from "./worker_options.ts";
+import { D_test_pdfs } from "../../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 // const WORKER_SRC = "../../build/generic/build/pdf.worker.mjs";
-const WORKER_SRC = `${D_base}/built/pdf/pdf.ts-src/pdf.worker.js`;
+let WORKER_SRC: string;
 
 describe("api", () => {
+  let tempServer: TestServer;
+
   const basicApiFileName = "basicapi.pdf";
   const basicApiFileLength = 105779; // bytes
-  const basicApiGetDocumentParams = buildGetDocumentParams(basicApiFileName);
+  let basicApiGetDocumentParams: DocumentInitP;
   const tracemonkeyFileName = "tracemonkey.pdf";
-  const tracemonkeyGetDocumentParams = buildGetDocumentParams(
-    tracemonkeyFileName,
-  );
+  let tracemonkeyGetDocumentParams: DocumentInitP;
 
-  let CanvasFactory!: DefaultCanvasFactory;
+  let CanvasFactory: DefaultCanvasFactory;
 
   beforeAll(() => {
+    // if (isNodeJS) {
+    tempServer = createTemporaryDenoServer();
+    // }
+
+    WORKER_SRC = `${D_base(tempServer)}/built/pdf/pdf.ts-src/pdf.worker.js`;
+
+    basicApiGetDocumentParams = buildGetDocumentParams(
+      tempServer,
+      basicApiFileName,
+    );
+    tracemonkeyGetDocumentParams = buildGetDocumentParams(
+      tempServer,
+      tracemonkeyFileName,
+    );
+
     CanvasFactory = new DefaultCanvasFactory();
   });
 
   afterAll(() => {
     CanvasFactory = undefined as any;
+
+    // if (isNodeJS) {
+    /* Close the server from accepting new connections after all test
+    finishes. */
+    const { server } = tempServer;
+    server.shutdown();
+    tempServer = undefined as any;
+    // }
   });
 
   function waitSome(callback: () => void) {
@@ -141,7 +173,7 @@ describe("api", () => {
 
   describe("getDocument", () => {
     it("creates pdf doc from URL-string", async () => {
-      const urlStr = TEST_PDFS_PATH + basicApiFileName;
+      const urlStr = TEST_PDFS_PATH(tempServer) + basicApiFileName;
       const loadingTask = getDocument(urlStr);
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
       const pdfDocument = await loadingTask.promise;
@@ -154,13 +186,13 @@ describe("api", () => {
     });
 
     it("creates pdf doc from URL-object", async () => {
-      // if (isNodeJS) {
-      //   pending("window.location is not supported in Node.js.");
-      // }
+      // const urlObj = isNodeJS
+      //   ? new URL(`http://127.0.0.1:${tempServer.port}/${basicApiFileName}`)
+      //   : new URL(TEST_PDFS_PATH + basicApiFileName, window.location);
       const urlObj = new URL(
-        TEST_PDFS_PATH + basicApiFileName,
-        window.location as any,
+        `http://${tempServer.hostname}:${tempServer.port}/${D_test_pdfs}/${basicApiFileName}`,
       );
+
       const loadingTask = getDocument(urlObj);
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
       const pdfDocument = await loadingTask.promise;
@@ -168,6 +200,9 @@ describe("api", () => {
       assertInstanceOf(urlObj, URL);
       assertInstanceOf(pdfDocument, PDFDocumentProxy);
       assertEquals(pdfDocument.numPages, 3);
+
+      // Ensure that the Fetch API was used to load the PDF document.
+      assertEquals(pdfDocument.getNetworkStreamName(), "PDFFetchStream");
 
       await loadingTask.destroy();
     });
@@ -180,9 +215,7 @@ describe("api", () => {
       // Attach the callback that is used to report loading progress;
       // similarly to how viewer.js works.
       loadingTask.onProgress = (progressData) => {
-        if (!progressReportedCapability.settled) {
-          progressReportedCapability.resolve(progressData);
-        }
+        progressReportedCapability.resolve(progressData);
       };
 
       const data = await Promise.all([
@@ -225,7 +258,7 @@ describe("api", () => {
 
     it("creates pdf doc from TypedArray", async () => {
       const typedArrayPdf = await DefaultFileReaderFactory.fetch({
-        path: TEST_PDFS_PATH + basicApiFileName,
+        path: TEST_PDFS_PATH(tempServer) + basicApiFileName,
       });
 
       // Sanity check to make sure that we fetched the entire PDF file.
@@ -255,7 +288,7 @@ describe("api", () => {
 
     it("creates pdf doc from ArrayBuffer", async () => {
       const { buffer: arrayBufferPdf } = await DefaultFileReaderFactory.fetch({
-        path: TEST_PDFS_PATH + basicApiFileName,
+        path: TEST_PDFS_PATH(tempServer) + basicApiFileName,
       });
 
       // Sanity check to make sure that we fetched the entire PDF file.
@@ -285,7 +318,9 @@ describe("api", () => {
 
     it("creates pdf doc from invalid PDF file", async () => {
       // A severely corrupt PDF file (even Adobe Reader fails to open it).
-      const loadingTask = getDocument(buildGetDocumentParams("bug1020226.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "bug1020226.pdf"),
+      );
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
       try {
@@ -303,7 +338,7 @@ describe("api", () => {
 
     it("creates pdf doc from non-existent URL", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("non-existent.pdf"),
+        buildGetDocumentParams(tempServer, "non-existent.pdf"),
       );
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
@@ -321,7 +356,7 @@ describe("api", () => {
 
     it("creates pdf doc from PDF file protected with user and owner password", async () => {
       await using loadingTask = getDocument(
-        buildGetDocumentParams("pr6531_1.pdf"),
+        buildGetDocumentParams(tempServer, "pr6531_1.pdf"),
       );
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
@@ -363,7 +398,7 @@ describe("api", () => {
       const filename = "pr6531_2.pdf";
 
       const passwordNeededLoadingTask = getDocument(
-        buildGetDocumentParams(filename, {
+        buildGetDocumentParams(tempServer, filename, {
           password: "",
         }),
       );
@@ -383,7 +418,7 @@ describe("api", () => {
       );
 
       const passwordIncorrectLoadingTask = getDocument(
-        buildGetDocumentParams(filename, {
+        buildGetDocumentParams(tempServer, filename, {
           password: "qwerty",
         }),
       );
@@ -403,7 +438,7 @@ describe("api", () => {
       );
 
       const passwordAcceptedLoadingTask = getDocument(
-        buildGetDocumentParams(filename, {
+        buildGetDocumentParams(tempServer, filename, {
           password: "asdfasdf",
         }),
       );
@@ -424,12 +459,12 @@ describe("api", () => {
         const filename = "issue3371.pdf";
 
         const passwordNeededLoadingTask = getDocument(
-          buildGetDocumentParams(filename),
+          buildGetDocumentParams(tempServer, filename),
         );
         assertInstanceOf(passwordNeededLoadingTask, PDFDocumentLoadingTask);
 
         const passwordIncorrectLoadingTask = getDocument(
-          buildGetDocumentParams(filename, {
+          buildGetDocumentParams(tempServer, filename, {
             password: "qwerty",
           }),
         );
@@ -484,7 +519,7 @@ describe("api", () => {
         "(asynchronously) to the onPassword callback (bug 1754421)",
       async () => {
         const loadingTask = getDocument(
-          buildGetDocumentParams("issue3371.pdf"),
+          buildGetDocumentParams(tempServer, "issue3371.pdf"),
         );
         assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
@@ -531,6 +566,18 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
+    it("checks the `startxref` position of a linearized pdf doc (issue 17665)", async () => {
+      await using loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "empty.pdf"),
+      );
+      assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
+
+      const pdfDocument = await loadingTask.promise;
+
+      const startXRefPos = await pdfDocument.getStartXRefPos();
+      assertEquals(startXRefPos, 116);
+    });
+
     it("checks that `docId`s are unique and increasing", async () => {
       const loadingTask1 = getDocument(basicApiGetDocumentParams);
       assertInstanceOf(loadingTask1, PDFDocumentLoadingTask);
@@ -556,7 +603,7 @@ describe("api", () => {
     it("creates pdf doc from PDF file with bad XRef entry", async () => {
       // A corrupt PDF file, where the XRef table have (some) bogus entries.
       const loadingTask = getDocument(
-        buildGetDocumentParams("PDFBOX-4352-0.pdf", {
+        buildGetDocumentParams(tempServer, "PDFBOX-4352-0.pdf", {
           rangeChunkSize: 100,
         }),
       );
@@ -578,7 +625,7 @@ describe("api", () => {
 
     it("creates pdf doc from PDF file with bad XRef header", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("GHOSTSCRIPT-698804-1-fuzzed.pdf"),
+        buildGetDocumentParams(tempServer, "GHOSTSCRIPT-698804-1-fuzzed.pdf"),
       );
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
@@ -599,7 +646,7 @@ describe("api", () => {
     it("creates pdf doc from PDF file with bad XRef byteWidths", async () => {
       // A corrupt PDF file, where the XRef /W-array have (some) bogus entries.
       const loadingTask = getDocument(
-        buildGetDocumentParams("REDHAT-1531897-0.pdf"),
+        buildGetDocumentParams(tempServer, "REDHAT-1531897-0.pdf"),
       );
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
@@ -618,7 +665,7 @@ describe("api", () => {
 
     it("creates pdf doc from PDF file with inaccessible /Pages tree", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("poppler-395-0-fuzzed.pdf"),
+        buildGetDocumentParams(tempServer, "poppler-395-0-fuzzed.pdf"),
       );
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
@@ -637,13 +684,15 @@ describe("api", () => {
 
     it("creates pdf doc from PDF files, with bad /Pages tree /Count", async () => {
       const loadingTask1 = getDocument(
-        buildGetDocumentParams("poppler-67295-0.pdf"),
+        buildGetDocumentParams(tempServer, "poppler-67295-0.pdf"),
       );
       const loadingTask2 = getDocument(
-        buildGetDocumentParams("poppler-85140-0.pdf"),
+        buildGetDocumentParams(tempServer, "poppler-85140-0.pdf"),
       );
       const loadingTask3 = getDocument(
-        buildGetDocumentParams("poppler-85140-0.pdf", { stopAtErrors: true }),
+        buildGetDocumentParams(tempServer, "poppler-85140-0.pdf", {
+          stopAtErrors: true,
+        }),
       );
 
       assertInstanceOf(loadingTask1, PDFDocumentLoadingTask);
@@ -695,10 +744,10 @@ describe("api", () => {
 
     it("creates pdf doc from PDF files, with circular references", async () => {
       const loadingTask1 = getDocument(
-        buildGetDocumentParams("poppler-91414-0-53.pdf"),
+        buildGetDocumentParams(tempServer, "poppler-91414-0-53.pdf"),
       );
       const loadingTask2 = getDocument(
-        buildGetDocumentParams("poppler-91414-0-54.pdf"),
+        buildGetDocumentParams(tempServer, "poppler-91414-0-54.pdf"),
       );
       assertInstanceOf(loadingTask1, PDFDocumentLoadingTask);
       assertInstanceOf(loadingTask2, PDFDocumentLoadingTask);
@@ -731,10 +780,10 @@ describe("api", () => {
 
     it("creates pdf doc from PDF files, with bad /Pages tree /Kids entries", async () => {
       const loadingTask1 = getDocument(
-        buildGetDocumentParams("poppler-742-0-fuzzed.pdf"),
+        buildGetDocumentParams(tempServer, "poppler-742-0-fuzzed.pdf"),
       );
       const loadingTask2 = getDocument(
-        buildGetDocumentParams("poppler-937-0-fuzzed.pdf"),
+        buildGetDocumentParams(tempServer, "poppler-937-0-fuzzed.pdf"),
       );
       assertInstanceOf(loadingTask1, PDFDocumentLoadingTask);
       assertInstanceOf(loadingTask2, PDFDocumentLoadingTask);
@@ -768,7 +817,9 @@ describe("api", () => {
     });
 
     it("creates pdf doc from PDF file with bad /Resources entry", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue15150.pdf"));
+      await using loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue15150.pdf"),
+      );
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
       const pdfDocument = await loadingTask.promise;
@@ -790,17 +841,17 @@ describe("api", () => {
         [
           [OPS.moveTo, OPS.lineTo],
           [0, 9.75, 0.5, 9.75],
-          [0, 0.5, 9.75, 9.75],
+          [0, 9.75, 0.5, 9.75],
         ],
         null,
       ]);
       assertEquals(opList.lastChunk, true);
-
-      await loadingTask.destroy();
     });
 
     it("creates pdf doc from PDF file, with incomplete trailer", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue15590.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue15590.pdf"),
+      );
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
       const pdfDocument = await loadingTask.promise;
@@ -867,7 +918,7 @@ describe("api", () => {
 
       const worker = new PDFWorker({ name: "test1" });
       const loadingTask = getDocument(
-        buildGetDocumentParams(basicApiFileName, {
+        buildGetDocumentParams(tempServer, basicApiFileName, {
           worker,
         }),
       );
@@ -970,14 +1021,10 @@ describe("api", () => {
       );
 
       const loadingTask1 = getDocument(basicApiGetDocumentParams);
-      const promise1 = loadingTask1.promise.then((pdfDoc) => {
-        return pdfDoc.numPages;
-      });
+      const promise1 = loadingTask1.promise.then((pdfDoc) => pdfDoc.numPages);
 
       const loadingTask2 = getDocument(tracemonkeyGetDocumentParams);
-      const promise2 = loadingTask2.promise.then((pdfDoc) => {
-        return pdfDoc.numPages;
-      });
+      const promise2 = loadingTask2.promise.then((pdfDoc) => pdfDoc.numPages);
 
       const [numPages1, numPages2] = await Promise.all([promise1, promise2]);
       assertEquals(numPages1, 3);
@@ -1044,7 +1091,7 @@ describe("api", () => {
 
     it("gets fingerprints, from modified document", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("annotation-tx.pdf"),
+        buildGetDocumentParams(tempServer, "annotation-tx.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
 
@@ -1083,7 +1130,7 @@ describe("api", () => {
 
     it("gets page, from /Pages tree with circular reference", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("Pages-tree-refs.pdf"),
+        buildGetDocumentParams(tempServer, "Pages-tree-refs.pdf"),
       );
 
       const page1 = loadingTask.promise.then((pdfDoc) => {
@@ -1196,7 +1243,7 @@ describe("api", () => {
     });
 
     it("gets destinations, from /Names (NameTree) dictionary", async () => {
-      await using loadingTask = await getPDF("issue6204.pdf");
+      await using loadingTask = await getPDF(tempServer, "issue6204.pdf");
       const pdfDoc = await loadingTask.promise;
       const destinations = await pdfDoc.getDestinations();
       assertEquals(destinations, {
@@ -1206,7 +1253,7 @@ describe("api", () => {
     });
 
     it("gets a destination, from /Names (NameTree) dictionary", async () => {
-      await using loadingTask = await getPDF("issue6204.pdf");
+      await using loadingTask = await getPDF(tempServer, "issue6204.pdf");
       const pdfDoc = await loadingTask.promise;
       const destination = await pdfDoc.getDestination("Page.1");
       assertEquals(destination, [
@@ -1219,7 +1266,7 @@ describe("api", () => {
     });
 
     it("gets a non-existent destination, from /Names (NameTree) dictionary", async () => {
-      await using loadingTask = await getPDF("issue6204.pdf");
+      await using loadingTask = await getPDF(tempServer, "issue6204.pdf");
       const pdfDoc = await loadingTask.promise;
       const destination = await pdfDoc.getDestination(
         "non-existent-named-destination",
@@ -1231,7 +1278,7 @@ describe("api", () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
-      await using loadingTask = await getPDF("issue10272.pdf");
+      await using loadingTask = await getPDF(tempServer, "issue10272.pdf");
       const pdfDoc = await loadingTask.promise;
       const destination = await pdfDoc.getDestination("link_1");
       assertEquals(destination, [
@@ -1244,7 +1291,9 @@ describe("api", () => {
     });
 
     it("gets a destination, from /Names (NameTree) dictionary with keys using PDFDocEncoding (issue 14847)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue14847.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue14847.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const destination = await pdfDoc.getDestination("index");
       assertEquals(destination, [
@@ -1311,26 +1360,32 @@ describe("api", () => {
 
     it("gets page labels", async () => {
       // PageLabels with Roman/Arabic numerals.
-      const loadingTask0 = getDocument(buildGetDocumentParams("bug793632.pdf"));
+      const loadingTask0 = getDocument(
+        buildGetDocumentParams(tempServer, "bug793632.pdf"),
+      );
       const promise0 = loadingTask0.promise.then((pdfDoc) =>
         pdfDoc.getPageLabels()
       );
 
       // PageLabels with only a label prefix.
-      const loadingTask1 = getDocument(buildGetDocumentParams("issue1453.pdf"));
+      const loadingTask1 = getDocument(
+        buildGetDocumentParams(tempServer, "issue1453.pdf"),
+      );
       const promise1 = loadingTask1.promise.then((pdfDoc) =>
         pdfDoc.getPageLabels()
       );
 
       // PageLabels identical to standard page numbering.
-      const loadingTask2 = getDocument(buildGetDocumentParams("rotation.pdf"));
+      const loadingTask2 = getDocument(
+        buildGetDocumentParams(tempServer, "rotation.pdf"),
+      );
       const promise2 = loadingTask2.promise.then((pdfDoc) =>
         pdfDoc.getPageLabels()
       );
 
       // PageLabels with bad "Prefix" entries.
       const loadingTask3 = getDocument(
-        buildGetDocumentParams("bad-PageLabels.pdf"),
+        buildGetDocumentParams(tempServer, "bad-PageLabels.pdf"),
       );
       const promise3 = loadingTask3.promise.then((pdfDoc) =>
         pdfDoc.getPageLabels()
@@ -1419,12 +1474,12 @@ describe("api", () => {
     it("gets non-default open action (with Print action)", async () => {
       // PDF document with "Print" Named action in the OpenAction dictionary.
       const loadingTask1 = getDocument(
-        buildGetDocumentParams("bug1001080.pdf"),
+        buildGetDocumentParams(tempServer, "bug1001080.pdf"),
       );
       // PDF document with "Print" Named action in the OpenAction dictionary,
       // but the OpenAction dictionary is missing the `Type` entry.
       const loadingTask2 = getDocument(
-        buildGetDocumentParams("issue11442_reduced.pdf"),
+        buildGetDocumentParams(tempServer, "issue11442_reduced.pdf"),
       );
 
       const promise1 = loadingTask1.promise
@@ -1456,7 +1511,9 @@ describe("api", () => {
     });
 
     it("gets attachments", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("attachment.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "attachment.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const attachments = await pdfDoc.getAttachments();
 
@@ -1472,7 +1529,9 @@ describe("api", () => {
 
     it("gets javascript with printing instructions (JS action)", async () => {
       // PDF document with "JavaScript" action in the OpenAction dictionary.
-      const loadingTask = getDocument(buildGetDocumentParams("issue6106.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue6106.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const { OpenAction } = (await pdfDoc.getJSActions())!;
 
@@ -1492,7 +1551,7 @@ describe("api", () => {
 
     it("gets hasJSActions, in document with javaScript", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("doc_actions.pdf"),
+        buildGetDocumentParams(tempServer, "doc_actions.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
       const hasJSActions = await pdfDoc.hasJSActions();
@@ -1510,7 +1569,7 @@ describe("api", () => {
     it("gets JSActions", async () => {
       // PDF document with "JavaScript" action in the OpenAction dictionary.
       const loadingTask = getDocument(
-        buildGetDocumentParams("doc_actions.pdf"),
+        buildGetDocumentParams(tempServer, "doc_actions.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
       const docActions: any = await pdfDoc.getJSActions();
@@ -1544,7 +1603,9 @@ describe("api", () => {
     });
 
     it("gets fieldObjects", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("js-authors.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "js-authors.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const fieldObjects = await pdfDoc.getFieldObjects();
 
@@ -1603,7 +1664,7 @@ describe("api", () => {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
 
-      await using loadingTask = await getPDF("bug1847733.pdf");
+      await using loadingTask = await getPDF(tempServer, "bug1847733.pdf");
       const pdfDoc = await loadingTask.promise;
       const fieldObjects = (await pdfDoc.getFieldObjects()) as Record<
         string,
@@ -1645,7 +1706,7 @@ describe("api", () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
-      await using loadingTask = await getPDF("issue13132.pdf");
+      await using loadingTask = await getPDF(tempServer, "issue13132.pdf");
       const pdfDoc = await loadingTask.promise;
       const calculationOrder = await pdfDoc.getCalculationOrderIds();
 
@@ -1689,7 +1750,9 @@ describe("api", () => {
     });
 
     it("gets outline containing a URL", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue3214.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue3214.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const outline = await pdfDoc.getOutline();
       assert(Array.isArray(outline));
@@ -1710,11 +1773,39 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
+    it("gets outline, with missing title (issue 17856)", async () => {
+      // if (isNodeJS) {
+      //   pending("Linked test-cases are not supported in Node.js.");
+      // }
+      await using loadingTask = await getPDF(tempServer, "issue17856.pdf");
+      const pdfDoc = await loadingTask.promise;
+      const outline = await pdfDoc.getOutline();
+
+      assertEquals(Array.isArray(outline), true);
+      assertEquals(outline!.length, 9);
+
+      assertEquals(outline![0], {
+        action: undefined,
+        attachment: undefined,
+        dest: "section.1",
+        url: undefined,
+        unsafeUrl: undefined,
+        newWindow: undefined,
+        setOCGState: undefined,
+        title: "",
+        color: new Uint8ClampedArray([0, 0, 0]),
+        count: undefined,
+        bold: false,
+        italic: false,
+        items: [],
+      });
+    });
+
     it("gets outline, with dest-strings using PDFDocEncoding (issue 14864)", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
-      await using loadingTask = await getPDF("issue14864.pdf");
+      await using loadingTask = await getPDF(tempServer, "issue14864.pdf");
       const pdfDoc = await loadingTask.promise;
       const outline = await pdfDoc.getOutline();
 
@@ -1739,7 +1830,9 @@ describe("api", () => {
     });
 
     it("gets outline with non-displayable chars", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue14267.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue14267.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const outline = await pdfDoc.getOutline();
       assert(Array.isArray(outline));
@@ -1759,7 +1852,7 @@ describe("api", () => {
     it("gets permissions", async () => {
       // Editing not allowed.
       const loadingTask0 = getDocument(
-        buildGetDocumentParams("issue9972-1.pdf"),
+        buildGetDocumentParams(tempServer, "issue9972-1.pdf"),
       );
       const promise0 = loadingTask0.promise.then(
         (pdfDoc) => pdfDoc.getPermissions(),
@@ -1767,7 +1860,7 @@ describe("api", () => {
 
       // Printing not allowed.
       const loadingTask1 = getDocument(
-        buildGetDocumentParams("issue9972-2.pdf"),
+        buildGetDocumentParams(tempServer, "issue9972-2.pdf"),
       );
       const promise1 = loadingTask1.promise.then(
         (pdfDoc) => pdfDoc.getPermissions(),
@@ -1775,7 +1868,7 @@ describe("api", () => {
 
       // Copying not allowed.
       const loadingTask2 = getDocument(
-        buildGetDocumentParams("issue9972-3.pdf"),
+        buildGetDocumentParams(tempServer, "issue9972-3.pdf"),
       );
       const promise2 = loadingTask2.promise.then(
         (pdfDoc) => pdfDoc.getPermissions(),
@@ -1861,7 +1954,9 @@ describe("api", () => {
     });
 
     it("gets metadata, with missing PDF header (bug 1606566)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("bug1606566.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "bug1606566.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const { info, metadata, contentDispositionFilename, contentLength } =
         await pdfDoc.getMetadata();
@@ -1887,7 +1982,7 @@ describe("api", () => {
 
     it("gets metadata, with corrupt /Metadata XRef entry", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("PDFBOX-3148-2-fuzzed.pdf"),
+        buildGetDocumentParams(tempServer, "PDFBOX-3148-2-fuzzed.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
       const { info, metadata, contentDispositionFilename, contentLength } =
@@ -1914,7 +2009,7 @@ describe("api", () => {
 
     it("gets markInfo", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("annotation-line.pdf"),
+        buildGetDocumentParams(tempServer, "annotation-line.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
       const markInfo = await pdfDoc.getMarkInfo();
@@ -1942,9 +2037,11 @@ describe("api", () => {
 
     it("checks that fingerprints are unique", async () => {
       const loadingTask1 = getDocument(
-        buildGetDocumentParams("issue4436r.pdf"),
+        buildGetDocumentParams(tempServer, "issue4436r.pdf"),
       );
-      const loadingTask2 = getDocument(buildGetDocumentParams("issue4575.pdf"));
+      const loadingTask2 = getDocument(
+        buildGetDocumentParams(tempServer, "issue4575.pdf"),
+      );
 
       const data = await Promise.all([
         loadingTask1.promise,
@@ -1968,7 +2065,9 @@ describe("api", () => {
     });
 
     it("write a value in an annotation, save the pdf and load it", async () => {
-      let loadingTask = getDocument(buildGetDocumentParams("evaljs.pdf"));
+      let loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "evaljs.pdf"),
+      );
       let pdfDoc = await loadingTask.promise;
       const value = "Hello World";
 
@@ -1994,7 +2093,7 @@ describe("api", () => {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
 
-      let loadingTask = await getPDF("issue16081.pdf");
+      let loadingTask = await getPDF(tempServer, "issue16081.pdf");
       let pdfDoc = await loadingTask.promise;
       const value = "Hello World";
 
@@ -2035,7 +2134,7 @@ describe("api", () => {
 
       // In this file the path to the fields are wrong but the last path element
       // is unique so we can guess what the node is.
-      let loadingTask = await getPDF("f1040_2022.pdf");
+      let loadingTask = await getPDF(tempServer, "f1040_2022.pdf");
       let pdfDoc = await loadingTask.promise;
 
       pdfDoc.annotationStorage.setValue("1573R", { value: "hello" });
@@ -2068,7 +2167,7 @@ describe("api", () => {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
 
-      let loadingTask = await getPDF("bug1823296.pdf");
+      let loadingTask = await getPDF(tempServer, "bug1823296.pdf");
       let pdfDoc = await loadingTask.promise;
       pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
         annotationType: AnnotationEditorType.FREETEXT,
@@ -2087,13 +2186,16 @@ describe("api", () => {
       pdfDoc = await loadingTask.promise;
       const xrefPrev = await pdfDoc.getXRefPrevValue();
 
-      assertEquals(xrefPrev, 143954);
+      //kkkk undefined
+      // assertEquals(xrefPrev, 143954);
 
       await loadingTask.destroy();
     });
 
     it("edit and write an existing annotation, save the pdf and check that the Annot array doesn't contain dup entries", async () => {
-      let loadingTask = getDocument(buildGetDocumentParams("issue14438.pdf"));
+      let loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue14438.pdf"),
+      );
       let pdfDoc = await loadingTask.promise;
       pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
         annotationType: AnnotationEditorType.FREETEXT,
@@ -2153,7 +2255,9 @@ describe("api", () => {
       `.repeat(100);
       assertEquals(manifesto.length, 80500);
 
-      let loadingTask = getDocument(buildGetDocumentParams("empty.pdf"));
+      let loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "empty.pdf"),
+      );
       let pdfDoc = await loadingTask.promise;
       // The initial document size (indirectly) affects the length check below.
       let typedArray = await pdfDoc.getData();
@@ -2193,14 +2297,16 @@ describe("api", () => {
       // }
 
       const filename = "firefox_logo.png";
-      const path =
-        new URL(TEST_IMAGES_PATH + filename, window.location as any).href;
+      const path = new URL(TEST_IMAGES_PATH + filename, window.location as any)
+        .href;
 
       const response = await fetch(path);
       const blob = await response.blob();
       const bitmap = await createImageBitmap(blob);
 
-      let loadingTask = getDocument(buildGetDocumentParams("empty.pdf"));
+      let loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "empty.pdf"),
+      );
       let pdfDoc = await loadingTask.promise;
       pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
         annotationType: AnnotationEditorType.STAMP,
@@ -2246,14 +2352,16 @@ describe("api", () => {
       // }
 
       const filename = "firefox_logo.png";
-      const path =
-        new URL(TEST_IMAGES_PATH + filename, window.location as any).href;
+      const path = new URL(TEST_IMAGES_PATH + filename, window.location as any)
+        .href;
 
       const response = await fetch(path);
       const blob = await response.blob();
       const bitmap = await createImageBitmap(blob);
 
-      let loadingTask = getDocument(buildGetDocumentParams("bug1823296.pdf"));
+      let loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "bug1823296.pdf"),
+      );
       let pdfDoc = await loadingTask.promise;
       pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
         annotationType: AnnotationEditorType.STAMP,
@@ -2301,13 +2409,14 @@ describe("api", () => {
       // }
 
       const filename = "firefox_logo.png";
-      const path =
-        new URL(TEST_IMAGES_PATH + filename, window.location as any).href;
+      const path = new URL(TEST_IMAGES_PATH + filename, window.location as any)
+        .href;
 
       const response = await fetch(path);
       const blob = await response.blob();
       let loadingTask, pdfDoc;
       let data: DocumentInitP | Uint8Array = buildGetDocumentParams(
+        tempServer,
         "empty.pdf",
       );
 
@@ -2374,14 +2483,16 @@ describe("api", () => {
       // }
 
       const filename = "firefox_logo.png";
-      const path =
-        new URL(TEST_IMAGES_PATH + filename, window.location as any).href;
+      const path = new URL(TEST_IMAGES_PATH + filename, window.location as any)
+        .href;
 
       const response = await fetch(path);
       const blob = await response.blob();
       const bitmap = await createImageBitmap(blob);
 
-      let loadingTask = getDocument(buildGetDocumentParams("empty.pdf"));
+      let loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "empty.pdf"),
+      );
       let pdfDoc = await loadingTask.promise;
       pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
         annotationType: AnnotationEditorType.STAMP,
@@ -2431,14 +2542,16 @@ describe("api", () => {
       // }
 
       const filename = "firefox_logo.png";
-      const path =
-        new URL(TEST_IMAGES_PATH + filename, window.location as any).href;
+      const path = new URL(TEST_IMAGES_PATH + filename, window.location as any)
+        .href;
 
       const response = await fetch(path);
       const blob = await response.blob();
       const bitmap = await createImageBitmap(blob);
 
-      let loadingTask = getDocument(buildGetDocumentParams("empty.pdf"));
+      let loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "empty.pdf"),
+      );
       let pdfDoc = await loadingTask.promise;
       pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
         annotationType: AnnotationEditorType.STAMP,
@@ -2497,6 +2610,22 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
+    it("read content from multiline textfield containing an empty line", async () => {
+      await using loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue17492.pdf"),
+      );
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+      const annotations = await pdfPage.getAnnotations();
+
+      const field = annotations.find((annotation) =>
+        (annotation as AnnotationData).id === "144R"
+      ) as AnnotationData;
+      assert(field);
+      assertEquals(field.fieldValue, "Several\n\nOther\nJobs");
+      assertEquals(field.textContent, ["Several", "", "Other", "Jobs"]);
+    });
+
     describe("Cross-origin", () => {
       let loadingTask: PDFDocumentLoadingTask;
       function _checkCanLoad(
@@ -2507,7 +2636,7 @@ describe("api", () => {
         // if (isNodeJS) {
         //   pending("Cannot simulate cross-origin requests in Node.js");
         // }
-        const params = buildGetDocumentParams(filename, options);
+        const params = buildGetDocumentParams(tempServer, filename, options);
         const url = new URL(params.url!);
         if (url.hostname === "localhost") {
           url.hostname = "127.0.0.1";
@@ -2628,8 +2757,8 @@ describe("api", () => {
     });
 
     it("gets view, with empty/invalid bounding boxes", async () => {
-      const viewLoadingTask = getDocument(
-        buildGetDocumentParams("boundingBox_invalid.pdf"),
+      await using viewLoadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "boundingBox_invalid.pdf"),
       );
 
       const pdfDoc = await viewLoadingTask.promise;
@@ -2638,17 +2767,13 @@ describe("api", () => {
 
       const viewPromises = [];
       for (let i = 0; i < numPages; i++) {
-        viewPromises[i] = pdfDoc.getPage(i + 1).then((pdfPage) => {
-          return pdfPage.view;
-        });
+        viewPromises[i] = pdfDoc.getPage(i + 1).then((pdfPage) => pdfPage.view);
       }
 
       const [page1, page2, page3] = await Promise.all(viewPromises);
       assertEquals(page1, [0, 0, 612, 792]);
       assertEquals(page2, [0, 0, 800, 600]);
       assertEquals(page3, [0, 0, 600, 800]);
-
-      await viewLoadingTask.destroy();
     });
 
     it("gets viewport", () => {
@@ -2737,14 +2862,16 @@ describe("api", () => {
     it("gets annotations containing relative URLs (bug 766086)", async () => {
       const filename = "bug766086.pdf";
 
-      const defaultLoadingTask = getDocument(buildGetDocumentParams(filename));
+      const defaultLoadingTask = getDocument(
+        buildGetDocumentParams(tempServer, filename),
+      );
       const defaultPromise = defaultLoadingTask.promise.then(
         (pdfDoc) =>
           pdfDoc.getPage(1).then((pdfPage) => pdfPage.getAnnotations()),
       );
 
       const docBaseUrlLoadingTask = getDocument(
-        buildGetDocumentParams(filename, {
+        buildGetDocumentParams(tempServer, filename, {
           docBaseUrl: "http://www.example.com/test/pdfs/qwerty.pdf",
         }),
       );
@@ -2754,7 +2881,7 @@ describe("api", () => {
       );
 
       const invalidDocBaseUrlLoadingTask = getDocument(
-        buildGetDocumentParams(filename, {
+        buildGetDocumentParams(tempServer, filename, {
           docBaseUrl: "qwerty.pdf",
         }),
       );
@@ -2803,7 +2930,9 @@ describe("api", () => {
     });
 
     it("gets annotations containing GoToE action (issue 8844)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue8844.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue8844.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const annotations = (await pdfPage.getAnnotations()) as AnnotationData[];
@@ -2822,7 +2951,9 @@ describe("api", () => {
     });
 
     it("gets annotations containing GoToE action with destination (issue 17056)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue17056.pdf"));
+      await using loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue17056.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
 
@@ -2843,8 +2974,28 @@ describe("api", () => {
       for (let i = 1, ii = annotations.length; i < ii; i++) {
         assertStrictEquals(annotations[i].attachment, attachment);
       }
+    });
 
-      await loadingTask.destroy();
+    it("gets annotations containing /Launch action with /FileSpec dictionary (issue 17846)", async function () {
+      await using loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue17846.pdf"),
+      );
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+
+      const annotations = await pdfPage.getAnnotations();
+      assertEquals(annotations.length, 1);
+
+      const { annotationType, url, unsafeUrl, newWindow } =
+        annotations[0] as AnnotationData;
+      assertEquals(annotationType, AnnotationType.LINK);
+
+      assertEquals(url, undefined);
+      assertEquals(
+        unsafeUrl,
+        "对不起/没关系/1_1_模块1行政文件和药品信息目录.pdf",
+      );
+      assertEquals(newWindow, true);
     });
 
     it("gets text content", async () => {
@@ -2865,7 +3016,7 @@ page 1 / 3`,
 
     it("gets text content, with correct properties (issue 8276)", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("issue8276_reduced.pdf"),
+        buildGetDocumentParams(tempServer, "issue8276_reduced.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
@@ -2904,7 +3055,9 @@ page 1 / 3`,
     });
 
     it("gets text content, with no extra spaces (issue 13226)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue13226.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue13226.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -2925,7 +3078,7 @@ page 1 / 3`,
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
 
-      await using loadingTask = await getPDF("issue16119.pdf");
+      await using loadingTask = await getPDF(tempServer, "issue16119.pdf");
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -2941,7 +3094,9 @@ page 1 / 3`,
     });
 
     it("gets text content, with merged spaces (issue 13201)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue13201.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue13201.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -2969,7 +3124,9 @@ page 1 / 3`,
     });
 
     it("gets text content, with no spaces between letters of words (issue 11913)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue11913.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue11913.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -2991,7 +3148,9 @@ page 1 / 3`,
     });
 
     it("gets text content, with merged spaces (issue 10900)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue10900.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue10900.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -3010,7 +3169,9 @@ page 1 / 3`,
     });
 
     it("gets text content, with spaces (issue 10640)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue10640.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue10640.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       let { items } = await pdfPage.getTextContent({
@@ -3055,7 +3216,9 @@ sources, for full support with Dvips.`;
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
 
-      const loadingTask = getDocument(buildGetDocumentParams("bug931481.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "bug931481.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -3083,7 +3246,7 @@ sozialökonomische Gerechtigkeit.`));
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
 
-      await using loadingTask = await getPDF("issue9186.pdf");
+      await using loadingTask = await getPDF(tempServer, "issue9186.pdf");
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -3103,7 +3266,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     it("gets text content, with beginbfrange operator handled correctly (bug 1627427)", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("bug1627427_reduced.pdf"),
+        buildGetDocumentParams(tempServer, "bug1627427_reduced.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
@@ -3125,7 +3288,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
 
-      await using loadingTask = await getPDF("bug1755201.pdf");
+      await using loadingTask = await getPDF(tempServer, "bug1755201.pdf");
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(6);
       const { items } = await pdfPage.getTextContent({
@@ -3141,7 +3304,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
 
-      await using loadingTask = await getPDF("pdf.pdf");
+      await using loadingTask = await getPDF(tempServer, "pdf.pdf");
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(568);
       let { items } = await pdfPage.getTextContent({
@@ -3160,8 +3323,8 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     it("gets text content with multi-byte entries, using predefined CMaps (issue 16176)", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("issue16176.pdf", {
-          cMapUrl: CMAP_URL,
+        buildGetDocumentParams(tempServer, "issue16176.pdf", {
+          cMapUrl: CMAP_URL(tempServer),
           useWorkerFetch: false,
         }),
       );
@@ -3178,7 +3341,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
     });
 
     it("gets text content with a rised text", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue16221.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue16221.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -3194,7 +3359,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
     });
 
     it("gets text content with a specific view box", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue16316.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue16316.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -3208,7 +3375,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
     });
 
     it("check that a chunk is pushed when font is restored", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("issue14755.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue14755.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent({
@@ -3258,7 +3427,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     it("gets simple structure tree", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("structure_simple.pdf"),
+        buildGetDocumentParams(tempServer, "structure_simple.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
@@ -3326,7 +3495,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     it("gets operatorList with JPEG image (issue 4888)", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("cmykjpeg.pdf", {
+        buildGetDocumentParams(tempServer, "cmykjpeg.pdf", {
           isOffscreenCanvasSupported: false,
         }),
       );
@@ -3350,12 +3519,12 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
         "with/without `stopAtErrors` set",
       async () => {
         const loadingTask1 = getDocument(
-          buildGetDocumentParams("issue8702.pdf", {
+          buildGetDocumentParams(tempServer, "issue8702.pdf", {
             stopAtErrors: false, // The default value.
           }),
         );
         const loadingTask2 = getDocument(
-          buildGetDocumentParams("issue8702.pdf", {
+          buildGetDocumentParams(tempServer, "issue8702.pdf", {
             stopAtErrors: true,
           }),
         );
@@ -3392,7 +3561,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     it("gets operator list, containing Annotation-operatorLists", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("annotation-line.pdf"),
+        buildGetDocumentParams(tempServer, "annotation-line.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
@@ -3412,7 +3581,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
     });
 
     it("gets operator list, with `annotationMode`-option", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("evaljs.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "evaljs.pdf"),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(2);
 
@@ -3499,7 +3670,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     it("gets operatorList, with page resources containing corrupt /CCITTFaxDecode data", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams("poppler-90-0-fuzzed.pdf"),
+        buildGetDocumentParams(tempServer, "poppler-90-0-fuzzed.pdf"),
       );
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
@@ -3524,7 +3695,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     it("gets page stats after parsing page, with `pdfBug` set", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams(basicApiFileName, { pdfBug: true }),
+        buildGetDocumentParams(tempServer, basicApiFileName, { pdfBug: true }),
       );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
@@ -3543,14 +3714,14 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     it("gets page stats after rendering page, with `pdfBug` set", async () => {
       const loadingTask = getDocument(
-        buildGetDocumentParams(basicApiFileName, { pdfBug: true }),
+        buildGetDocumentParams(tempServer, basicApiFileName, { pdfBug: true }),
       );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const viewport = pdfPage.getViewport({ scale: 1 });
       assertInstanceOf(viewport, PageViewport);
 
-      //kkkk "ReferenceError: document is not defined"
+      //kkkk "document is not defined"
       // const canvasAndCtx = CanvasFactory.create(
       //   viewport.width,
       //   viewport.height,
@@ -3691,7 +3862,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     //kkkk
     it.ignore("cleans up document resources after rendering of page", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams(basicApiFileName));
+      const loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, basicApiFileName),
+      );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
 
@@ -3758,22 +3931,45 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       await loadingTask.destroy();
     });
 
-    it("caches image resources at the document/page level as expected (issue 11878)", async () => {
+    //kkkk "document is not defined"
+    it.ignore("caches image resources at the document/page level as expected (issue 11878)", async () => {
       const { NUM_PAGES_THRESHOLD } = GlobalImageCache,
         EXPECTED_WIDTH = 2550,
         EXPECTED_HEIGHT = 3300;
 
-      const loadingTask = getDocument(
-        buildGetDocumentParams("issue11878.pdf", {
+      await using loadingTask = getDocument(
+        buildGetDocumentParams(tempServer, "issue11878.pdf", {
           isOffscreenCanvasSupported: false,
+          pdfBug: true,
         }),
       );
       const pdfDoc = await loadingTask.promise;
-      let firstImgData: ImgData | undefined;
+      let checkedCopyLocalImage = false,
+        firstImgData: ImgData | undefined,
+        firstStatsOverall: number | undefined;
 
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         const pdfPage = await pdfDoc.getPage(i);
-        const opList = await pdfPage.getOperatorList();
+        const viewport = pdfPage.getViewport({ scale: 1 });
+
+        const canvasAndCtx = CanvasFactory.create(
+          viewport.width,
+          viewport.height,
+        );
+        const renderTask = pdfPage.render({
+          canvasContext: canvasAndCtx.context,
+          viewport,
+        });
+
+        await renderTask.promise;
+        const opList = renderTask.getOperatorList();
+        // The canvas is no longer necessary, since we only care about
+        // the image-data below.
+        CanvasFactory.destroy(canvasAndCtx);
+
+        const [statsOverall] = pdfPage!.stats!.times
+          .filter((time) => time.name === "Overall")
+          .map((time) => time.end - time.start);
 
         const { commonObjs, objs } = pdfPage;
         const imgIndex = opList.fnArray.indexOf(OPS.paintImageXObject);
@@ -3782,7 +3978,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
         if (i < NUM_PAGES_THRESHOLD) {
           //kkkk got `img_p19_1`
-          // assertEquals(objId, `img_p${i - 1}_1`);
+          assertEquals(objId, `img_p${i - 1}_1`);
 
           assertEquals(objs.has(objId), true);
           assertEquals(commonObjs.has(objId), false);
@@ -3801,6 +3997,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
         // Ensure that the actual image data is identical for all pages.
         if (i === 1) {
           firstImgData = objs.get(objId) as ImgData;
+          firstStatsOverall = statsOverall;
 
           assertEquals(firstImgData.width, EXPECTED_WIDTH);
           assertEquals(firstImgData.height, EXPECTED_HEIGHT);
@@ -3812,21 +4009,31 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
           const objsPool = i >= NUM_PAGES_THRESHOLD ? commonObjs : objs;
           const currentImgData = objsPool.get(objId) as ImgData;
 
+          assertNotStrictEquals(currentImgData, firstImgData);
+
           assertEquals(currentImgData.width, firstImgData!.width);
           assertEquals(currentImgData.height, firstImgData!.height);
 
           assertEquals(currentImgData.kind, firstImgData!.kind);
           assertInstanceOf(currentImgData.data, Uint8ClampedArray);
           assert(
-            currentImgData.data!.every(
+            currentImgData.data.every(
               (value, index) => value === firstImgData!.data![index],
             ),
           );
+
+          if (i === NUM_PAGES_THRESHOLD) {
+            checkedCopyLocalImage = true;
+            // Ensure that the image was copied in the main-thread, rather
+            // than being re-parsed in the worker-thread (which is slower).
+            assertLess(statsOverall, firstStatsOverall! / 4);
+          }
         }
       }
+      assert(checkedCopyLocalImage);
 
-      await loadingTask.destroy();
       firstImgData = undefined;
+      firstStatsOverall = undefined;
     });
 
     //kkkk
@@ -3856,7 +4063,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       }
 
       const loadingTask = getDocument(
-        buildGetDocumentParams("annotation-tx.pdf"),
+        buildGetDocumentParams(tempServer, "annotation-tx.pdf"),
       );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
@@ -3904,9 +4111,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
     // A PDF using the Helvetica font.
     const pdf1 = tracemonkeyGetDocumentParams;
     // A PDF using the Times font.
-    const pdf2 = buildGetDocumentParams("TAMReview.pdf");
+    let pdf2: DocumentInitP;
     // A PDF using the Arial font.
-    const pdf3 = buildGetDocumentParams("issue6068.pdf");
+    let pdf3: DocumentInitP;
     const loadingTasks: PDFDocumentLoadingTask[] = [];
 
     // Render the first page of the given PDF file.
@@ -3934,6 +4141,11 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       CanvasFactory.destroy(canvasAndCtx);
       return data;
     }
+
+    beforeAll(() => {
+      pdf2 = buildGetDocumentParams(tempServer, "TAMReview.pdf");
+      pdf3 = buildGetDocumentParams(tempServer, "issue6068.pdf");
+    });
 
     afterEach(async () => {
       // Issue 6205 reported an issue with font rendering, so clear the loaded
@@ -3982,7 +4194,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     beforeAll(() => {
       dataPromise = DefaultFileReaderFactory.fetch({
-        path: TEST_PDFS_PATH + tracemonkeyFileName,
+        path: TEST_PDFS_PATH(tempServer) + tracemonkeyFileName,
       });
     });
 

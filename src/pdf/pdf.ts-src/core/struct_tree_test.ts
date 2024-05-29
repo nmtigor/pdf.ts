@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/struct_tree_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2021 Mozilla Foundation
  *
@@ -17,10 +21,14 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/testing/asserts.ts";
-import { describe, it } from "@std/testing/bdd.ts";
+import { assertEquals } from "@std/assert/mod.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import type { TestServer } from "@pdf.ts-test/test_utils.ts";
+import {
+  buildGetDocumentParams,
+  createTemporaryDenoServer,
+} from "@pdf.ts-test/test_utils.ts";
 import { getDocument, type StructTreeNode } from "../display/api.ts";
-import { buildGetDocumentParams } from "../../test_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 function equalTrees(rootA: StructTreeNode, rootB: StructTreeNode) {
@@ -41,10 +49,22 @@ function equalTrees(rootA: StructTreeNode, rootB: StructTreeNode) {
 }
 
 describe("struct tree", () => {
+  let tempServer: TestServer;
+
+  beforeAll(() => {
+    tempServer = createTemporaryDenoServer();
+  });
+
+  afterAll(() => {
+    const { server } = tempServer;
+    server.shutdown();
+    tempServer = undefined as any;
+  });
+
   describe("getStructTree", () => {
     it("parses basic structure", async () => {
       const filename = "structure_simple.pdf";
-      const params = buildGetDocumentParams(filename);
+      const params = buildGetDocumentParams(tempServer, filename);
       const loadingTask = getDocument(params);
       const doc = await loadingTask.promise;
       const page = await doc.getPage(1);
@@ -92,7 +112,7 @@ describe("struct tree", () => {
 
     it("parses structure with marked content reference", async () => {
       const filename = "issue6782.pdf";
-      const params = buildGetDocumentParams(filename);
+      const params = buildGetDocumentParams(tempServer, filename);
       const loadingTask = getDocument(params);
       const doc = await loadingTask.promise;
       const page = await doc.getPage(1);

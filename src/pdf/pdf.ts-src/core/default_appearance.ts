@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/default_appearance.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -17,9 +21,10 @@
  * limitations under the License.
  */
 
-import { DENO } from "../../../global.ts";
-import type { id_t, OC2D, rect_t } from "../../../lib/alias.ts";
-import type { rgb_t } from "../../../lib/color/alias.ts";
+import type { dot2d_t, id_t, OC2D, rect_t } from "@fe-lib/alias.ts";
+import type { rgb_t } from "@fe-lib/color/alias.ts";
+import { DENO } from "@fe-src/global.ts";
+import type { matrix_t } from "../shared/util.ts";
 import {
   LINE_DESCENT_FACTOR,
   LINE_FACTOR,
@@ -30,6 +35,7 @@ import {
 import type { BaseStream } from "./base_stream.ts";
 import { ColorSpace, CS, type DeviceGrayCS } from "./colorspace.ts";
 import {
+  codePointIter,
   escapePDFName,
   getRotationMatrix,
   numberToString,
@@ -318,6 +324,12 @@ let denoCanvas:
   denoCanvas = await import(P_mod);
 }
 
+type FirstPositionInfo_ = {
+  coords: dot2d_t;
+  bbox: rect_t;
+  matrix: matrix_t | undefined;
+};
+
 export class FakeUnicodeFont {
   xref;
   widths: Map<number, number> | undefined;
@@ -332,35 +344,6 @@ export class FakeUnicodeFont {
 
   static #toUnicodeRef: Ref;
   static toUnicodeStream: StringStream;
-  get toUnicodeRef() {
-    if (!FakeUnicodeFont.#toUnicodeRef) {
-      const toUnicode = `/CIDInit /ProcSet findresource begin
-12 dict begin
-begincmap
-/CIDSystemInfo
-<< /Registry (Adobe)
-/Ordering (UCS) /Supplement 0 >> def
-/CMapName /Adobe-Identity-UCS def
-/CMapType 2 def
-1 begincodespacerange
-<0000> <FFFF>
-endcodespacerange
-1 beginbfrange
-<0000> <FFFF> <0000>
-endbfrange
-endcmap CMapName currentdict /CMap defineresource pop end end`;
-      const toUnicodeStream =
-        (FakeUnicodeFont.toUnicodeStream = new StringStream(toUnicode));
-      const toUnicodeDict = new Dict(this.xref);
-      toUnicodeStream.dict = toUnicodeDict;
-      toUnicodeDict.set("Length", toUnicode.length);
-      FakeUnicodeFont.#toUnicodeRef = this.xref.getNewPersistentRef(
-        toUnicodeStream,
-      );
-    }
-
-    return FakeUnicodeFont.#toUnicodeRef;
-  }
 
   static #fontDescriptorRef: Ref;
   get fontDescriptorRef() {
@@ -451,7 +434,7 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
     baseFont.set("Subtype", Name.get("Type0"));
     baseFont.set("Encoding", Name.get("Identity-H"));
     baseFont.set("DescendantFonts", [this.descendantFontRef]);
-    baseFont.set("ToUnicode", this.toUnicodeRef);
+    baseFont.set("ToUnicode", Name.get("Identity-H"));
 
     return this.xref.getNewPersistentRef(baseFont);
   }
@@ -491,6 +474,31 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
     return this.resources;
   }
 
+  static getFirstPositionInfo(
+    rect: rect_t,
+    rotation: number,
+    fontSize: number,
+  ): FirstPositionInfo_ {
+    // Get the position of the first char in the rect.
+    const [x1, y1, x2, y2] = rect;
+    let w = x2 - x1;
+    let h = y2 - y1;
+
+    if (rotation % 180 !== 0) {
+      [w, h] = [h, w];
+    }
+    const lineHeight = LINE_FACTOR * fontSize;
+    const lineDescent = LINE_DESCENT_FACTOR * fontSize;
+
+    return {
+      coords: [0, h + lineDescent - lineHeight],
+      bbox: [0, 0, w, h],
+      matrix: rotation !== 0
+        ? getRotationMatrix(rotation, h, lineHeight)
+        : undefined,
+    };
+  }
+
   createAppearance(
     text: string,
     rect: rect_t,
@@ -508,8 +516,8 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
       // languages, like arabic, it'd be wrong because of ligatures.
       const lineWidth = ctx.measureText(line).width;
       maxWidth = Math.max(maxWidth, lineWidth);
-      for (const char of line.split("")) {
-        const code = char.charCodeAt(0);
+      for (const code of codePointIter(line)) {
+        const char = String.fromCodePoint(code);
         let width = this.widths!.get(code);
         if (width === undefined) {
           const metrics = ctx.measureText(char);

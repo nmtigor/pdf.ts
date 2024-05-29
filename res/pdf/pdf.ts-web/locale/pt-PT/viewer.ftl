@@ -226,6 +226,21 @@ pdfjs-find-match-diacritics-checkbox-label = Corresponder diacríticos
 pdfjs-find-entire-word-checkbox-label = Palavras completas
 pdfjs-find-reached-top = Topo do documento atingido, a continuar a partir do fundo
 pdfjs-find-reached-bottom = Fim do documento atingido, a continuar a partir do topo
+# Variables:
+#   $current (Number) - the index of the currently active find result
+#   $total (Number) - the total number of matches in the document
+pdfjs-find-match-count =
+    { $total ->
+        [one] { $current } de { $total } correspondência
+       *[other] { $current } de { $total } correspondências
+    }
+# Variables:
+#   $limit (Number) - the maximum number of matches
+pdfjs-find-match-count-limit =
+    { $limit ->
+        [one] Mais de { $limit } correspondência
+       *[other] Mais de { $limit } correspondências
+    }
 pdfjs-find-not-found = Frase não encontrada
 
 ## Predefined zoom values
@@ -286,6 +301,25 @@ pdfjs-editor-ink-button-label = Desenhar
 pdfjs-editor-stamp-button =
     .title = Adicionar ou editar imagens
 pdfjs-editor-stamp-button-label = Adicionar ou editar imagens
+pdfjs-editor-highlight-button =
+    .title = Destaque
+pdfjs-editor-highlight-button-label = Destaque
+pdfjs-highlight-floating-button =
+    .title = Destaque
+
+## Remove button for the various kind of editor.
+
+pdfjs-editor-remove-ink-button =
+    .title = Remover desenho
+pdfjs-editor-remove-freetext-button =
+    .title = Remover texto
+pdfjs-editor-remove-stamp-button =
+    .title = Remover imagem
+pdfjs-editor-remove-highlight-button =
+    .title = Remover destaque
+
+##
+
 # Editor Parameters
 pdfjs-editor-free-text-color-input = Cor
 pdfjs-editor-free-text-size-input = Tamanho
@@ -295,6 +329,10 @@ pdfjs-editor-ink-opacity-input = Opacidade
 pdfjs-editor-stamp-add-image-button =
     .title = Adicionar imagem
 pdfjs-editor-stamp-add-image-button-label = Adicionar imagem
+# This refers to the thickness of the line used for free highlighting (not bound to text)
+pdfjs-editor-free-highlight-thickness-input = Espessura
+pdfjs-editor-free-highlight-thickness-title =
+    .title = Alterar espessura quando destacar itens que não sejam texto
 pdfjs-free-text =
     .aria-label = Editor de texto
 pdfjs-free-text-default-content = Começar a digitar…
@@ -305,7 +343,56 @@ pdfjs-ink-canvas =
 
 ## Alt-text dialog
 
+# Alternative text (alt text) helps when people can't see the image.
+pdfjs-editor-alt-text-button-label = Texto alternativo
+pdfjs-editor-alt-text-edit-button-label = Editar texto alternativo
+pdfjs-editor-alt-text-dialog-label = Escolher uma opção
+pdfjs-editor-alt-text-dialog-description = O texto alternativo (texto alternativo) ajuda quando as pessoas não conseguem ver a imagem ou quando a mesma não é carregada.
+pdfjs-editor-alt-text-add-description-label = Adicionar uma descrição
+pdfjs-editor-alt-text-add-description-description = Aponte para 1-2 frases que descrevam o assunto, definição ou ações.
+pdfjs-editor-alt-text-mark-decorative-label = Marcar como decorativa
+pdfjs-editor-alt-text-mark-decorative-description = Isto é utilizado para imagens decorativas, tais como limites ou marcas d'água.
+pdfjs-editor-alt-text-cancel-button = Cancelar
+pdfjs-editor-alt-text-save-button = Guardar
+pdfjs-editor-alt-text-decorative-tooltip = Marcada como decorativa
+# .placeholder: This is a placeholder for the alt text input area
+pdfjs-editor-alt-text-textarea =
+    .placeholder = Por exemplo, “Um jovem senta-se à mesa para comer uma refeição”
 
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
 
+pdfjs-editor-resizer-label-top-left = Canto superior esquerdo — redimensionar
+pdfjs-editor-resizer-label-top-middle = Superior ao centro — redimensionar
+pdfjs-editor-resizer-label-top-right = Canto superior direito — redimensionar
+pdfjs-editor-resizer-label-middle-right = Centro à direita — redimensionar
+pdfjs-editor-resizer-label-bottom-right = Canto inferior direito — redimensionar
+pdfjs-editor-resizer-label-bottom-middle = Inferior ao centro — redimensionar
+pdfjs-editor-resizer-label-bottom-left = Canto inferior esquerdo — redimensionar
+pdfjs-editor-resizer-label-middle-left = Centro à esquerda — redimensionar
+
+## Color picker
+
+# This means "Color used to highlight text"
+pdfjs-editor-highlight-colorpicker-label = Cor de destaque
+pdfjs-editor-colorpicker-button =
+    .title = Alterar cor
+pdfjs-editor-colorpicker-dropdown =
+    .aria-label = Escolhas de cor
+pdfjs-editor-colorpicker-yellow =
+    .title = Amarelo
+pdfjs-editor-colorpicker-green =
+    .title = Verde
+pdfjs-editor-colorpicker-blue =
+    .title = Azul
+pdfjs-editor-colorpicker-pink =
+    .title = Rosa
+pdfjs-editor-colorpicker-red =
+    .title = Vermelho
+
+## Show all highlights
+## This is a toggle button to show/hide all the highlights.
+
+pdfjs-editor-highlight-show-all-button-label = Mostrar tudo
+pdfjs-editor-highlight-show-all-button =
+    .title = Mostrar tudo

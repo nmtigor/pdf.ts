@@ -226,6 +226,23 @@ pdfjs-find-match-diacritics-checkbox-label = Rozróżnianie liter diakrytyzowany
 pdfjs-find-entire-word-checkbox-label = Całe słowa
 pdfjs-find-reached-top = Początek dokumentu. Wyszukiwanie od końca.
 pdfjs-find-reached-bottom = Koniec dokumentu. Wyszukiwanie od początku.
+# Variables:
+#   $current (Number) - the index of the currently active find result
+#   $total (Number) - the total number of matches in the document
+pdfjs-find-match-count =
+    { $total ->
+        [one] { $current }. z { $total } trafienia
+        [few] { $current }. z { $total } trafień
+       *[many] { $current }. z { $total } trafień
+    }
+# Variables:
+#   $limit (Number) - the maximum number of matches
+pdfjs-find-match-count-limit =
+    { $limit ->
+        [one] Więcej niż { $limit } trafienie
+        [few] Więcej niż { $limit } trafienia
+       *[many] Więcej niż { $limit } trafień
+    }
 pdfjs-find-not-found = Nie znaleziono tekstu
 
 ## Predefined zoom values
@@ -286,6 +303,23 @@ pdfjs-editor-ink-button-label = Rysunek
 pdfjs-editor-stamp-button =
     .title = Dodaj lub edytuj obrazy
 pdfjs-editor-stamp-button-label = Dodaj lub edytuj obrazy
+pdfjs-editor-highlight-button =
+    .title = Wyróżnij
+pdfjs-editor-highlight-button-label = Wyróżnij
+
+## Remove button for the various kind of editor.
+
+pdfjs-editor-remove-ink-button =
+    .title = Usuń rysunek
+pdfjs-editor-remove-freetext-button =
+    .title = Usuń tekst
+pdfjs-editor-remove-stamp-button =
+    .title = Usuń obraz
+pdfjs-editor-remove-highlight-button =
+    .title = Usuń wyróżnienie
+
+##
+
 # Editor Parameters
 pdfjs-editor-free-text-color-input = Kolor
 pdfjs-editor-free-text-size-input = Rozmiar
@@ -295,6 +329,10 @@ pdfjs-editor-ink-opacity-input = Nieprzezroczystość
 pdfjs-editor-stamp-add-image-button =
     .title = Dodaj obraz
 pdfjs-editor-stamp-add-image-button-label = Dodaj obraz
+# This refers to the thickness of the line used for free highlighting (not bound to text)
+pdfjs-editor-free-highlight-thickness-input = Grubość
+pdfjs-editor-free-highlight-thickness-title =
+    .title = Zmień grubość podczas wyróżniania elementów innych niż tekst
 pdfjs-free-text =
     .aria-label = Edytor tekstu
 pdfjs-free-text-default-content = Zacznij pisać…
@@ -324,3 +362,30 @@ pdfjs-editor-alt-text-textarea =
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
 
+pdfjs-editor-resizer-label-top-left = Lewy górny róg — zmień rozmiar
+pdfjs-editor-resizer-label-top-middle = Górny środkowy — zmień rozmiar
+pdfjs-editor-resizer-label-top-right = Prawy górny róg — zmień rozmiar
+pdfjs-editor-resizer-label-middle-right = Prawy środkowy — zmień rozmiar
+pdfjs-editor-resizer-label-bottom-right = Prawy dolny róg — zmień rozmiar
+pdfjs-editor-resizer-label-bottom-middle = Dolny środkowy — zmień rozmiar
+pdfjs-editor-resizer-label-bottom-left = Lewy dolny róg — zmień rozmiar
+pdfjs-editor-resizer-label-middle-left = Lewy środkowy — zmień rozmiar
+
+## Color picker
+
+# This means "Color used to highlight text"
+pdfjs-editor-highlight-colorpicker-label = Kolor wyróżnienia
+pdfjs-editor-colorpicker-button =
+    .title = Zmień kolor
+pdfjs-editor-colorpicker-dropdown =
+    .aria-label = Wybór kolorów
+pdfjs-editor-colorpicker-yellow =
+    .title = Żółty
+pdfjs-editor-colorpicker-green =
+    .title = Zielony
+pdfjs-editor-colorpicker-blue =
+    .title = Niebieski
+pdfjs-editor-colorpicker-pink =
+    .title = Różowy
+pdfjs-editor-colorpicker-red =
+    .title = Czerwony

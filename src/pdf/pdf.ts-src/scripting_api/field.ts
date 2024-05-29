@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/field.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -22,7 +26,7 @@ import type { AnnotActions } from "../core/core_utils.ts";
 import type { DocWrapped, FieldWrapped } from "./app.ts";
 import { Color, type CorrectColor } from "./color.ts";
 import type { ScriptingActionName } from "./common.ts";
-import { createActionsMap, getFieldType } from "./common.ts";
+import { createActionsMap, FieldType, getFieldType } from "./common.ts";
 import type { Event } from "./event.ts";
 import type { ScriptingData, SendData } from "./pdf_object.ts";
 import { PDFObject } from "./pdf_object.ts";
@@ -437,7 +441,12 @@ export class Field extends PDFObject<SendFieldData> {
       return;
     }
 
-    if (value === "" || typeof value !== "string") {
+    if (
+      value === "" ||
+      typeof value !== "string" ||
+      // When the field type is date or time, the value must be a string.
+      this._fieldType >= FieldType.date
+    ) {
       this._originalValue = undefined;
       this._value = value;
       return;

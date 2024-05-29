@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/firefoxcom.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -21,10 +25,10 @@ import type { ArrEl } from "@fe-lib/alias.ts";
 import { textnode } from "@fe-lib/dom.ts";
 import { GECKOVIEW, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
 import { isPdfFile, PDFDataRangeTransport } from "../pdf.ts-src/pdf.ts";
-import type { FindControlState, PassiveLoadingCbs } from "./app.ts";
-import { DefaultExternalServices, viewerApp } from "./app.ts";
+import type { FindControlState, PDFViewerApplication } from "./app.ts";
 import type { UserOptions } from "./app_options.ts";
 import type { EventMap } from "./event_utils.ts";
+import { BaseExternalServices } from "./external_services.ts";
 import type {
   CreateSandboxP,
   EventInSandBox,
@@ -66,40 +70,45 @@ import { DEFAULT_SCALE_VALUE } from "./ui_utils.ts";
 //   }
 // }
 
+let viewerApp = { initialized: false } as PDFViewerApplication;
+export function initCom(app: PDFViewerApplication) {
+  viewerApp = app;
+}
+
 export class FirefoxCom {
-  /**
-   * Creates an event that the extension is listening for and will
-   * synchronously respond to.
-   * NOTE: It is recommended to use requestAsync() instead since one day we may
-   *       not be able to synchronously reply.
-   * @param action The action to trigger.
-   * @param data The data to send.
-   * @return {*} The response.
-   */
-  static requestSync(action: string, data?: unknown) {
-    const request = document.createTextNode("");
-    document.documentElement.append(request);
+  // /**
+  //  * Creates an event that the extension is listening for and will
+  //  * synchronously respond to.
+  //  * NOTE: It is recommended to use requestAsync() instead since one day we may
+  //  *       not be able to synchronously reply.
+  //  * @param action The action to trigger.
+  //  * @param data The data to send.
+  //  * @return {*} The response.
+  //  */
+  // static requestSync(action: string, data?: unknown) {
+  //   const request = document.createTextNode("");
+  //   document.documentElement.append(request);
 
-    const sender = new CustomEvent<{
-      action: string;
-      data?: unknown;
-      sync: true;
-      response?: unknown;
-    }>("pdf.js.message", {
-      bubbles: true,
-      cancelable: false,
-      detail: {
-        action,
-        data,
-        sync: true,
-      },
-    });
-    request.dispatchEvent(sender);
-    const response = sender.detail.response;
-    request.remove();
+  //   const sender = new CustomEvent<{
+  //     action: string;
+  //     data?: unknown;
+  //     sync: true;
+  //     response?: unknown;
+  //   }>("pdf.js.message", {
+  //     bubbles: true,
+  //     cancelable: false,
+  //     detail: {
+  //       action,
+  //       data,
+  //       sync: true,
+  //     },
+  //   });
+  //   request.dispatchEvent(sender);
+  //   const response = sender.detail.response;
+  //   request.remove();
 
-    return response;
-  }
+  //   return response;
+  // }
 
   /**
    * Creates an event that the extension is listening for and will
@@ -131,7 +140,7 @@ export class FirefoxCom {
     type Detail_ = {
       action: string;
       data?: D | undefined;
-      sync: false;
+      sync?: false;
       responseExpected: boolean;
       response?: D;
     };
@@ -156,7 +165,6 @@ export class FirefoxCom {
       detail: {
         action,
         data,
-        sync: false,
         responseExpected: !!callback,
       },
     });
@@ -214,9 +222,11 @@ export class DownloadManager implements IDownloadManager {
         this.#openBlobUrls.set(data, blobUrl);
       }
       // Let Firefox's content handler catch the URL and display the PDF.
-      let viewerUrl = blobUrl + "?filename=" + encodeURIComponent(filename);
+      // NOTE: This cannot use a query string for the filename, see
+      //       https://bugzilla.mozilla.org/show_bug.cgi?id=1632644#c5
+      let viewerUrl = blobUrl + "#filename=" + encodeURIComponent(filename);
       if (dest) {
-        viewerUrl += `#${escape(dest)}`;
+        viewerUrl += `&filedest=${escape(dest)}`;
       }
 
       try {
@@ -248,7 +258,7 @@ export class DownloadManager implements IDownloadManager {
   }
 }
 
-class FirefoxPreferences extends BasePreferences {
+export class Preferences extends BasePreferences {
   /** @implement */
   protected async _readFromStorage(prefObj: { prefs: UserOptions }) {
     return FirefoxCom.requestAsync("getPreferences", prefObj);
@@ -385,7 +395,7 @@ class FirefoxPreferences extends BasePreferences {
       "pdf.js.query" as any,
       async ({ detail: { queryId } }) => {
         let result = null;
-        if (queryId === "canDownloadInsteadOfPrint") {
+        if (viewerApp.initialized && queryId === "canDownloadInsteadOfPrint") {
           result = false;
           const { pdfDocument, pdfViewer } = viewerApp;
           if (pdfDocument) {
@@ -396,13 +406,8 @@ class FirefoxPreferences extends BasePreferences {
               // lead to have modified annotations.
               const hasWillPrint = pdfViewer.enableScripting &&
                 !!(await pdfDocument.getJSActions())?.WillPrint;
-              const hasUnchangedOptionalContent = (
-                await pdfViewer.optionalContentConfigPromise
-              )!.hasInitialVisibility;
 
-              result = hasUnchangedAnnotations &&
-                !hasWillPrint &&
-                hasUnchangedOptionalContent;
+              result = hasUnchangedAnnotations && !hasWillPrint;
             } catch {
               console.warn(
                 "Unable to check if the document can be downloaded.",
@@ -431,9 +436,9 @@ class FirefoxComDataRangeTransport extends PDFDataRangeTransport {
     FirefoxCom.request("requestDataRange", { begin, end });
   }
 
+  // NOTE: This method is currently not invoked in the Firefox PDF Viewer.
   override abort() {
-    // Sync call to ensure abort is really started.
-    FirefoxCom.requestSync("abortLoading", null);
+    FirefoxCom.request("abortLoading", undefined);
   }
 }
 
@@ -462,7 +467,13 @@ export type NimbusExperimentData = {
   "open-in-app-button"?: unknown;
 };
 
-class FirefoxExternalServices extends DefaultExternalServices {
+export class MLManager {
+  guess(data: unknown) {
+    return FirefoxCom.requestAsync("mlGuess", data as any);
+  }
+}
+
+export class ExternalServices extends BaseExternalServices {
   override updateFindControlState(data: FindControlState) {
     FirefoxCom.request("updateFindControlState", data);
   }
@@ -471,7 +482,7 @@ class FirefoxExternalServices extends DefaultExternalServices {
     FirefoxCom.request("updateFindMatchesCount", data);
   }
 
-  override initPassiveLoading(callbacks: PassiveLoadingCbs) {
+  override initPassiveLoading() {
     let pdfDataRangeTransport: FirefoxComDataRangeTransport;
 
     window.addEventListener("message", (e) => {
@@ -488,7 +499,7 @@ class FirefoxExternalServices extends DefaultExternalServices {
       switch (args.pdfjsLoadAction) {
         case "supportsRangedLoading":
           if (args.done && !args.data) {
-            callbacks.onError();
+            viewerApp._documentError(undefined);
             break;
           }
           pdfDataRangeTransport = new FirefoxComDataRangeTransport(
@@ -498,7 +509,7 @@ class FirefoxExternalServices extends DefaultExternalServices {
             args.filename,
           );
 
-          callbacks.onOpenWithTransport(pdfDataRangeTransport);
+          viewerApp.open({ range: pdfDataRangeTransport });
           break;
         case "range":
           pdfDataRangeTransport.onDataRange(args.begin, args.chunk);
@@ -517,30 +528,22 @@ class FirefoxExternalServices extends DefaultExternalServices {
           pdfDataRangeTransport?.onDataProgressiveDone();
           break;
         case "progress":
-          callbacks.onProgress(args.loaded, args.total);
+          viewerApp.progress(args.loaded / args.total);
           break;
         case "complete":
           if (!args.data) {
-            callbacks.onError(args.errorCode);
+            viewerApp._documentError(undefined, { message: args.errorCode });
             break;
           }
-          callbacks.onOpenWithData(args.data, args.filename);
+          viewerApp.open({ data: args.data, filename: args.filename });
           break;
       }
     });
-    FirefoxCom.requestSync("initPassiveLoading", null);
+    FirefoxCom.request("initPassiveLoading", undefined);
   }
 
   override reportTelemetry(data: EventMap["reporttelemetry"]["details"]) {
-    FirefoxCom.request("reportTelemetry", JSON.stringify(data));
-  }
-
-  override createDownloadManager() {
-    return new DownloadManager();
-  }
-
-  override createPreferences() {
-    return new FirefoxPreferences();
+    FirefoxCom.request("reportTelemetry", data);
   }
 
   override updateEditorStates(data: EventMap["annotationeditorstateschanged"]) {
@@ -555,10 +558,11 @@ class FirefoxExternalServices extends DefaultExternalServices {
     return new L10n(localeProperties, document.l10n);
   }
 
-  override createScripting(options: unknown) {
+  override createScripting() {
     return new FirefoxScripting();
   }
 
+  //kkkk TOCLEANUP
   // override get supportsPinchToZoom() {
   //   const support = !!FirefoxCom.requestSync("supportsPinchToZoom");
   //   return shadow(this, "supportsPinchToZoom", support);
@@ -595,6 +599,9 @@ class FirefoxExternalServices extends DefaultExternalServices {
   // }
 
   override async getNimbusExperimentData() {
+    /*#static*/ if (!GECKOVIEW) {
+      return undefined;
+    }
     const nimbusData = await FirefoxCom.requestAsync<string>(
       "getNimbusExperimentData",
       undefined,
@@ -605,8 +612,8 @@ class FirefoxExternalServices extends DefaultExternalServices {
       : undefined;
   }
 }
-viewerApp.externalServices = new FirefoxExternalServices();
 
+//kkkk TOCLEANUP
 // // l10n.js for Firefox extension expects services to be set.
 // document.mozL10n.setExternalLocalizerServices({
 //   getLocale() {
@@ -619,6 +626,7 @@ viewerApp.externalServices = new FirefoxExternalServices();
 // });
 /*80--------------------------------------------------------------------------*/
 
+//kkkk TOCLEANUP
 // // Small subset of the webL10n API by Fabien Cazenave for PDF.js extension.
 // ((window) => {
 //   let gL10nData: L10nData_ | undefined;

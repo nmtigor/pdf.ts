@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/genericcom.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2017 Mozilla Foundation
  *
@@ -17,14 +21,13 @@
  * limitations under the License.
  */
 
-import { assert } from "@fe-lib/util/trace.ts";
-import { GENERIC, INOUT } from "@fe-src/global.ts";
-import { DefaultExternalServices, viewerApp } from "./app.ts";
+import { GENERIC } from "@fe-src/global.ts";
 import { AppOptions, type UserOptions } from "./app_options.ts";
-import { DownloadManager } from "./download_manager.ts";
+import { BaseExternalServices } from "./external_services.ts";
 import { GenericScripting } from "./generic_scripting.ts";
 import { GenericL10n } from "./genericl10n.ts";
 import { BasePreferences } from "./preferences.ts";
+import type { PDFViewerApplication } from "./app.ts";
 /*80--------------------------------------------------------------------------*/
 
 /*#static*/ if (!GENERIC) {
@@ -33,9 +36,9 @@ import { BasePreferences } from "./preferences.ts";
   );
 }
 
-export const GenericCom = {};
+export function initCom(app: PDFViewerApplication) {}
 
-class GenericPreferences extends BasePreferences {
+export class Preferences extends BasePreferences {
   protected override async _writeToStorage(prefObj: UserOptions) {
     localStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
   }
@@ -46,33 +49,19 @@ class GenericPreferences extends BasePreferences {
   }
 }
 
-class GenericExternalServices extends DefaultExternalServices {
-  static #initialized = false;
-
-  constructor() {
-    /*#static*/ if (INOUT) {
-      assert(!GenericExternalServices.#initialized);
-    }
-    super();
-
-    GenericExternalServices.#initialized = true;
+export class MLManager {
+  async guess() {
+    return undefined;
   }
+}
 
-  override createDownloadManager() {
-    return new DownloadManager();
-  }
-
-  override createPreferences() {
-    return new GenericPreferences();
-  }
-
+export class ExternalServices extends BaseExternalServices {
   override async createL10n() {
     return new GenericL10n(AppOptions.locale!);
   }
 
-  override createScripting({ sandboxBundleSrc = "" }) {
-    return new GenericScripting(sandboxBundleSrc);
+  override createScripting() {
+    return new GenericScripting(AppOptions.sandboxBundleSrc!);
   }
 }
-viewerApp.externalServices = new GenericExternalServices();
 /*80--------------------------------------------------------------------------*/

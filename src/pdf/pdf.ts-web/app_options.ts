@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/app_options
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2018 Mozilla Foundation
  *
@@ -26,7 +30,6 @@ import {
   PDFJSDev,
   TESTING,
 } from "@fe-src/global.ts";
-import { D_base } from "../alias.ts";
 import {
   AnnotationEditorType,
   AnnotationMode,
@@ -40,9 +43,10 @@ import {
   SpreadMode,
   TextLayerMode,
 } from "./ui_utils.ts";
+import { D_cmap_url, D_standard_font_data_url, D_web } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
-export const enum OptionKind {
+export enum OptionKind {
   BROWSER = 0x01,
   VIEWER = 0x02,
   API = 0x04,
@@ -60,15 +64,16 @@ export const enum ViewOnLoad {
 type _DefaultOptions = typeof defaultOptions;
 export type OptionName = keyof _DefaultOptions;
 // type _OptionType1<ON extends OptionName> = _DefaultOptions[ON]["value"];
-type _OptionType = number | string | boolean | Worker;
+export type OptionType = number | string | boolean | Worker;
 
 export type UserOptions = {
-  [ON in OptionName]?: _OptionType | undefined;
+  [ON in OptionName]?: OptionType | undefined;
 };
 const userOptions: UserOptions = Object.create(null);
 
-export const compatibilityParams: UserOptions = Object.create(null);
 /*#static*/ if (PDFJSDev || GENERIC) {
+  // eslint-disable-next-line no-var
+  var compatibilityParams: UserOptions = Object.create(null);
   /*#static*/ if (LIB) {
     if (typeof navigator === "undefined") {
       globalThis.navigator = Object.create(null);
@@ -102,6 +107,10 @@ const defaultOptions = {
     kind: OptionKind.BROWSER + OptionKind.API,
   },
   isInAutomation: {
+    value: false,
+    kind: OptionKind.BROWSER,
+  },
+  supportsCaretBrowsingMode: {
     value: false,
     kind: OptionKind.BROWSER,
   },
@@ -142,6 +151,10 @@ const defaultOptions = {
     value: CursorTool.SELECT,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
+  debuggerSrc: {
+    value: "./debugger.mjs",
+    kind: OptionKind.VIEWER,
+  },
   defaultUrl: {
     value: undefined as string | undefined,
     kind: 0 as OptionKind,
@@ -166,6 +179,24 @@ const defaultOptions = {
     value: false,
     kind: 0 as OptionKind,
   },
+  enableHighlightEditor: {
+    // We'll probably want to make some experiments before enabling this
+    // in Firefox release, but it has to be temporary.
+    // TODO: remove it when unnecessary.
+    value: PDFJSDev || TESTING,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
+  enableHighlightFloatingButton: {
+    // We'll probably want to make some experiments before enabling this
+    // in Firefox release, but it has to be temporary.
+    // TODO: remove it when unnecessary.
+    value: PDFJSDev || TESTING,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
+  enableML: {
+    value: false,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
   enablePermissions: {
     value: false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -178,12 +209,23 @@ const defaultOptions = {
     value: /*#static*/ PDFJSDev || !CHROME ? true : false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
+  enableStampEditor: {
+    // We'll probably want to make some experiments before enabling this
+    // in Firefox release, but it has to be temporary.
+    // TODO: remove it when unnecessary.
+    value: true,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
   externalLinkRel: {
     value: "noopener noreferrer nofollow",
     kind: OptionKind.VIEWER,
   },
   externalLinkTarget: {
     value: LinkTarget.NONE,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
+  highlightEditorColors: {
+    value: "yellow=#FFFF98,green=#53FFBC,blue=#80EBFF,pink=#FFCBE6,red=#FF4F5F",
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   historyUpdateUrl: {
@@ -196,11 +238,9 @@ const defaultOptions = {
   },
   imageResourcesPath: {
     value: /*#static*/ MOZCENTRAL
-      ? "resource://pdf.js/web/images/"
-      : `${D_base}/res/pdf/pdf.ts-web/images/`,
-    // value: typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")
-    //   ? "resource://pdf.js/web/images/"
-    //   : "./images/",
+      // ? "resource://pdf.js/web/images/"
+      ? `/${D_web}/images/`
+      : `/${D_web}/images/`,
     kind: OptionKind.VIEWER,
   },
   locale: {
@@ -208,7 +248,7 @@ const defaultOptions = {
     kind: 0 as OptionKind,
   },
   maxCanvasPixels: {
-    value: 16777216,
+    value: 2 ** 25,
     kind: OptionKind.VIEWER,
   },
   forcePageColors: {
@@ -224,7 +264,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   pdfBugEnabled: {
-    value: PDFJSDev,
+    value: PDFJSDev || TESTING,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   printResolution: {
@@ -261,11 +301,11 @@ const defaultOptions = {
       // eslint-disable-next-line no-nested-ternary
       /*#static*/ PDFJSDev
         // ? "../external/bcmaps/"
-        ? `${D_base}/res/pdf/pdf.ts-external/bcmaps/`
+        ? `/${D_cmap_url}/`
         : /*#static*/ MOZCENTRAL
         // ? "resource://pdf.js/web/cmaps/"
-        ? `${D_base}/res/pdf/pdf.ts-external/bcmaps/`
-        : `${D_base}/res/pdf/pdf.ts-external/bcmaps/`,
+        ? `/${D_cmap_url}/`
+        : `/${D_cmap_url}/`,
     kind: OptionKind.API,
   },
   disableAutoFetch: {
@@ -321,16 +361,16 @@ const defaultOptions = {
       // eslint-disable-next-line no-nested-ternary
       /*#static*/ PDFJSDev
         // ? "../external/standard_fonts/"
-        ? `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`
+        ? `/${D_standard_font_data_url}/`
         : /*#static*/ MOZCENTRAL
         // ? "resource://pdf.js/web/standard_fonts/"
-        ? `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`
-        : `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`,
+        ? `/${D_standard_font_data_url}/`
+        : `/${D_standard_font_data_url}/`,
     kind: OptionKind.API,
   },
   verbosity: {
-    // value: VerbosityLevel.INFOS,
-    value: VerbosityLevel.WARNINGS,
+    value: VerbosityLevel.INFOS,
+    // value: VerbosityLevel.WARNINGS,
     kind: OptionKind.API,
   },
 
@@ -342,12 +382,12 @@ const defaultOptions = {
     value:
       // eslint-disable-next-line no-nested-ternary
       /*#static*/ PDFJSDev
-        ? `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`
+        ? "/gen/pdf/pdf.ts-src/pdf.worker.js"
         : /*#static*/ MOZCENTRAL
         // ? "resource://pdf.js/build/pdf.worker.mjs"
-        ? `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`
+        ? "/gen/pdf/pdf.ts-src/pdf.worker.js"
         // ? "../src/worker_loader.mjs"
-        : `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`,
+        : "/gen/pdf/pdf.ts-src/pdf.worker.js",
     kind: OptionKind.WORKER,
   },
   sandboxBundleSrc: {
@@ -356,6 +396,21 @@ const defaultOptions = {
   },
 };
 /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+  defaultOptions.defaultUrl = {
+    value: /*#static*/ CHROME
+      ? ""
+      // : "compressed.tracemonkey-pldi-09.pdf",
+      : `/${D_web}/compressed.tracemonkey-pldi-09.pdf`,
+    kind: OptionKind.VIEWER,
+  };
+  defaultOptions.sandboxBundleSrc = {
+    value: /*#static*/ PDFJSDev
+      // ? "../build/dev-sandbox/pdf.sandbox.mjs"
+      ? "/gen/pdf/pdf.ts-src/pdf.sandbox.js"
+      // : "../build/pdf.sandbox.mjs",
+      : "/gen/pdf/pdf.ts-src/pdf.sandbox.js",
+    kind: OptionKind.VIEWER,
+  };
   defaultOptions.viewerCssTheme = {
     /** @type {number} */
     value: /*#static*/ CHROME ? 2 : 0,
@@ -363,14 +418,6 @@ const defaultOptions = {
   };
 }
 /*#static*/ if (PDFJSDev || GENERIC) {
-  defaultOptions.defaultUrl = {
-    // value: `${D_base}/res/pdf/test/pdfs/pattern_text_embedded_font.pdf`,
-    // value: `${D_base}/res/pdf/test/pdfs/basicapi.pdf`,
-    value: `${D_base}/res/pdf/test/pdfs/tracemonkey.pdf`,
-    // value: `${D_base}/res/pdf/test/pdfs-1/math.pdf`,
-    // value: "compressed.tracemonkey-pldi-09.pdf",
-    kind: OptionKind.VIEWER,
-  };
   defaultOptions.disablePreferences = {
     value: TESTING ? true : false,
     kind: OptionKind.VIEWER,
@@ -379,45 +426,61 @@ const defaultOptions = {
     value: navigator.language as Locale || Locale.en_US,
     kind: OptionKind.VIEWER,
   };
-  defaultOptions.sandboxBundleSrc = {
-    value: /*#static*/ PDFJSDev
-      // ? "../build/dev-sandbox/pdf.sandbox.mjs"
-      ? `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`
-      // ? "../build/pdf.sandbox.mjs",
-      : `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`,
-    kind: OptionKind.VIEWER,
-  };
 } else {
   /*#static*/ if (CHROME) {
-    defaultOptions.defaultUrl = {
-      value: undefined,
-      kind: OptionKind.VIEWER,
-    };
     defaultOptions.disableTelemetry = {
       value: false,
       kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     };
-    defaultOptions.sandboxBundleSrc = {
-      // value: "../build/pdf.sandbox.js",
-      value: `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`,
-      kind: OptionKind.VIEWER,
-    };
+  }
+}
+
+/*#static*/ if (PDFJSDev || GENERIC) {
+  // Apply any compatibility-values to the user-options,
+  // see also `AppOptions.remove` below.
+  for (const name in compatibilityParams!) {
+    userOptions[name as OptionName] = compatibilityParams[name as OptionName];
+  }
+}
+
+/*#static*/ if (PDFJSDev || TESTING || LIB) {
+  // Ensure that the `defaultOptions` are correctly specified.
+  for (const name in defaultOptions) {
+    const { value, kind } = defaultOptions[name as OptionName];
+
+    if (kind & OptionKind.PREFERENCE) {
+      if (kind === OptionKind.PREFERENCE) {
+        throw new Error(`Cannot use only "PREFERENCE" kind: ${name}`);
+      }
+      if (kind & OptionKind.BROWSER) {
+        throw new Error(`Cannot mix "PREFERENCE" and "BROWSER" kind: ${name}`);
+      }
+      if (
+        typeof compatibilityParams! === "object" &&
+        compatibilityParams[name as OptionName] !== undefined
+      ) {
+        throw new Error(
+          `Should not have compatibility-value for "PREFERENCE" kind: ${name}`,
+        );
+      }
+      // Only "simple" preference-values are allowed.
+      if (
+        typeof value !== "boolean" &&
+        typeof value !== "string" &&
+        !Number.isInteger(value)
+      ) {
+        throw new Error(`Invalid value for "PREFERENCE" kind: ${name}`);
+      }
+    }
   }
 }
 
 export abstract class AppOptions {
-  // static get<ON extends OptionName>(name: ON): _OptionType1<ON> {
-  //   const userOption = userOptions[name];
-  //   if (userOption !== undefined) {
-  //     return userOption;
-  //   }
-  //   const defaultOption = defaultOptions[name];
-  //   if (defaultOption !== undefined) {
-  //     return compatibilityParams[name] ?? defaultOption.value;
-  //   }
-  //   return undefined;
+  // static get(name: OptionName) {
+  //   return userOptions[name] ?? defaultOptions[name]?.value ?? undefined;
   // }
-  static #get(name: OptionName): _OptionType | undefined {
+
+  static #get(name: OptionName): OptionType | undefined {
     const userOption = userOptions[name];
     if (userOption !== undefined) {
       return userOption;
@@ -434,6 +497,9 @@ export abstract class AppOptions {
   }
   static get isInAutomation() {
     return this.#get("isInAutomation") as boolean;
+  }
+  static get supportsCaretBrowsingMode() {
+    return this.#get("supportsCaretBrowsingMode") as boolean;
   }
   static get supportsDocumentFonts() {
     return this.#get("supportsDocumentFonts") as boolean;
@@ -463,6 +529,9 @@ export abstract class AppOptions {
   static get cursorToolOnLoad() {
     return this.#get("cursorToolOnLoad") as CursorTool;
   }
+  static get debuggerSrc() {
+    return this.#get("debuggerSrc") as string;
+  }
   static get defaultUrl() {
     return this.#get("defaultUrl") as string | undefined;
   }
@@ -481,6 +550,15 @@ export abstract class AppOptions {
   static get disablePreferences() {
     return this.#get("disablePreferences") as boolean;
   }
+  static get enableHighlightEditor() {
+    return this.#get("enableHighlightEditor") as boolean;
+  }
+  static get enableHighlightFloatingButton() {
+    return this.#get("enableHighlightFloatingButton") as boolean;
+  }
+  static get enableML() {
+    return this.#get("enableML") as boolean;
+  }
   static get enablePermissions() {
     return this.#get("enablePermissions") as boolean;
   }
@@ -490,11 +568,17 @@ export abstract class AppOptions {
   static get enableScripting() {
     return this.#get("enableScripting") as boolean;
   }
+  static get enableStampEditor() {
+    return this.#get("enableStampEditor") as boolean;
+  }
   static get externalLinkRel() {
     return this.#get("externalLinkRel") as string;
   }
   static get externalLinkTarget() {
     return this.#get("externalLinkTarget") as LinkTarget;
+  }
+  static get highlightEditorColors() {
+    return this.#get("highlightEditorColors") as string;
   }
   static get historyUpdateUrl() {
     return this.#get("historyUpdateUrl") as boolean;
@@ -600,44 +684,24 @@ export abstract class AppOptions {
   static get sandboxBundleSrc() {
     return this.#get("sandboxBundleSrc") as string | undefined;
   }
+  /*64||||||||||||||||||||||||||||||||||||||||||||||||||||||||||*/
 
-  static getAll(kind?: OptionKind) {
+  static getAll(kind?: OptionKind, defaultOnly = false) {
     const options: UserOptions = Object.create(null);
     for (const name in defaultOptions) {
       const defaultOption = defaultOptions[name as OptionName];
-      if (kind) {
-        if (!(kind & defaultOption.kind)) {
-          continue;
-        }
-        /*#static*/ if (PDFJSDev || LIB) {
-          if (kind === OptionKind.PREFERENCE) {
-            if (defaultOption.kind & OptionKind.BROWSER) {
-              throw new Error(`Invalid kind for preference: ${name}`);
-            }
-            const value = defaultOption.value;
-            const valueType = typeof value;
 
-            if (
-              valueType === "boolean" ||
-              valueType === "string" ||
-              (valueType === "number" && Number.isInteger(value))
-            ) {
-              options[name as OptionName] = value;
-              continue;
-            }
-            throw new Error(`Invalid type for preference: ${name}`);
-          }
-        }
+      if (kind && !(kind & defaultOption.kind)) {
+        continue;
       }
-      const userOption = userOptions[name as OptionName];
-      options[name as OptionName] = userOption !== undefined
-        ? userOption
-        : compatibilityParams[name as OptionName] ?? defaultOption.value;
+      options[name as OptionName] = defaultOnly
+        ? defaultOption.value
+        : userOptions[name as OptionName] ?? defaultOption.value;
     }
     return options;
   }
 
-  static set<ON extends OptionName>(name: ON, value: _OptionType | undefined) {
+  static set<ON extends OptionName>(name: ON, value: OptionType | undefined) {
     userOptions[name] = value;
   }
 
@@ -649,11 +713,16 @@ export abstract class AppOptions {
           // opt-out of having the `Preferences` override existing `AppOptions`.
           return;
         }
-        if (Object.keys(userOptions).length) {
+        for (const name in userOptions) {
+          // Ignore any compatibility-values in the user-options.
+          if (compatibilityParams[name as OptionName] !== undefined) {
+            continue;
+          }
           console.warn(
             "setAll: The Preferences may override manually set AppOptions; " +
               'please use the "disablePreferences"-option in order to prevent that.',
           );
+          break;
         }
       }
     }
@@ -665,6 +734,14 @@ export abstract class AppOptions {
 
   static remove(name: OptionName) {
     delete userOptions[name];
+
+    /*#static*/ if (PDFJSDev || GENERIC) {
+      // Re-apply a compatibility-value, if it exists, to the user-options.
+      const val = compatibilityParams[name];
+      if (val !== undefined) {
+        userOptions[name] = val;
+      }
+    }
   }
 }
 /*80--------------------------------------------------------------------------*/

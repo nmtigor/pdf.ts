@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_sidebar.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2016 Mozilla Foundation
  *
@@ -83,7 +87,6 @@ export class PDFSidebar {
   attachmentsView;
   layersView;
 
-  _outlineOptionsContainer;
   _currentOutlineItemButton;
 
   eventBus;
@@ -108,7 +111,6 @@ export class PDFSidebar {
     this.attachmentsView = elements.attachmentsView;
     this.layersView = elements.layersView;
 
-    this._outlineOptionsContainer = elements.outlineOptionsContainer;
     this._currentOutlineItemButton = elements.currentOutlineItemButton;
 
     this.eventBus = eventBus;
@@ -226,12 +228,6 @@ export class PDFSidebar {
       this.layersView,
     );
 
-    // Finally, update view-specific CSS classes.
-    this._outlineOptionsContainer.classList.toggle(
-      "hidden",
-      view !== SidebarView.OUTLINE,
-    );
-
     if (forceOpen && !this.isOpen) {
       this.open();
       return; // Opening will trigger rendering and dispatch the event.
@@ -264,7 +260,7 @@ export class PDFSidebar {
     this.#hideUINotification();
   }
 
-  close() {
+  close(evt?: UIEvent) {
     if (!this.isOpen) {
       return;
     }
@@ -276,11 +272,16 @@ export class PDFSidebar {
 
     this.onToggled!();
     this.#dispatchEvent();
+
+    if (evt?.detail! > 0) {
+      // Remove focus from the toggleButton if it's clicked (see issue 17361).
+      this.toggleButton.blur();
+    }
   }
 
-  toggle() {
+  toggle(evt?: UIEvent) {
     if (this.isOpen) {
-      this.close();
+      this.close(evt);
     } else {
       this.open();
     }
@@ -329,11 +330,13 @@ export class PDFSidebar {
     this.sidebarContainer.on("transitionend", (evt) => {
       if (evt.target === this.sidebarContainer) {
         this.outerContainer.classList.remove("sidebarMoving");
+        // Ensure that rendering is triggered after opening/closing the sidebar.
+        this.eventBus.dispatch("resize", { source: this });
       }
     });
 
-    this.toggleButton.on("click", () => {
-      this.toggle();
+    this.toggleButton.on("click", (evt) => {
+      this.toggle(evt);
     });
 
     // Buttons for switching views.

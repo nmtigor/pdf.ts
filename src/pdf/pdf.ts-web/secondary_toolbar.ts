@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/secondary_toolbar.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -28,53 +32,30 @@ import {
   toggleExpandedBtn,
 } from "./ui_utils.ts";
 import type { ViewerConfiguration } from "./viewer.ts";
+import type { Anchor, Button } from "./alias.ts";
 /*80--------------------------------------------------------------------------*/
 
-interface Anchor {
-  element: HTMLAnchorElement;
-  eventName?: undefined;
-  close: boolean;
-  eventDetails?: undefined;
-}
-
-type ButtonEventName =
-  | "documentproperties"
-  | "download"
-  | "firstpage"
-  | "lastpage"
-  | "openfile"
-  | "presentationmode"
-  | "print"
-  | "rotatecw"
-  | "rotateccw"
-  | "switchscrollmode"
-  | "switchcursortool"
-  | "switchspreadmode";
-interface Button {
-  element: HTMLButtonElement;
-  eventName: ButtonEventName;
-  close: boolean;
-  eventDetails?: {
-    tool?: CursorTool;
-    mode?: ScrollMode | SpreadMode;
-  };
-}
-
 export class SecondaryToolbar {
-  toolbar: HTMLDivElement;
-  toggleButton: HTMLButtonElement;
-  buttons: (Button | Anchor)[];
-  items: {
-    firstPage: HTMLButtonElement;
-    lastPage: HTMLButtonElement;
-    pageRotateCw: HTMLButtonElement;
-    pageRotateCcw: HTMLButtonElement;
-  };
+  #opts;
+  //kkkk TOCLEANUP
+  // toolbar: HTMLDivElement;
+  // toggleButton: HTMLButtonElement;
+  // buttons: (Button | Anchor)[];
+  // items: {
+  //   firstPage: HTMLButtonElement;
+  //   lastPage: HTMLButtonElement;
+  //   pageRotateCw: HTMLButtonElement;
+  //   pageRotateCcw: HTMLButtonElement;
+  // };
 
   mainContainer?: HTMLDivElement;
   eventBus: EventBus;
 
   opened = false;
+  get isOpen(): boolean {
+    return this.opened;
+  }
+
   containerHeight?: number;
   previousContainerHeight?: number;
 
@@ -85,9 +66,8 @@ export class SecondaryToolbar {
     options: ViewerConfiguration["secondaryToolbar"],
     eventBus: EventBus,
   ) {
-    this.toolbar = options.toolbar;
-    this.toggleButton = options.toggleButton;
-    this.buttons = [
+    this.#opts = options;
+    const buttons: (Button | Anchor)[] = [
       {
         element: options.presentationModeButton,
         eventName: "presentationmode",
@@ -169,33 +149,28 @@ export class SecondaryToolbar {
       },
     ];
     /*#static*/ if (PDFJSDev || GENERIC) {
-      this.buttons.push({
+      buttons.push({
         element: options.openFileButton!,
         eventName: "openfile",
         close: true,
       });
     }
-    this.items = {
-      firstPage: options.firstPageButton,
-      lastPage: options.lastPageButton,
-      pageRotateCw: options.pageRotateCwButton,
-      pageRotateCcw: options.pageRotateCcwButton,
-    };
+    //kkkk TOCLEANUP
+    // this.items = {
+    //   firstPage: options.firstPageButton,
+    //   lastPage: options.lastPageButton,
+    //   pageRotateCw: options.pageRotateCwButton,
+    //   pageRotateCcw: options.pageRotateCcwButton,
+    // };
 
     this.eventBus = eventBus;
+    this.opened = false;
 
     // Bind the event listeners for click, cursor tool, and scroll/spread mode
     // actions.
-    this.#bindClickListeners();
-    this.#bindCursorToolsListener(options);
-    this.#bindScrollModeListener(options);
-    this.#bindSpreadModeListener(options);
+    this.#bindListeners(buttons);
 
     this.reset();
-  }
-
-  get isOpen(): boolean {
-    return this.opened;
   }
 
   setPageNumber(pageNumber: number) {
@@ -214,30 +189,40 @@ export class SecondaryToolbar {
     this.#updateUIState();
 
     // Reset the Scroll/Spread buttons too, since they're document specific.
-    this.eventBus.dispatch("secondarytoolbarreset", { source: this });
+    this.#scrollModeChanged({ mode: ScrollMode.VERTICAL });
+    this.#spreadModeChanged({ mode: SpreadMode.NONE });
   }
 
   #updateUIState() {
-    this.items.firstPage.disabled = this.pageNumber! <= 1;
-    this.items.lastPage.disabled = this.pageNumber! >= this.pagesCount!;
-    this.items.pageRotateCw.disabled = this.pagesCount === 0;
-    this.items.pageRotateCcw.disabled = this.pagesCount === 0;
+    const {
+      firstPageButton,
+      lastPageButton,
+      pageRotateCwButton,
+      pageRotateCcwButton,
+    } = this.#opts;
+
+    firstPageButton.disabled = this.pageNumber! <= 1;
+    lastPageButton.disabled = this.pageNumber! >= this.pagesCount!;
+    pageRotateCwButton.disabled = this.pagesCount === 0;
+    pageRotateCcwButton.disabled = this.pagesCount === 0;
   }
 
-  #bindClickListeners() {
+  #bindListeners(buttons: (Button | Anchor)[]) {
+    const { eventBus } = this;
+    const { toggleButton } = this.#opts;
     // Button to toggle the visibility of the secondary toolbar.
-    this.toggleButton.on("click", this.toggle.bind(this));
+    toggleButton.on("click", this.toggle.bind(this));
 
     // All items within the secondary toolbar.
-    for (const { element, eventName, close, eventDetails } of this.buttons) {
-      element.on("click", (evt: unknown) => {
+    for (const { element, eventName, close, eventDetails } of buttons) {
+      element.on("click", (evt) => {
         if (eventName !== undefined) {
-          this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
+          eventBus.dispatch(eventName, { source: this, ...eventDetails });
         }
         if (close) {
           this.close();
         }
-        this.eventBus.dispatch("reporttelemetry", {
+        eventBus.dispatch("reporttelemetry", {
           source: this,
           details: {
             type: "buttons",
@@ -246,95 +231,85 @@ export class SecondaryToolbar {
         });
       });
     }
+
+    eventBus._on("cursortoolchanged", this.#cursorToolChanged.bind(this));
+    eventBus._on("scrollmodechanged", this.#scrollModeChanged.bind(this));
+    eventBus._on("spreadmodechanged", this.#spreadModeChanged.bind(this));
   }
 
-  #bindCursorToolsListener({
-    cursorSelectToolButton,
-    cursorHandToolButton,
-  }: ViewerConfiguration["secondaryToolbar"]) {
-    this.eventBus._on("cursortoolchanged", ({ tool }) => {
-      toggleCheckedBtn(cursorSelectToolButton, tool === CursorTool.SELECT);
-      toggleCheckedBtn(cursorHandToolButton, tool === CursorTool.HAND);
-    });
+  #cursorToolChanged({ tool }: EventMap["cursortoolchanged"]) {
+    const { cursorSelectToolButton, cursorHandToolButton } = this.#opts;
+
+    toggleCheckedBtn(cursorSelectToolButton, tool === CursorTool.SELECT);
+    toggleCheckedBtn(cursorHandToolButton, tool === CursorTool.HAND);
   }
 
-  #bindScrollModeListener({
-    scrollPageButton,
-    scrollVerticalButton,
-    scrollHorizontalButton,
-    scrollWrappedButton,
-    spreadNoneButton,
-    spreadOddButton,
-    spreadEvenButton,
-  }: ViewerConfiguration["secondaryToolbar"]) {
-    const scrollModeChanged = ({ mode }: EventMap["scrollmodechanged"]) => {
-      const isPage = mode === ScrollMode.PAGE,
-        isVertical = mode === ScrollMode.VERTICAL,
-        isHorizontal = mode === ScrollMode.HORIZONTAL,
-        isWrapped = mode === ScrollMode.WRAPPED;
+  #scrollModeChanged({ mode }: EventMap["scrollmodechanged"]) {
+    const {
+      scrollPageButton,
+      scrollVerticalButton,
+      scrollHorizontalButton,
+      scrollWrappedButton,
+      spreadNoneButton,
+      spreadOddButton,
+      spreadEvenButton,
+    } = this.#opts;
 
-      scrollPageButton.classList.toggle("toggled", isPage);
-      scrollVerticalButton.classList.toggle("toggled", isVertical);
-      scrollHorizontalButton.classList.toggle("toggled", isHorizontal);
-      scrollWrappedButton.classList.toggle("toggled", isWrapped);
+    //kkkk TOCLEANUP
+    // const isPage = mode === ScrollMode.PAGE,
+    //   isVertical = mode === ScrollMode.VERTICAL,
+    //   isHorizontal = mode === ScrollMode.HORIZONTAL,
+    //   isWrapped = mode === ScrollMode.WRAPPED;
 
-      scrollPageButton.setAttribute("aria-checked", isPage as any);
-      scrollVerticalButton.setAttribute("aria-checked", isVertical as any);
-      scrollHorizontalButton.setAttribute("aria-checked", isHorizontal as any);
-      scrollWrappedButton.setAttribute("aria-checked", isWrapped as any);
+    toggleCheckedBtn(scrollPageButton, mode === ScrollMode.PAGE);
+    toggleCheckedBtn(scrollVerticalButton, mode === ScrollMode.VERTICAL);
+    toggleCheckedBtn(scrollHorizontalButton, mode === ScrollMode.HORIZONTAL);
+    toggleCheckedBtn(scrollWrappedButton, mode === ScrollMode.WRAPPED);
 
-      // Permanently *disable* the Scroll buttons when PAGE-scrolling is being
-      // enforced for *very* long/large documents; please see the `BaseViewer`.
-      const forceScrollModePage =
-        this.pagesCount! > PagesCountLimit.FORCE_SCROLL_MODE_PAGE;
-      scrollPageButton.disabled = forceScrollModePage;
-      scrollVerticalButton.disabled = forceScrollModePage;
-      scrollHorizontalButton.disabled = forceScrollModePage;
-      scrollWrappedButton.disabled = forceScrollModePage;
+    // Permanently *disable* the Scroll buttons when PAGE-scrolling is being
+    // enforced for *very* long/large documents; please see the `BaseViewer`.
+    const forceScrollModePage =
+      this.pagesCount! > PagesCountLimit.FORCE_SCROLL_MODE_PAGE;
+    scrollPageButton.disabled = forceScrollModePage;
+    scrollVerticalButton.disabled = forceScrollModePage;
+    scrollHorizontalButton.disabled = forceScrollModePage;
+    scrollWrappedButton.disabled = forceScrollModePage;
 
-      // Temporarily *disable* the Spread buttons when horizontal scrolling is
-      // enabled, since the non-default Spread modes doesn't affect the layout.
-      spreadNoneButton.disabled = isHorizontal;
-      spreadOddButton.disabled = isHorizontal;
-      spreadEvenButton.disabled = isHorizontal;
-    };
-    this.eventBus._on("scrollmodechanged", scrollModeChanged);
+    // Temporarily *disable* the Spread buttons when horizontal scrolling is
+    // enabled, since the non-default Spread modes doesn't affect the layout.
+    const isHorizontal = mode === ScrollMode.HORIZONTAL;
+    spreadNoneButton.disabled = isHorizontal;
+    spreadOddButton.disabled = isHorizontal;
+    spreadEvenButton.disabled = isHorizontal;
 
-    this.eventBus._on(
-      "secondarytoolbarreset",
-      (evt: EventMap["secondarytoolbarreset"]) => {
-        if (evt.source === this) {
-          scrollModeChanged({ mode: ScrollMode.VERTICAL });
-        }
-      },
-    );
+    //kkkk TOCLEANUP
+    // this.eventBus._on("scrollmodechanged", scrollModeChanged);
+
+    // this.eventBus._on(
+    //   "secondarytoolbarreset",
+    //   (evt: EventMap["secondarytoolbarreset"]) => {
+    //     if (evt.source === this) {
+    //       scrollModeChanged({ mode: ScrollMode.VERTICAL });
+    //     }
+    //   },
+    // );
   }
 
-  #bindSpreadModeListener({
-    spreadNoneButton,
-    spreadOddButton,
-    spreadEvenButton,
-  }: ViewerConfiguration["secondaryToolbar"]) {
-    function spreadModeChanged({ mode }: { mode: SpreadMode }) {
-      const isNone = mode === SpreadMode.NONE,
-        isOdd = mode === SpreadMode.ODD,
-        isEven = mode === SpreadMode.EVEN;
+  #spreadModeChanged({ mode }: { mode: SpreadMode }) {
+    const { spreadNoneButton, spreadOddButton, spreadEvenButton } = this.#opts;
 
-      spreadNoneButton.classList.toggle("toggled", isNone);
-      spreadOddButton.classList.toggle("toggled", isOdd);
-      spreadEvenButton.classList.toggle("toggled", isEven);
+    toggleCheckedBtn(spreadNoneButton, mode === SpreadMode.NONE);
+    toggleCheckedBtn(spreadOddButton, mode === SpreadMode.ODD);
+    toggleCheckedBtn(spreadEvenButton, mode === SpreadMode.EVEN);
 
-      spreadNoneButton.setAttribute("aria-checked", isNone as any);
-      spreadOddButton.setAttribute("aria-checked", isOdd as any);
-      spreadEvenButton.setAttribute("aria-checked", isEven as any);
-    }
-    this.eventBus._on("spreadmodechanged", spreadModeChanged);
+    //kkkk TOCLEANUP
+    // this.eventBus._on("spreadmodechanged", spreadModeChanged);
 
-    this.eventBus._on("secondarytoolbarreset", (evt) => {
-      if (evt.source === this) {
-        spreadModeChanged({ mode: SpreadMode.NONE });
-      }
-    });
+    // this.eventBus._on("secondarytoolbarreset", (evt) => {
+    //   if (evt.source === this) {
+    //     spreadModeChanged({ mode: SpreadMode.NONE });
+    //   }
+    // });
   }
 
   open() {
@@ -342,7 +317,9 @@ export class SecondaryToolbar {
       return;
     }
     this.opened = true;
-    toggleExpandedBtn(this.toggleButton, true, this.toolbar);
+
+    const { toggleButton, toolbar } = this.#opts;
+    toggleExpandedBtn(toggleButton, true, toolbar);
   }
 
   close() {
@@ -350,13 +327,17 @@ export class SecondaryToolbar {
       return;
     }
     this.opened = false;
-    toggleExpandedBtn(this.toggleButton, false, this.toolbar);
+
+    const { toggleButton, toolbar } = this.#opts;
+    toggleExpandedBtn(toggleButton, false, toolbar);
   }
 
   toggle() {
     if (this.opened) {
       this.close();
-    } else this.open();
+    } else {
+      this.open();
+    }
   }
 }
 /*80--------------------------------------------------------------------------*/

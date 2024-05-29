@@ -282,8 +282,9 @@ function h(e, t = 0, r, n = r.polyfill("FormData", 1, 1), o = []) {
     if (
       i = i ? `${i}[${e}]` : e,
         s instanceof Array || globalThis.FileList && s instanceof FileList
-    ) for (const e of s) n.append(i, e);
-    else {!t || "object" != typeof s || t instanceof Array && t.includes(e)
+    ) {
+      for (const e of s) n.append(i, e);
+    } else {!t || "object" != typeof s || t instanceof Array && t.includes(e)
         ? n.append(i, s)
         : null !== s && h(s, t, r, n, [...o, e]);}
   }),
@@ -368,7 +369,7 @@ const g = (e, t, r, n) => {
       const e = n.polyfill("URLSearchParams", 1, 1);
       for (const r in t) {
         const n = t[r];
-        if (t[r] instanceof Array) for (const t of n) e.append(r, y(t));
+        if (t[r] instanceof Array) { for (const t of n) e.append(r, y(t)); }
         else e.append(r, y(n));
       }
       o = e.toString();

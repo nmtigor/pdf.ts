@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_document_properties.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -183,6 +187,7 @@ export class PDFDocumentProperties {
       this.#parseFileSize(contentLength!),
       this.#parseDate(info.CreationDate),
       this.#parseDate(info.ModDate),
+      // eslint-disable-next-line arrow-body-style
       this.pdfDocument!.getPage(currentPageNumber).then((pdfPage) => {
         return this.#parsePageSize(getPageSizeInches(pdfPage), pagesRotation);
       }),

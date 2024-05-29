@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/document.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -52,7 +56,11 @@ import type {
   FieldObject,
   MarkupAnnotation,
 } from "./annotation.ts";
-import { AnnotationFactory, PopupAnnotation } from "./annotation.ts";
+import {
+  AnnotationFactory,
+  PopupAnnotation,
+  WidgetAnnotation,
+} from "./annotation.ts";
 import { BaseStream } from "./base_stream.ts";
 import { Catalog } from "./catalog.ts";
 import { clearGlobalCaches } from "./cleanup_helper.ts";
@@ -898,11 +906,16 @@ export class Page {
         }
 
         const sortedAnnotations: Annotation[] = [];
-        let popupAnnotations: Annotation[] | undefined;
+        let popupAnnotations: Annotation[] | undefined,
+          widgetAnnotations: WidgetAnnotation[] | undefined;
         // Ensure that PopupAnnotations are handled last, since they depend on
         // their parent Annotation in the display layer; fixes issue 11362.
         for (const annotation of await Promise.all(annotationPromises)) {
           if (!annotation) {
+            continue;
+          }
+          if (annotation instanceof WidgetAnnotation) {
+            (widgetAnnotations ||= []).push(annotation);
             continue;
           }
           if (annotation instanceof PopupAnnotation) {
@@ -910,6 +923,9 @@ export class Page {
             continue;
           }
           sortedAnnotations.push(annotation);
+        }
+        if (widgetAnnotations) {
+          sortedAnnotations.push(...widgetAnnotations);
         }
         if (popupAnnotations) {
           sortedAnnotations.push(...popupAnnotations);
@@ -1139,7 +1155,14 @@ export class PDFDocument {
       // Find the end of the first object.
       stream.reset();
       if (find(stream, ENDOBJ_SIGNATURE)) {
-        startXRef = stream.pos + 6 - stream.start;
+        stream.skip(6);
+
+        let ch = stream.peekByte();
+        while (isWhiteSpace(ch)) {
+          stream.pos++;
+          ch = stream.peekByte();
+        }
+        startXRef = stream.pos - stream.start;
       }
     } else {
       // Find `startxref` by checking backwards from the end of the file.
@@ -1792,6 +1815,7 @@ export class PDFDocument {
     } else {
       promise = catalog!.getPageDict(pageIndex);
     }
+    // eslint-disable-next-line arrow-body-style
     promise = promise.then(([pageDict, ref]) => {
       return new Page({
         pdfManager: this.pdfManager,

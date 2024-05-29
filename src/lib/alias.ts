@@ -24,6 +24,9 @@ export type uint16 = uint;
 export const zUint16 = zUint.max(2 ** 16 - 1);
 export type uint8 = uint;
 export const zUint8 = zUint.max(2 ** 8 - 1);
+
+export type unum = number;
+export const zUnum = z.number().min(0);
 /*49-------------------------------------------*/
 
 /** 0 is special */
@@ -132,6 +135,41 @@ export type CSSStyle = Partial<Record<CSSStyleName, string | number>>;
  * @deprecated Use `CSSStyle` instead.
  */
 export type Style = Record<string, string>;
+/*64----------------------------------------------------------*/
+
+export enum BufrDir {
+  ltr = 1,
+  rtl,
+}
+
+export enum WritingMode {
+  htb = 0b0_0001,
+
+  vrl = 0b0_0100,
+  vlr = 0b0_1000,
+}
+export const enum WritingDir {
+  h = WritingMode.htb,
+  v = WritingMode.vrl | WritingMode.vlr,
+}
+
+export type SetLayoutP = {
+  bufrDir?: BufrDir;
+  writingMode?: WritingMode;
+};
+/*80--------------------------------------------------------------------------*/
+/* zIndex */
+
+/* lib/Scronr */
+export const Scrod_z = 10;
+export const Scrobar_z = 10;
+/*80--------------------------------------------------------------------------*/
+
+export const scrollO: ScrollToOptions = {
+  left: 0,
+  top: 0,
+  behavior: "instant",
+};
 /*80--------------------------------------------------------------------------*/
 
 export interface Runr {
@@ -158,6 +196,11 @@ export const enum Pointer {
   coarse,
   fine,
 }
+/*80--------------------------------------------------------------------------*/
+
+export type UpdateTheme_PUT = {
+  theme_j: string;
+};
 /*80--------------------------------------------------------------------------*/
 
 export type Constructor<T = object> = new (...args: any[]) => T;
@@ -217,5 +260,22 @@ export type ArrEl<ArrayType extends readonly unknown[]> = ArrayType extends
 type None_ = { _type: "none" };
 type Some_<T> = { _type: "some"; value: T };
 export type Option<T> = None_ | Some_<T>;
+//#endregion
+
+//#region Prettify<>
+export type Prettify<T> = { [K in keyof T]: T[K] } & {};
+//#endregion
+
+//#region RemoveIndex<>
+/* Ref. [How to remove index signature using mapped types](https://stackoverflow.com/a/51956054) */
+
+export type RemoveIndex<T> = {
+  [
+    K in keyof T as string extends K ? never
+      : number extends K ? never
+      : symbol extends K ? never
+      : K
+  ]: T[K];
+};
 //#endregion
 /*80--------------------------------------------------------------------------*/

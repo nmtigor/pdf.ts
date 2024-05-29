@@ -3,7 +3,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import type { CSSStyle, llen_t } from "./alias.ts";
+import type { CSSStyle, llen_t, uint } from "./alias.ts";
 import type { Vuu } from "./cv.ts";
 import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.ts";
 /*80--------------------------------------------------------------------------*/
@@ -42,7 +42,7 @@ declare global {
   }
 
   interface WheelEvent {
-    _repr(): {
+    _repr: {
       deltaMode: string;
       deltaX: number;
       deltaY: number;
@@ -63,18 +63,20 @@ if (globalThis.Event) {
 }
 
 if (globalThis.WheelEvent) {
-  WheelEvent.prototype._repr = function (this) {
-    const m_ = /* final switch */ ({
-      [WheelEvent.DOM_DELTA_PIXEL]: "DOM_DELTA_PIXEL",
-      [WheelEvent.DOM_DELTA_LINE]: "DOM_DELTA_LINE",
-      [WheelEvent.DOM_DELTA_PAGE]: "DOM_DELTA_PAGE",
-    } as Record<number, string>)[this.deltaMode];
-    return {
-      deltaMode: m_ ? `"${m_}"` : "undefined",
-      deltaX: this.deltaX,
-      deltaY: this.deltaY,
-    };
-  };
+  Reflect.defineProperty(WheelEvent.prototype, "_repr", {
+    get(this: WheelEvent) {
+      const m_ = /* final switch */ {
+        [WheelEvent.DOM_DELTA_PIXEL]: "DOM_DELTA_PIXEL",
+        [WheelEvent.DOM_DELTA_LINE]: "DOM_DELTA_LINE",
+        [WheelEvent.DOM_DELTA_PAGE]: "DOM_DELTA_PAGE",
+      }[this.deltaMode];
+      return {
+        deltaMode: m_,
+        deltaX: this.deltaX,
+        deltaY: this.deltaY,
+      };
+    },
+  });
 }
 /*64----------------------------------------------------------*/
 
@@ -119,6 +121,15 @@ declare global {
     removeAllChild: () => this;
     /** @deprecated */
     assert_eq: (rhs: object) => void | never;
+
+    /**
+     * To record, how many times this `Node` is used.
+     */
+    "cy.use": uint;
+    /**
+     * In Cypress, it seems to be able to access data only through DOM.
+     */
+    "cy.any": any;
   }
 }
 
@@ -400,10 +411,10 @@ declare global {
 
   interface Range {
     /**
-     * @out @param rec_a_x
+     * @out @param out_a_x
      * @const @param ovlap_x
      */
-    getSticka(rec_a_x: DOMRect[], ovlap_x?: boolean): void;
+    getSticka(out_a_x: DOMRect[], ovlap_x?: boolean): void;
 
     reset(): void;
   }
@@ -417,19 +428,19 @@ if (globalThis.DOMRect) {
 }
 
 if (globalThis.Range) {
-  Range.prototype.getSticka = function (this, rec_a_x, ovlap_x = false) {
+  Range.prototype.getSticka = function (this, out_a_x, ovlap_x = false) {
     const recs = this.getClientRects();
     if (recs.length) {
       for (const rec of recs) {
         if (rec.width === 0) rec.width = rec.height * .1;
         rec[$ovlap] = ovlap_x;
-        rec_a_x.push(rec);
+        out_a_x.push(rec);
       }
     } else {
       const rec = this.getBoundingClientRect();
       rec.width = rec.height * .1;
       rec[$ovlap] = ovlap_x;
-      rec_a_x.push(rec);
+      out_a_x.push(rec);
     }
   };
 
@@ -442,13 +453,17 @@ if (globalThis.Range) {
 
 declare global {
   interface Text {
-    [$loff]?: llen_t;
+    [$loff]: llen_t;
     /**
      * For `TokLine<>` being empty or containing whitespaces only, when it is
      * appended to a `ELine<>`, an additional "|" will be added. For such
      * `Text`, its `[$tail_ignored]` is `true`.
      */
     [$tail_ignored]?: boolean;
+
+    loff(offs_x: uint): llen_t;
+    readonly strtLoff: llen_t;
+    readonly stopLoff: llen_t;
   }
 }
 
@@ -457,15 +472,33 @@ declare global {
  * @const @param loff_x
  * @const @param tail_ignored_x
  */
-export function textnode(
+export const textnode = (
   text_x: string,
-  loff_x?: llen_t,
+  loff_x: llen_t = 0,
   tail_ignored_x?: boolean,
-) {
+) => {
   const ret = document.createTextNode(text_x);
-  if (loff_x !== undefined) ret[$loff] = loff_x;
+  ret[$loff] = loff_x;
   if (tail_ignored_x !== undefined) ret[$tail_ignored] = tail_ignored_x;
   return ret;
+};
+
+if (globalThis.Text) {
+  Text.prototype.loff = function (this, offs_x) {
+    return this[$loff] + offs_x;
+  };
+
+  Reflect.defineProperty(Text.prototype, "strtLoff", {
+    get(this: Text) {
+      return this.loff(0);
+    },
+  });
+
+  Reflect.defineProperty(Text.prototype, "stopLoff", {
+    get(this: Text) {
+      return this.loff(this.length);
+    },
+  });
 }
 /*64----------------------------------------------------------*/
 

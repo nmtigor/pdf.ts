@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/pdf.worker_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2023 Mozilla Foundation
  *

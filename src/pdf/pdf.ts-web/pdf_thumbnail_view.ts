@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_thumbnail_view.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -254,7 +258,7 @@ export class PDFThumbnailView implements IVisibleView {
     this.resume = undefined;
   }
 
-  #getPageDrawContext = (upscaleFactor = 1) => {
+  #getPageDrawContext(upscaleFactor = 1) {
     // Keep the no-thumbnail outline visible, i.e. `data-loaded === false`,
     // until rendering/image conversion is complete, to avoid display issues.
     const canvas = html("canvas");
@@ -269,7 +273,7 @@ export class PDFThumbnailView implements IVisibleView {
       : undefined;
 
     return { ctx, canvas, transform };
-  };
+  }
 
   #convertCanvasToImage(canvas: HTMLCanvasElement) {
     if (this.renderingState !== RenderingStates.FINISHED) {
@@ -404,7 +408,7 @@ export class PDFThumbnailView implements IVisibleView {
     this.#convertCanvasToImage(canvas);
   }
 
-  #reduceImage = (img: HTMLCanvasElement) => {
+  #reduceImage(img: HTMLCanvasElement) {
     const { ctx, canvas } = this.#getPageDrawContext();
 
     if (img.width <= 2 * canvas.width) {
@@ -471,7 +475,7 @@ export class PDFThumbnailView implements IVisibleView {
       canvas.height,
     );
     return canvas;
-  };
+  }
 
   get #pageL10nArgs() {
     return JSON.stringify({ page: this.pageLabel ?? this.id });
