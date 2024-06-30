@@ -17,56 +17,57 @@
   },
   "test": {
     "include": [
-      "../pdf/pdf.ts-src/core/annotation_test.ts", //kkkk(1)
-      "../pdf/pdf.ts-src/core/bidi_test.ts",
-      "../pdf/pdf.ts-src/core/cff_parser_test.ts",
-      "../pdf/pdf.ts-src/core/cmap_test.ts",
-      "../pdf/pdf.ts-src/core/colorspace_test.ts",
-      "../pdf/pdf.ts-src/core/core_utils_test.ts",
-      "../pdf/pdf.ts-src/core/crypto_test.ts",
-      "../pdf/pdf.ts-src/core/default_appearance_test.ts",
-      "../pdf/pdf.ts-src/core/document_test.ts",
-      "../pdf/pdf.ts-src/core/encodings_test.ts",
-      "../pdf/pdf.ts-src/core/evaluator_test.ts",
-      "../pdf/pdf.ts-src/core/font_substitutions_test.ts",
-      "../pdf/pdf.ts-src/core/function_test.ts",
-      "../pdf/pdf.ts-src/core/parser_test.ts",
-      "../pdf/pdf.ts-src/core/primitives_test.ts",
-      "../pdf/pdf.ts-src/core/stream_test.ts",
-      "../pdf/pdf.ts-src/core/struct_tree_test.ts",
-      "../pdf/pdf.ts-src/core/type1_parser_test.ts",
-      "../pdf/pdf.ts-src/core/unicode_test.ts",
-      "../pdf/pdf.ts-src/core/writer_test.ts",
-      "../pdf/pdf.ts-src/core/xml_parser_test.ts",
-      "../pdf/pdf.ts-src/core/xfa/xfa_formcalc_test.ts",
-      "../pdf/pdf.ts-src/core/xfa/xfa_parser_test.ts", //kkkk(23)
-      "../pdf/pdf.ts-src/core/xfa/xfa_serialize_data_test.ts",
-      "../pdf/pdf.ts-src/core/xfa/xfa_tohtml_test.ts", //kkkk(27)
+      // "../pdf/pdf.ts-src/core/annotation_test.ts", //kkkk(1)
+      // "../pdf/pdf.ts-src/core/bidi_test.ts",
+      // "../pdf/pdf.ts-src/core/cff_parser_test.ts",
+      // "../pdf/pdf.ts-src/core/cmap_test.ts",
+      // "../pdf/pdf.ts-src/core/colorspace_test.ts",
+      // "../pdf/pdf.ts-src/core/core_utils_test.ts",
+      // "../pdf/pdf.ts-src/core/crypto_test.ts",
+      // "../pdf/pdf.ts-src/core/default_appearance_test.ts",
+      // "../pdf/pdf.ts-src/core/document_test.ts",
+      // "../pdf/pdf.ts-src/core/encodings_test.ts",
+      // "../pdf/pdf.ts-src/core/evaluator_test.ts",
+      // "../pdf/pdf.ts-src/core/font_substitutions_test.ts",
+      // "../pdf/pdf.ts-src/core/function_test.ts",
+      // "../pdf/pdf.ts-src/core/parser_test.ts",
+      // "../pdf/pdf.ts-src/core/primitives_test.ts",
+      // "../pdf/pdf.ts-src/core/stream_test.ts",
+      // "../pdf/pdf.ts-src/core/struct_tree_test.ts",
+      // "../pdf/pdf.ts-src/core/type1_parser_test.ts",
+      // "../pdf/pdf.ts-src/core/unicode_test.ts",
+      // "../pdf/pdf.ts-src/core/writer_test.ts",
+      // "../pdf/pdf.ts-src/core/xml_parser_test.ts",
+      // "../pdf/pdf.ts-src/core/xfa/xfa_formcalc_test.ts",
+      // "../pdf/pdf.ts-src/core/xfa/xfa_parser_test.ts", //kkkk(23)
+      // "../pdf/pdf.ts-src/core/xfa/xfa_serialize_data_test.ts",
+      // "../pdf/pdf.ts-src/core/xfa/xfa_tohtml_test.ts", //kkkk(27)
       //
-      "../pdf/pdf.ts-src/shared/message_handler_test.ts",
-      "../pdf/pdf.ts-src/shared/murmurhash3_test.ts", //kkkk(1)
-      "../pdf/pdf.ts-src/shared/util_test.ts",
+      // "../pdf/pdf.ts-src/shared/message_handler_test.ts",
+      // "../pdf/pdf.ts-src/shared/murmurhash3_test.ts", //kkkk(1)
+      // "../pdf/pdf.ts-src/shared/util_test.ts",
       //
-      "../pdf/pdf.ts-src/pdf_test.ts", //kkkk(1)
-      "../pdf/pdf.ts-src/pdf.worker_test.ts",
+      // "../pdf/pdf.ts-src/pdf.image_decoders_test.ts",
+      // "../pdf/pdf.ts-src/pdf_test.ts", //kkkk(1)
+      // "../pdf/pdf.ts-src/pdf.worker_test.ts",
       //
-      "../pdf/pdf.ts-src/display/annotation_storage_test.ts",
-      "../pdf/pdf.ts-src/display/api_test.ts", //kkkk(24)
-      "../pdf/pdf.ts-src/display/display_utils_test.ts", //kkkk(5)
-      "../pdf/pdf.ts-src/display/editor/editor_test.ts",
-      "../pdf/pdf.ts-src/display/fetch_stream_test.ts",
-      "../pdf/pdf.ts-src/display/metadata_test.ts",
-      "../pdf/pdf.ts-src/display/network_test.ts", //kkkk(2)
-      "../pdf/pdf.ts-src/display/network_utils_test.ts",
-      "../pdf/pdf.ts-src/display/text_layer_test.ts", //kkkk(1),
+      // "../pdf/pdf.ts-src/display/annotation_storage_test.ts",
+      // "../pdf/pdf.ts-src/display/api_test.ts", //kkkk(5)
+      // "../pdf/pdf.ts-src/display/display_utils_test.ts",
+      // "../pdf/pdf.ts-src/display/editor/editor_test.ts",
+      // "../pdf/pdf.ts-src/display/fetch_stream_test.ts",
+      // "../pdf/pdf.ts-src/display/metadata_test.ts",
+      // "../pdf/pdf.ts-src/display/network_test.ts",
+      // "../pdf/pdf.ts-src/display/network_utils_test.ts",
+      // "../pdf/pdf.ts-src/display/text_layer_test.ts",
       //
-      "../pdf/pdf.ts-web/app_options_test.ts",
-      "../pdf/pdf.ts-web/event_utils_test.ts", //kkkk(3)
-      "../pdf/pdf.ts-web/pdf_find_controller_test.ts", //kkkk(1)
-      "../pdf/pdf.ts-web/pdf_find_utils_test.ts",
-      "../pdf/pdf.ts-web/pdf_history_test.ts",
-      "../pdf/pdf.ts-web/pdf_viewer_test.ts",
-      "../pdf/pdf.ts-web/ui_utils_test.ts"
+      // "../pdf/pdf.ts-web/app_options_test.ts",
+      // "../pdf/pdf.ts-web/event_utils_test.ts",
+      // "../pdf/pdf.ts-web/pdf_find_controller_test.ts",
+      // "../pdf/pdf.ts-web/pdf_find_utils_test.ts",
+      // "../pdf/pdf.ts-web/pdf_history_test.ts",
+      // "../pdf/pdf.ts-web/pdf_viewer_test.ts",
+      // "../pdf/pdf.ts-web/ui_utils_test.ts"
     ]
     // "exclude": [""]
   },
@@ -74,12 +75,25 @@
     "@fe-3rd/": "../3rd/",
     "@fe-cpl/": "../lib/compiling/",
     "@fe-lib/": "../lib/",
+    "@fe-pdf.ts-src/": "../pdf/pdf.ts-src/",
+    "@fe-pdf.ts-test/": "../pdf/pdf.ts-test/",
+    "@fe-pdf.ts-web/": "../pdf/pdf.ts-web/",
     "@fe-src/": "../",
     "@fe-util/": "../../util/",
-    "@pdf.ts-test/": "../pdf/pdf.ts-test/",
-    "@pdf.ts-web/": "../pdf/pdf.ts-web/",
+    "@hono/hono": "jsr:@hono/hono@^4.4.9",
     "@std/": "https://deno.land/std@0.220.1/",
-    "@wretch": "../3rd/wretch-2.7.1/dist/index.js",
-    "@zod": "../3rd/zod-3.22.2/lib/index.mjs"
+    "@std/assert": "jsr:@std/assert@^0.220.1",
+    "@std/cli": "jsr:@std/cli@^0.220.1",
+    "@std/encoding": "jsr:@std/encoding@^0.220.1",
+    "@std/fs": "jsr:@std/fs@^0.220.1",
+    "@std/http": "jsr:@std/http@^0.224.5",
+    "@std/log": "jsr:@std/log@^0.220.1",
+    "@std/path": "jsr:@std/path@^0.225.2",
+    "@wretch": "../3rd/wretch-2.9.0/dist/index.js",
+    "@zod": "../3rd/zod-3.23.8/lib/index.mjs"
+  },
+  "tasks": {
+    "server": "deno run --allow-read --allow-net --allow-write=../baseurl.mjs --watch --watch-exclude=../baseurl.mjs test_server.ts",
+    "pdfref": "deno run --allow-read --allow-net --allow-write=../baseurl.mjs,../../tmp --watch --watch-exclude=../baseurl.mjs pdf.ts/reftest.ts"
   }
 }

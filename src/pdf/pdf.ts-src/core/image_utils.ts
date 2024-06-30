@@ -21,15 +21,15 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import { assert, fail } from "@fe-lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import { MAX_IMAGE_SIZE_TO_CACHE, OPS, warn } from "../shared/util.ts";
 import type { ColorSpace } from "./colorspace.ts";
 import type { ImgData, MarkedContentProps } from "./evaluator.ts";
 import type { ParsedFunction } from "./function.ts";
 import type { OpListIR } from "./operator_list.ts";
 import type { Dict, Obj, Ref } from "./primitives.ts";
-import { RefSetCache } from "./primitives.ts";
+import { RefSet, RefSetCache } from "./primitives.ts";
 /*80--------------------------------------------------------------------------*/
 
 abstract class BaseLocalCache<CD> {
@@ -249,13 +249,19 @@ type GI_CData = Image_LI_CData & {
 };
 export class GlobalImageCache {
   static readonly NUM_PAGES_THRESHOLD = 2;
-
   static readonly MIN_IMAGES_TO_CACHE = 10;
-
   static readonly MAX_BYTE_SIZE = 5 * MAX_IMAGE_SIZE_TO_CACHE;
 
   #refCache = new RefSetCache<Set<number>>();
   #imageCache = new RefSetCache<GI_CData>();
+
+  #decodeFailedSet = new RefSet();
+  addDecodeFailed(ref: string | Ref) {
+    this.#decodeFailedSet.put(ref);
+  }
+  hasDecodeFailed(ref: string | Ref) {
+    return this.#decodeFailedSet.has(ref);
+  }
 
   constructor() {
     /*#static*/ if (PDFJSDev || TESTING) {
@@ -266,7 +272,7 @@ export class GlobalImageCache {
     }
   }
 
-  get _byteSize() {
+  get #byteSize() {
     let byteSize = 0;
     for (const imageData of this.#imageCache) {
       byteSize += imageData.byteSize!;
@@ -274,11 +280,11 @@ export class GlobalImageCache {
     return byteSize;
   }
 
-  get _cacheLimitReached() {
+  get #cacheLimitReached() {
     if (this.#imageCache.size < GlobalImageCache.MIN_IMAGES_TO_CACHE) {
       return false;
     }
-    if (this._byteSize < GlobalImageCache.MAX_BYTE_SIZE) {
+    if (this.#byteSize < GlobalImageCache.MAX_BYTE_SIZE) {
       return false;
     }
     return true;
@@ -296,7 +302,7 @@ export class GlobalImageCache {
     if (pageIndexSet.size < GlobalImageCache.NUM_PAGES_THRESHOLD) {
       return false;
     }
-    if (!this.#imageCache.has(ref) && this._cacheLimitReached) {
+    if (!this.#imageCache.has(ref) && this.#cacheLimitReached) {
       return false;
     }
     return true;
@@ -346,7 +352,7 @@ export class GlobalImageCache {
     if (this.#imageCache.has(ref)) {
       return;
     }
-    if (this._cacheLimitReached) {
+    if (this.#cacheLimitReached) {
       warn("GlobalImageCache.setData - cache limit reached.");
       return;
     }
@@ -356,6 +362,7 @@ export class GlobalImageCache {
   /** @fianl */
   clear(onlyData = false) {
     if (!onlyData) {
+      this.#decodeFailedSet.clear();
       this.#refCache.clear();
     }
     this.#imageCache.clear();

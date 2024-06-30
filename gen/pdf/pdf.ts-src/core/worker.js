@@ -353,6 +353,7 @@ export const WorkerMessageHandler = {
         ]).then(([rotate, ref, userUnit, view]) => ({
             rotate,
             ref,
+            refStr: ref?.toString(),
             userUnit,
             view,
         }))));

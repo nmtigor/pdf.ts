@@ -6,6 +6,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 import type { dot2d_t } from "../../lib/alias.js";
+import type { FieldObjectsPromise } from "../alias.js";
 import type { RenderTask } from "../pdf.ts-src/display/api.js";
 import type { AnnotationEditorUIManager, AnnotationStorage, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
 import { AnnotationMode } from "../pdf.ts-src/pdf.js";
@@ -23,7 +24,6 @@ import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { OutputScale, RenderingStates, TextLayerMode } from "./ui_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
-import type { FieldObjectsPromise } from "../alias.js";
 interface PDFPageViewOptions {
     /**
      * The viewer element.

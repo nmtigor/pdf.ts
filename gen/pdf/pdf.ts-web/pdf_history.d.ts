@@ -8,7 +8,6 @@
 import { type ExplicitDest } from "../pdf.ts-src/pdf.js";
 import { EventBus } from "./event_utils.js";
 import { type HistoryInitP, type HistoryPushP, type IPDFLinkService } from "./interfaces.js";
-import { type PDFLocation } from "./pdf_viewer.js";
 interface PDFHistoryOptions {
     /**
      * The navigation/linking service.
@@ -40,16 +39,7 @@ export declare class PDFHistory {
     _popStateInProgress?: boolean;
     _currentHash?: string;
     get initialRotation(): number | undefined;
-    get initialBookmark(): string | null;
-    _boundEvents: {
-        updateViewarea(_: {
-            location?: PDFLocation | undefined;
-        }): void;
-        popState(_: {
-            state: any;
-        }): void;
-        pageHide(): void;
-    } | undefined;
+    get initialBookmark(): string | undefined;
     _isPagesLoaded?: boolean;
     constructor({ linkService, eventBus }: PDFHistoryOptions);
     /**

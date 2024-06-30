@@ -28,19 +28,19 @@ import {
   assertNotEquals,
   assertThrows,
   fail,
-} from "@std/assert/mod.ts";
+} from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import type { TestServer } from "@pdf.ts-test/test_utils.ts";
+import type { TestServer } from "@fe-pdf.ts-test/test_utils.ts";
 import {
   CMAP_URL,
   createTemporaryDenoServer,
-} from "@pdf.ts-test/test_utils.ts";
+} from "@fe-pdf.ts-test/test_utils.ts";
 import { DefaultCMapReaderFactory } from "../display/api.ts";
 import { CMapData } from "../display/base_factory.ts";
 import { type CharCodeOut, CMap, CMapFactory, IdentityCMap } from "./cmap.ts";
 import { Name } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
-import { D_cmap_url } from "../../alias.ts";
+import { D_rpe_cmap } from "@fe-src/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("cmap", () => {
@@ -59,11 +59,11 @@ describe("cmap", () => {
     fetchBuiltInCMap = (name: string) => CMapReaderFactory.fetch({ name });
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     fetchBuiltInCMap = undefined as any;
 
     const { server } = tempServer;
-    server.shutdown();
+    await server.shutdown();
     tempServer = undefined as any;
   });
 
@@ -266,7 +266,7 @@ describe("cmap", () => {
       const message = reason.message;
       assert(message.startsWith("Unable to load CMap at: "));
       assert(
-        message.endsWith(`/${D_cmap_url}/Adobe-Japan1-1`),
+        message.endsWith(`/${D_rpe_cmap}/Adobe-Japan1-1`),
       );
     }
   });

@@ -72,7 +72,7 @@ export class ScriptingProxyHandler implements ProxyHandler<Obj_> {
       if (
         !this.nosend.has(prop) &&
         obj._send &&
-        obj._id !== null &&
+        obj._id != undefined &&
         typeof old !== "function"
       ) {
         const data: SendData = { id: obj._id };

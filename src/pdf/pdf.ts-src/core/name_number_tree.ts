@@ -158,12 +158,14 @@ abstract class NameOrNumberTree<T extends string | number> {
   }
 }
 
+/** @final */
 export class NameTree extends NameOrNumberTree<string> {
   constructor(root: Ref, xref: XRef) {
     super(root, xref, "Names");
   }
 }
 
+/** @final */
 export class NumberTree extends NameOrNumberTree<number> {
   constructor(root: Ref | Dict, xref: XRef) {
     super(root, xref, "Nums");

@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/testing/asserts.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { FontProps } from "./evaluator.ts";
 import { SEAC_ANALYSIS_ENABLED } from "./fonts_utils.ts";

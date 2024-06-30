@@ -5,7 +5,7 @@
  * @module pdf/pdf.ts-src/core/core_utils.ts
  * @license Apache-2.0
  ******************************************************************************/
-import type { uint } from "../../../lib/alias.js";
+import type { rect_t, uint } from "../../../lib/alias.js";
 import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import type { ActionEventName, ActionEventTypeType, matrix_t } from "../shared/util.js";
 import { BaseException } from "../shared/util.js";
@@ -85,6 +85,28 @@ export declare function readUint32(data: Uint8Array | Uint8ClampedArray, offset:
  * Checks if ch is one of the following characters: SPACE, TAB, CR or LF.
  */
 export declare function isWhiteSpace(ch: number): boolean;
+/**
+ * Checks if something is an Array containing only boolean values,
+ * and (optionally) checks its length.
+ */
+export declare function isBooleanArray(arr: unknown, len?: uint): arr is boolean[];
+/**
+ * Checks if something is an Array containing only numbers,
+ * and (optionally) checks its length.
+ */
+export declare function isNumberArray(arr: unknown, len?: uint): arr is number[];
+/**
+ * Returns the matrix, or the fallback value if it's invalid.
+ */
+export declare function lookupMatrix<R extends matrix_t | undefined>(arr: unknown, fallback: R): matrix_t | R;
+/**
+ * Returns the rectangle, or the fallback value if it's invalid.
+ */
+export declare function lookupRect<R extends rect_t | undefined>(arr: unknown, fallback: R): rect_t | R;
+/**
+ * Returns the normalized rectangle, or the fallback value if it's invalid.
+ */
+export declare function lookupNormalRect<R extends rect_t | undefined>(arr: unknown, fallback: R): rect_t | R;
 interface XFAPathCom {
     name: string;
     pos: number;

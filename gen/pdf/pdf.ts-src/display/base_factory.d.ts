@@ -10,6 +10,8 @@ import { CMapCompressionType } from "../shared/util.js";
 export declare abstract class BaseFilterFactory {
     addFilter(maps?: number[][]): string;
     addHCMFilter(fgColor: string, bgColor: string): string;
+    addAlphaFilter(map: Uint8Array): string;
+    addLuminosityFilter(map: Uint8Array | undefined): string;
     addHighlightHCMFilter(filterName: string, fgColor: string, bgColor: string, newFgColor: string, newBgColor: string): string;
     destroy(keepHCM?: boolean): void;
 }
@@ -68,12 +70,6 @@ export declare abstract class BaseStandardFontDataFactory {
 export declare abstract class BaseSVGFactory {
     /** @final */
     create(width: number, height: number, skipDimensions?: boolean): SVGSVGElement;
-    /** @final */
-    createElement(type: string): SVGElement;
-    /**
-     * @ignore
-     */
-    protected abstract _createSVG(type: string): SVGElement;
 }
 export {};
 //# sourceMappingURL=base_factory.d.ts.map

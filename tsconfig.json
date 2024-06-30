@@ -6,10 +6,11 @@
       "@fe-edt/*": ["./src/lib/editor/*"],
       "@fe-lib/*": ["./src/lib/*"],
       "@fe-src/*": ["./src/*"],
-      "@pdf.ts-web/*": ["./src/pdf/pdf.ts-web/*"],
-      "@wretch": ["./src/3rd/wretch-2.7.1/dist/index.js"],
+      "@fe-pdf.ts-src/*": ["./src/pdf/pdf.ts-src/*"],
+      "@fe-pdf.ts-web/*": ["./src/pdf/pdf.ts-web/*"],
+      "@wretch": ["./src/3rd/wretch-2.9.0/dist/index.js"],
       "@xstate": ["./src/3rd/xstate-5.9.1/xstate.ts"],
-      "@zod": ["./src/3rd/zod-3.22.2/lib/index.mjs"]
+      "@zod": ["./src/3rd/zod-3.23.8/lib/index.mjs"]
     },
     "rootDir": "src",
     "module": "ESNext",
@@ -46,13 +47,16 @@
 
   "files": [
     "src/pdf/pdf.ts-web/viewer.ts",
-    "src/pdf/pdf.ts-src/pdf.worker.ts",
+    "src/pdf/pdf.ts-src/pdf.image_decoders.ts",
     "src/pdf/pdf.ts-src/pdf.sandbox.ts",
     "src/pdf/pdf.ts-src/pdf.scripting.ts",
+    "src/pdf/pdf.ts-src/pdf.worker.ts",
 
-    "src/pdf/pdf.ts-src/core/xfa/formcalc_parser.ts"
+    "src/pdf/pdf.ts-src/core/xfa/formcalc_parser.ts",
+
+    "src/pdf/pdf.ts-test/driver.ts"
   ],
   "include": [
-    "src/3rd/wretch-2.7.1/**/*"
+    "src/3rd/wretch-2.9.0/**/*"
   ]
 }

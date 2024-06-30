@@ -85,9 +85,9 @@ export declare class GlobalImageCache {
     static readonly NUM_PAGES_THRESHOLD = 2;
     static readonly MIN_IMAGES_TO_CACHE = 10;
     static readonly MAX_BYTE_SIZE: number;
+    addDecodeFailed(ref: string | Ref): void;
+    hasDecodeFailed(ref: string | Ref): boolean;
     constructor();
-    get _byteSize(): number;
-    get _cacheLimitReached(): boolean;
     /** @final */
     shouldCache(ref: string | Ref, pageIndex: number): boolean;
     /**

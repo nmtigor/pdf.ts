@@ -19,15 +19,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { grayToRGBA } from "../shared/image_utils.js";
 import { BaseException, warn } from "../shared/util.js";
 import { readUint16 } from "./core_utils.js";
 /*80--------------------------------------------------------------------------*/
-class JpegError extends BaseException {
+export class JpegError extends BaseException {
     constructor(msg) {
-        super(`JPEG error: ${msg}`, "JpegError");
+        super(msg, "JpegError");
     }
 }
 class DNLMarkerError extends BaseException {

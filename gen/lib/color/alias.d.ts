@@ -4,20 +4,20 @@
  ******************************************************************************/
 import type { ArrEl, Ratio, uint8 } from "../alias.js";
 export type red_t = uint8;
-export declare const zRed: import("../../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
+export declare const zRed: import("../../3rd/zod-3.23.8/lib/index.mjs").ZodNumber;
 export type alpha_t = Ratio;
-export declare const zAlpha: import("../../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
+export declare const zAlpha: import("../../3rd/zod-3.23.8/lib/index.mjs").ZodNumber;
 export type rgb_t = [red_t, red_t, red_t];
 export type rgba_t = [red_t, red_t, red_t, alpha_t];
 /** [0,360) */
 export type hue_t = number;
-export declare const zHue: import("../../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
+export declare const zHue: import("../../3rd/zod-3.23.8/lib/index.mjs").ZodNumber;
 /** [0,100] */
 export type chroma_t = number;
-export declare const zChroma: import("../../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
+export declare const zChroma: import("../../3rd/zod-3.23.8/lib/index.mjs").ZodNumber;
 /** [0,100] */
 export type tone_t = number;
-export declare const zTone: import("../../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
+export declare const zTone: import("../../3rd/zod-3.23.8/lib/index.mjs").ZodNumber;
 /** "#123456" */
 export type RRGGBB = string;
 /** "#12345678" */
@@ -42,5 +42,5 @@ export type Cssc = CsscHexNorm | CsscRGB | CsscRGBA | CsscName;
  * @const @param cssc_x
  */
 export declare function isValidCssc(cssc_x: string): cssc_x is Cssc;
-export declare const zCssc: import("../../3rd/zod-3.22.2/lib/index.mjs").ZodAny | import("../../3rd/zod-3.22.2/lib/index.mjs").ZodEffects;
+export declare const zCssc: import("../../3rd/zod-3.23.8/lib/index.mjs").ZodAny | import("../../3rd/zod-3.23.8/lib/index.mjs").ZodEffects;
 //# sourceMappingURL=alias.d.ts.map

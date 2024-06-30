@@ -20,6 +20,7 @@
  * limitations under the License.
  */
 import { html } from "../../lib/dom.js";
+import { isObjectLike } from "../../lib/jslang.js";
 import { OPS } from "../pdf.ts-src/pdf.js";
 /*80--------------------------------------------------------------------------*/
 // const { OPS } = (globalThis as any).pdfjsLib || (await import("../pdf.ts-src/pdf.ts"));
@@ -352,7 +353,7 @@ export class Stepper {
                 const fontCharRow = this.#c("tr");
                 const unicodeRow = this.#c("tr");
                 for (const glyph of glyphs) {
-                    if (typeof glyph === "object" && glyph !== null) {
+                    if (isObjectLike(glyph)) {
                         charCodeRow.append(this.#c("td", glyph.originalCharCode));
                         fontCharRow.append(this.#c("td", glyph.fontChar));
                         unicodeRow.append(this.#c("td", glyph.unicode));

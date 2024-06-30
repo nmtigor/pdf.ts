@@ -67,8 +67,6 @@ interface SMask {
     context: C2D;
     offsetX: number;
     offsetY: number;
-    scaleX: number;
-    scaleY: number;
     subtype: string;
     backdrop?: number[] | Uint8ClampedArray | undefined;
     transferMap?: Uint8Array | undefined;
@@ -234,6 +232,8 @@ export declare class CanvasGraphics {
     beginSMaskMode(): void;
     endSMaskMode(): void;
     compose(dirtyBox?: rect_t): void;
+    composeSMask(ctx: C2D, smask: SMask, layerCtx: C2D, layerBox: rect_t): void;
+    genericComposeSMask(maskCtx: C2D, layerCtx: C2D, width: number, height: number, subtype: string, backdrop: number[] | Uint8ClampedArray | undefined, transferMap: Uint8Array | undefined, layerOffsetX: number, layerOffsetY: number, maskOffsetX: number, maskOffsetY: number): void;
     [OPS.save](): void;
     [OPS.restore](): void;
     [OPS.transform](a: number, b: number, c: number, d: number, e: number, f: number): void;
@@ -278,11 +278,11 @@ export declare class CanvasGraphics {
     [OPS.shadingFill](objId: ShadingType): void;
     [OPS.beginInlineImage](): void;
     [OPS.beginImageData](): void;
-    [OPS.paintFormXObjectBegin](matrix: matrix_t, bbox?: rect_t): void;
+    [OPS.paintFormXObjectBegin](matrix?: matrix_t, bbox?: rect_t): void;
     [OPS.paintFormXObjectEnd](): void;
     [OPS.beginGroup](group: GroupOptions): void;
     [OPS.endGroup](group: GroupOptions): void;
-    [OPS.beginAnnotation](id: string, rect: rect_t, transform: matrix_t, matrix: matrix_t, hasOwnCanvas: boolean): void;
+    [OPS.beginAnnotation](id: string, rect: rect_t | undefined, transform: matrix_t, matrix: matrix_t, hasOwnCanvas: boolean): void;
     [OPS.endAnnotation](): void;
     [OPS.paintImageMaskXObject](img: ImgData): void;
     [OPS.paintImageMaskXObjectRepeat](img: ImgData, scaleX: number, skewX: number | undefined, skewY: number | undefined, scaleY: number, positions: Float32Array): void;

@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@import url(dialog.css);
 @import url(text_layer_builder.css);
 @import url(annotation_layer_builder.css);
 @import url(xfa_layer_builder.css);
@@ -69,12 +70,30 @@
   @media screen and (forced-colors: active) {
     --hcm-highlight-filter: invert(100%);
   }
-}
 
-.pdfViewer .canvasWrapper {
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
+  .canvasWrapper {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+
+    canvas {
+      margin: 0;
+      display: block;
+
+      &[hidden] {
+        display: none;
+      }
+
+      &[zooming] {
+        width: 100%;
+        height: 100%;
+      }
+
+      .structTree {
+        contain: strict;
+      }
+    }
+  }
 }
 
 .pdfViewer .page {
@@ -152,24 +171,6 @@
   margin-inline: 5px;
 }
 /*#endif*/
-
-.pdfViewer .page canvas {
-  margin: 0;
-  display: block;
-}
-
-.pdfViewer .page canvas .structTree {
-  contain: strict;
-}
-
-.pdfViewer .page canvas[hidden] {
-  display: none;
-}
-
-.pdfViewer .page canvas[zooming] {
-  width: 100%;
-  height: 100%;
-}
 
 .pdfViewer .page.loadingIcon::after {
   position: absolute;

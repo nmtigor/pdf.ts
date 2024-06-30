@@ -15,6 +15,12 @@ export class BaseFilterFactory {
     addHCMFilter(fgColor, bgColor) {
         return "none";
     }
+    addAlphaFilter(map) {
+        return "none";
+    }
+    addLuminosityFilter(map) {
+        return "none";
+    }
     addHighlightHCMFilter(filterName, fgColor, bgColor, newFgColor, newBgColor) {
         return "none";
     }
@@ -117,13 +123,6 @@ export class BaseSVGFactory {
             svg.setAttribute("height", `${height}px`);
         }
         return svg;
-    }
-    /** @final */
-    createElement(type) {
-        if (typeof type !== "string") {
-            throw new Error("Invalid SVG element type");
-        }
-        return this._createSVG(type);
     }
 }
 /*80--------------------------------------------------------------------------*/

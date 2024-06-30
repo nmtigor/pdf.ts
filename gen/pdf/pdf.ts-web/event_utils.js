@@ -41,30 +41,19 @@ export async function waitOnEventOrTimeout({ target, name, delay = 0, }) {
         throw new Error("waitOnEventOrTimeout - invalid parameters.");
     }
     const { promise, resolve } = new PromiseCap();
+    const ac = new AbortController();
     function handler(type) {
-        if (target instanceof EventBus) {
-            target._off(name, eventHandler);
-        }
-        else {
-            target.removeEventListener(name, eventHandler);
-        }
-        if (timeout) {
-            clearTimeout(timeout);
-        }
+        ac.abort(); // Remove event listener.
+        clearTimeout(timeout);
         resolve(type);
     }
-    const eventHandler = handler.bind(null, WaitOnType.EVENT);
-    if (target instanceof EventBus) {
-        target._on(name, eventHandler);
-    }
-    else {
-        target.addEventListener(name, eventHandler);
-    }
-    const timeoutHandler = handler.bind(null, WaitOnType.TIMEOUT);
-    const timeout = setTimeout(timeoutHandler, delay);
+    const evtMethod = target instanceof EventBus ? "_on" : "addEventListener";
+    target[evtMethod](name, handler.bind(undefined, WaitOnType.EVENT), {
+        signal: ac.signal,
+    });
+    const timeout = setTimeout(handler.bind(undefined, WaitOnType.TIMEOUT), delay);
     return promise;
 }
-/*49-------------------------------------------*/
 /**
  * Simple event bus for an application. Listeners are attached using the `on`
  * and `off` methods. To raise an event, the `dispatch` method shall be used.
@@ -75,6 +64,7 @@ export class EventBus {
         this._on(eventName, listener, {
             external: true,
             once: options?.once,
+            signal: options?.signal,
         });
     }
     off(eventName, listener) {
@@ -111,11 +101,23 @@ export class EventBus {
      * @ignore
      */
     _on(eventName, listener, options) {
+        let rmAbort;
+        if (options?.signal instanceof AbortSignal) {
+            const { signal } = options;
+            if (signal.aborted) {
+                console.error("Cannot use an `aborted` signal.");
+                return;
+            }
+            const onAbort = () => this._off(eventName, listener);
+            rmAbort = () => signal.removeEventListener("abort", onAbort);
+            signal.addEventListener("abort", onAbort);
+        }
         const eventListeners = (this.#listeners[eventName] ||= []);
         eventListeners.push({
             listener,
             external: options?.external === true,
             once: options?.once === true,
+            rmAbort,
         });
     }
     /**
@@ -127,7 +129,9 @@ export class EventBus {
             return;
         }
         for (let i = 0, ii = eventListeners.length; i < ii; i++) {
-            if (eventListeners[i].listener === listener) {
+            const evt = eventListeners[i];
+            if (evt.listener === listener) {
+                evt.rmAbort?.(); // Ensure that the `AbortSignal` listener is removed.
                 eventListeners.splice(i, 1);
                 return;
             }

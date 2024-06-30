@@ -14,7 +14,7 @@
  */
 export declare class TextAccessibilityManager {
     #private;
-    setTextMapping(textDivs: HTMLDivElement[]): void;
+    setTextMapping(textDivs: (HTMLDivElement | HTMLSpanElement)[]): void;
     /**
      * Function called when the text layer has finished rendering.
      */

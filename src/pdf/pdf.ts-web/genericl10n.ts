@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { D_res_pdf } from "@fe-src/alias.ts";
 import {
   FluentBundle,
   FluentResource,
@@ -30,7 +31,7 @@ import { Locale } from "@fe-lib/Locale.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import { fetchData } from "../pdf.ts-src/pdf.ts";
 import { L10n } from "./l10n.ts";
-import { AD_gh, D_res } from "../alias.ts";
+import { AD_gh } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 function createBundle(lang: Locale, text: string) {
@@ -163,7 +164,7 @@ export class GenericL10n extends L10n {
     const text = /*#static*/ PDFJSDev
       ? await fetchData(
         new URL(
-          `${AD_gh}/${D_res}/l10n/en-US/viewer.ftl`,
+          `${AD_gh}/${D_res_pdf}/l10n/en-US/viewer.ftl`,
           window.location.href,
         ),
         /* type = */ "text",
@@ -171,7 +172,7 @@ export class GenericL10n extends L10n {
       // : PDFJSDev.eval("DEFAULT_FTL");
       : await fetchData(
         new URL(
-          `${AD_gh}/${D_res}/l10n/en-US/viewer.ftl`,
+          `${AD_gh}/${D_res_pdf}/l10n/en-US/viewer.ftl`,
           window.location.href,
         ),
         /* type = */ "text",

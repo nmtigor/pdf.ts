@@ -25,7 +25,7 @@ import type { dot2d_t, id_t, Ratio, rect_t, uint } from "@fe-lib/alias.ts";
 import type { Cssc, rgb_t } from "@fe-lib/color/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import { noContextMenu } from "@fe-lib/util/general.ts";
-import { IL10n } from "@pdf.ts-web/interfaces.ts";
+import { IL10n } from "@fe-pdf.ts-web/interfaces.ts";
 import type { Box } from "../../alias.ts";
 import {
   AnnotationEditorParamsType,

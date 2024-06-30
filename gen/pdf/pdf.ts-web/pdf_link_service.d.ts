@@ -5,7 +5,8 @@
  * @module pdf/pdf.ts-web/pdf_link_service.ts
  * @license Apache-2.0
  ******************************************************************************/
-import type { Destination, ExplicitDest, PDFDocumentProxy, RefProxy, SetOCGState } from "../pdf.ts-src/pdf.js";
+import type { uint } from "../../lib/alias.js";
+import type { Destination, ExplicitDest, PDFDocumentProxy, SetOCGState } from "../pdf.ts-src/pdf.js";
 import type { EventBus } from "./event_utils.js";
 import type { IPDFLinkService } from "./interfaces.js";
 import type { PDFHistory } from "./pdf_history.js";
@@ -58,15 +59,15 @@ export declare class PDFLinkService implements IPDFLinkService {
     pdfDocument: PDFDocumentProxy | undefined;
     pdfViewer?: PDFViewer;
     pdfHistory?: PDFHistory;
-    constructor({ eventBus, externalLinkTarget, externalLinkRel, ignoreDestinationZoom, }: PDFLinkServiceOptions);
+    constructor({ eventBus, externalLinkTarget, externalLinkRel, ignoreDestinationZoom, }?: PDFLinkServiceOptions);
     setDocument(pdfDocument?: PDFDocumentProxy, baseUrl?: string): void;
     setViewer(pdfViewer: PDFViewer): void;
     setHistory(pdfHistory: PDFHistory): void;
     /** @implement */
     get pagesCount(): number;
     /** @implement */
-    get page(): number;
-    set page(value: number);
+    get page(): uint;
+    set page(value: uint);
     /** @implement */
     get rotation(): number;
     set rotation(value: number);
@@ -86,7 +87,7 @@ export declare class PDFLinkService implements IPDFLinkService {
      */
     goToPage(val: number | string): void;
     /**
-     * Wrapper around the `addLinkAttributes` helper function.
+     * Adds various attributes (href, title, target, rel) to hyperlinks.
      * @implement
      */
     addLinkAttributes(link: HTMLAnchorElement, url: string, newWindow?: boolean): void;
@@ -109,69 +110,9 @@ export declare class PDFLinkService implements IPDFLinkService {
     /** @implement */
     executeNamedAction(action: string): void;
     executeSetOCGState(action: SetOCGState): Promise<void>;
-    /**
-     * @implement
-     * @param pageNum page number.
-     * @param pageRef reference to the page.
-     */
-    cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
-    /** @implement */
-    _cachedPageNumber(pageRef: RefProxy | undefined): number | undefined;
 }
-export declare class SimpleLinkService implements IPDFLinkService {
-    /** @implement */
-    externalLinkTarget: LinkTarget | undefined;
-    /** @implement */
-    externalLinkRel: string | undefined;
-    /** @implement */
-    externalLinkEnabled: boolean;
-    /** @implement */
-    get pagesCount(): number;
-    /** @implement */
-    get page(): number;
-    set page(value: number);
-    /** @implement */
-    get rotation(): number;
-    set rotation(value: number);
-    /** @implement */
-    get isInPresentationMode(): boolean;
-    /**
-     * @param dest The named, or explicit, PDF destination.
-     */
-    goToDestination(dest: Destination): Promise<void>;
-    /**
-     * @param val The page number, or page label.
-     */
-    goToPage(val: number | string): void;
-    /** @implement */
-    addLinkAttributes(link: HTMLAnchorElement, url: string, newWindow?: boolean): void;
-    /**
-     * @param dest The PDF destination object.
-     * @return The hyperlink to the PDF object.
-     */
-    getDestinationHash(dest?: Destination): string;
-    /**
-     * @implement
-     * @param hash The PDF parameters/hash.
-     * @return The hyperlink to the PDF object.
-     */
-    getAnchorUrl(hash: string): string;
-    /** @implement */
-    setHash(hash: string): void;
-    /** @implement */
-    executeNamedAction(action: string): void;
-    /**
-     * @param {Object} action
-     */
-    executeSetOCGState(action: SetOCGState): void;
-    /**
-     * @implement
-     * @param pageNum page number.
-     * @param pageRef reference to the page.
-     */
-    cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
-    /** @implement */
-    _cachedPageNumber(pageRef: RefProxy): undefined;
+export declare class SimpleLinkService extends PDFLinkService {
+    setDocument(pdfDocument?: PDFDocumentProxy, baseUrl?: string): void;
 }
 export {};
 //# sourceMappingURL=pdf_link_service.d.ts.map

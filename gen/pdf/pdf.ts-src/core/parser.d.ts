@@ -5,10 +5,20 @@
  * @module pdf/pdf.ts-src/core/parser.ts
  * @license Apache-2.0
  ******************************************************************************/
+import { Ascii85Stream } from "./ascii_85_stream.js";
+import { AsciiHexStream } from "./ascii_hex_stream.js";
 import type { BaseStream } from "./base_stream.js";
+import { CCITTFaxStream } from "./ccitt_stream.js";
 import type { CipherTransform } from "./crypto.js";
 import type { OpMap } from "./evaluator.js";
+import { FlateStream } from "./flate_stream.js";
+import { Jbig2Stream } from "./jbig2_stream.js";
+import { JpegStream } from "./jpeg_stream.js";
+import { JpxStream } from "./jpx_stream.js";
+import { LZWStream } from "./lzw_stream.js";
+import { PredictorStream } from "./predictor_stream.js";
 import { Dict, Name, type Obj } from "./primitives.js";
+import { RunLengthStream } from "./run_length_stream.js";
 import { Stream } from "./stream.js";
 import type { XRef } from "./xref.js";
 interface _ParserCtorP {
@@ -19,6 +29,7 @@ interface _ParserCtorP {
 }
 /** @final */
 export declare class Parser {
+    #private;
     lexer: Lexer;
     xref?: XRef | undefined;
     allowStreams: boolean;
@@ -57,10 +68,9 @@ export declare class Parser {
      */
     inlineStreamSkipEI(stream: BaseStream): void;
     makeInlineImage(cipherTransform?: CipherTransform): any;
-    _findStreamLength(startPos: number, signature: Uint8Array): number;
     makeStream(dict: Dict, cipherTransform?: CipherTransform): BaseStream;
-    filter(stream: BaseStream, dict: Dict, length: number): BaseStream;
-    makeFilter(stream: BaseStream, name: string, maybeLength?: number, params?: Dict): BaseStream;
+    filter(stream: BaseStream, dict: Dict, length: number): BaseStream | Ascii85Stream | AsciiHexStream | CCITTFaxStream | FlateStream | Jbig2Stream | JpegStream | JpxStream | LZWStream | PredictorStream | RunLengthStream;
+    makeFilter(stream: BaseStream, name: string, maybeLength?: number, params?: Dict): BaseStream | Ascii85Stream | AsciiHexStream | CCITTFaxStream | FlateStream | Jbig2Stream | JpegStream | JpxStream | LZWStream | PredictorStream | RunLengthStream;
 }
 /** @final */
 export declare class Lexer {

@@ -8,7 +8,7 @@
 import type { dot2d_t } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType, AnnotationEditorType } from "../../shared/util.js";
-import type { AnnotStorageValue } from "../annotation_layer.js";
+import type { AnnotationElement, AnnotStorageValue } from "../annotation_layer.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import type { AnnotationEditorP, PropertyToUpdate } from "./editor.js";
 import { AnnotationEditor } from "./editor.js";
@@ -83,5 +83,7 @@ export declare class FreeTextEditor extends AnnotationEditor {
     static deserialize(data: FreeTextEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): FreeTextEditor | undefined;
     /** @implement */
     serialize(isForCopying?: boolean): FreeTextEditorSerialized | undefined;
+    renderAnnotationElement(annotation: AnnotationElement): HTMLElement;
+    resetAnnotationElement(annotation: AnnotationElement): void;
 }
 //# sourceMappingURL=freetext.d.ts.map

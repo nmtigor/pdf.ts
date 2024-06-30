@@ -93,7 +93,14 @@ export class PDFCursorTools {
     }
     #addEventListeners() {
         this.eventBus._on("switchcursortool", (evt) => {
-            this.switchTool(evt.tool);
+            if (!evt.reset) {
+                this.switchTool(evt.tool);
+            }
+            else if (this.#prevActive !== undefined) {
+                annotationEditorMode = AnnotationEditorType.NONE;
+                presentationModeState = PresentationModeState.NORMAL;
+                enableActive();
+            }
         });
         let annotationEditorMode = AnnotationEditorType.NONE, presentationModeState = PresentationModeState.NORMAL;
         const disableActive = () => {
@@ -110,13 +117,6 @@ export class PDFCursorTools {
                 this.switchTool(prevActive);
             }
         };
-        this.eventBus._on("secondarytoolbarreset", (evt) => {
-            if (this.#prevActive !== undefined) {
-                annotationEditorMode = AnnotationEditorType.NONE;
-                presentationModeState = PresentationModeState.NORMAL;
-                enableActive();
-            }
-        });
         this.eventBus._on("annotationeditormodechanged", ({ mode }) => {
             annotationEditorMode = mode;
             if (mode === AnnotationEditorType.NONE) {

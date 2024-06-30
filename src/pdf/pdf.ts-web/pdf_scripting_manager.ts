@@ -91,8 +91,9 @@ export class PDFScriptingManager {
   }
 
   #eventBus;
-  #externalServices;
   #docProperties;
+  #externalServices;
+  #eventAbortController: AbortController | undefined;
 
   constructor(
     { eventBus, externalServices, docProperties }: PDFScriptingManagerOptions,
@@ -146,61 +147,46 @@ export class PDFScriptingManager {
       await this.#destroyScripting();
       return;
     }
+    const eventBus = this.#eventBus;
 
-    this.#internalEvents.set(
-      "updatefromsandbox",
-      (event: EventMap["updatefromsandbox"]) => {
-        if (event?.source === window) {
-          this.#updateFromSandbox(event.detail);
-        }
-      },
-    );
-    this.#internalEvents.set(
-      "dispatcheventinsandbox",
-      (event: EventMap["dispatcheventinsandbox"]) => {
-        this.#scripting?.dispatchEventInSandbox(event.detail);
-      },
-    );
+    this.#eventAbortController = new AbortController();
+    const { signal } = this.#eventAbortController;
 
-    this.#internalEvents.set(
-      "pagechanging",
-      ({ pageNumber, previous }: EventMap["pagechanging"]) => {
-        if (pageNumber === previous) {
-          return; // The current page didn't change.
-        }
-        this.#dispatchPageClose(previous);
-        this.#dispatchPageOpen(pageNumber);
-      },
-    );
-    this.#internalEvents.set(
-      "pagerendered",
-      ({ pageNumber }: EventMap["pagerendered"]) => {
-        if (!this.#pageOpenPending.has(pageNumber)) {
-          return; // No pending "PageOpen" event for the newly rendered page.
-        }
-        if (pageNumber !== this.#pdfViewer.currentPageNumber) {
-          return; // The newly rendered page is no longer the current one.
-        }
-        this.#dispatchPageOpen(pageNumber);
-      },
-    );
-    this.#internalEvents.set(
-      "pagesdestroy",
-      async (event: EventMap["pagesdestroy"]) => {
-        await this.#dispatchPageClose(this.#pdfViewer.currentPageNumber);
+    eventBus._on("updatefromsandbox", (event) => {
+      if (event?.source === window) {
+        this.#updateFromSandbox(event.detail);
+      }
+    }, { signal });
+    eventBus._on("dispatcheventinsandbox", (event) => {
+      this.#scripting?.dispatchEventInSandbox(event.detail);
+    }, { signal });
 
-        await this.#scripting?.dispatchEventInSandbox({
-          id: "doc",
-          name: "WillClose",
-        });
+    eventBus._on("pagechanging", ({ pageNumber, previous }) => {
+      if (pageNumber === previous) {
+        return; // The current page didn't change.
+      }
+      this.#dispatchPageClose(previous);
+      this.#dispatchPageOpen(pageNumber);
+    }, { signal });
+    eventBus._on("pagerendered", ({ pageNumber }) => {
+      if (!this.#pageOpenPending.has(pageNumber)) {
+        return; // No pending "PageOpen" event for the newly rendered page.
+      }
+      if (pageNumber !== this.#pdfViewer.currentPageNumber) {
+        return; // The newly rendered page is no longer the current one.
+      }
+      this.#dispatchPageOpen(pageNumber);
+    }, { signal });
+    eventBus._on("pagesdestroy", async () => {
+      await this.#dispatchPageClose(this.#pdfViewer.currentPageNumber);
 
-        this.#closeCapability?.resolve();
-      },
-    );
+      await this.#scripting?.dispatchEventInSandbox({
+        id: "doc",
+        name: "WillClose",
+      });
 
-    for (const [name, listener] of this.#internalEvents) {
-      this.#eventBus._on(name, listener);
-    }
+      this.#closeCapability?.resolve();
+    }, { signal });
 
     try {
       const docProperties = await this.#docProperties!(pdfDocument);
@@ -221,7 +207,7 @@ export class PDFScriptingManager {
         },
       });
 
-      this.#eventBus.dispatch("sandboxcreated", { source: this });
+      eventBus.dispatch("sandboxcreated", { source: this });
     } catch (error) {
       console.error(`setDocument: "${(error as any).message}".`);
 
@@ -287,13 +273,14 @@ export class PDFScriptingManager {
     });
   }
 
-  get #internalEvents() {
-    return shadow(
-      this,
-      "#internalEvents",
-      new Map<InternalEventName, InternalListenerMap[InternalEventName]>(),
-    );
-  }
+  //kkkk TOCLEANUP
+  // get #internalEvents() {
+  //   return shadow(
+  //     this,
+  //     "#internalEvents",
+  //     new Map<InternalEventName, InternalListenerMap[InternalEventName]>(),
+  //   );
+  // }
 
   get #pageOpenPending() {
     return shadow(this, "#pageOpenPending", new Set<number>());
@@ -509,10 +496,8 @@ export class PDFScriptingManager {
     this.#willPrintCapability?.reject(new Error("Scripting destroyed."));
     this.#willPrintCapability = undefined;
 
-    for (const [name, listener] of this.#internalEvents) {
-      this.#eventBus._off(name, listener);
-    }
-    this.#internalEvents.clear();
+    this.#eventAbortController?.abort();
+    this.#eventAbortController = undefined;
 
     this.#pageOpenPending.clear();
     this.#visitedPages.clear();

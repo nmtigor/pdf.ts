@@ -82,9 +82,9 @@ export class PDFLayerViewer extends BaseTreeViewer {
         element.textContent = await this._l10n.get("pdfjs-additional-layers");
         element.style.fontStyle = "italic";
     };
-    #addToggleButton = (div, { name = undefined }) => {
+    #addToggleButton(div, { name = undefined }) {
         super._addToggleButton(div, /* hidden = */ name === undefined);
-    };
+    }
     toggleAllTreeItems$() {
         if (!this.#optionalContentConfig) {
             return;

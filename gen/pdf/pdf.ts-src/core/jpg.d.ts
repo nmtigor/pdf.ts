@@ -5,6 +5,10 @@
  * @module pdf/pdf.ts-src/core/jpg.ts
  * @license Apache-2.0
  ******************************************************************************/
+import { BaseException } from "../shared/util.js";
+export declare class JpegError extends BaseException {
+    constructor(msg: string);
+}
 /**
  * This code was forked from https://github.com/notmasteryet/jpgjs.
  * The original version was created by GitHub user notmasteryet.

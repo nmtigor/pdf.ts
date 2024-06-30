@@ -41,6 +41,7 @@ import type { RenderingStates } from "./ui_utils.ts";
 import type { FluentMessageArgs } from "@fe-3rd/fluent/dom/esm/localization.ts";
 import type { PDFViewerApplication } from "./app.ts";
 import type { PageOverview } from "./pdf_viewer.ts";
+import type { uint } from "@fe-lib/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface IPDFLinkService {
@@ -48,8 +49,8 @@ export interface IPDFLinkService {
 
   get pagesCount(): number;
 
-  get page(): number;
-  set page(value: number);
+  get page(): uint;
+  set page(value: uint);
 
   get rotation(): number;
   set rotation(value: number);
@@ -99,14 +100,6 @@ export interface IPDFLinkService {
   executeNamedAction(action: string): void;
 
   executeSetOCGState(action: SetOCGState): void;
-
-  /**
-   * @param pageNum page number.
-   * @param pageRef reference to the page.
-   */
-  cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
-
-  _cachedPageNumber(pageRef: RefProxy | undefined): number | undefined;
 }
 
 export interface HistoryInitP {

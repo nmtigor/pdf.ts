@@ -5,22 +5,8 @@
  * @module pdf/pdf.ts-src/core/image.ts
  * @license Apache-2.0
  ******************************************************************************/
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { convertBlackAndWhiteToRGBA, convertToRGBA, } from "../shared/image_utils.js";
 import { FeatureTest, FormatError, ImageKind, info, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
@@ -98,6 +84,7 @@ export class PDFImage {
     bpc;
     colorSpace;
     numComps;
+    ignoreColorSpace;
     decode;
     needsDecode;
     decodeCoefficients;
@@ -106,6 +93,7 @@ export class PDFImage {
     mask;
     constructor({ xref, res, image, isInline = false, smask = undefined, mask = undefined, isMask = false, pdfFunctionFactory, localColorSpaceCache, }) {
         this.image = image;
+        let jpxDecode = false;
         const dict = image.dict;
         const filter = dict.get("F", "Filter");
         let filterName;
@@ -120,13 +108,22 @@ export class PDFImage {
         }
         switch (filterName) {
             case "JPXDecode":
-                const jpxImage = new JpxImage();
-                jpxImage.parseImageProperties(image.stream);
+                //kkkk TOCLEANUP
+                // const jpxImage = new JpxImage();
+                // jpxImage.parseImageProperties(image.stream as JpxStream);
+                // (image.stream as JpxStream).reset();
+                // image.width = jpxImage.width;
+                // image.height = jpxImage.height;
+                // image.bitsPerComponent = jpxImage.bitsPerComponent;
+                // image.numComps = jpxImage.componentsCount;
+                ({
+                    width: image.width,
+                    height: image.height,
+                    componentsCount: image.numComps,
+                    bitsPerComponent: image.bitsPerComponent,
+                } = JpxImage.parseImageProperties(image.stream));
                 image.stream.reset();
-                image.width = jpxImage.width;
-                image.height = jpxImage.height;
-                image.bitsPerComponent = jpxImage.bitsPerComponent;
-                image.numComps = jpxImage.componentsCount;
+                jpxDecode = true;
                 break;
             case "JBIG2Decode":
                 image.bitsPerComponent = 1;
@@ -192,6 +189,9 @@ export class PDFImage {
                 localColorSpaceCache,
             });
             this.numComps = this.colorSpace.numComps;
+            // If the jpx image has a color space then it musn't be used in order to
+            // be able to use the color space that comes from the pdf.
+            this.ignoreColorSpace = jpxDecode && this.colorSpace.name === "Indexed";
         }
         this.decode = dict.getArray("D", "Decode");
         this.needsDecode = false;
@@ -838,7 +838,7 @@ export class PDFImage {
         this.image.drawHeight = drawHeight || this.height;
         this.image.forceRGBA = !!forceRGBA;
         this.image.forceRGB = !!forceRGB;
-        const imageBytes = this.image.getBytes(length);
+        const imageBytes = this.image.getBytes(length, this.ignoreColorSpace);
         // If imageBytes came from a DecodeStream, we're safe to transfer it
         // (and thus detach its underlying buffer) because it will constitute
         // the entire DecodeStream's data.  But if it came from a Stream, we

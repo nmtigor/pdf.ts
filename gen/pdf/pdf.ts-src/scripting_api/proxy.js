@@ -45,7 +45,7 @@ export class ScriptingProxyHandler {
             obj[prop] = value;
             if (!this.nosend.has(prop) &&
                 obj._send &&
-                obj._id !== null &&
+                obj._id != undefined &&
                 typeof old !== "function") {
                 const data = { id: obj._id };
                 data[prop] = prop === "value"

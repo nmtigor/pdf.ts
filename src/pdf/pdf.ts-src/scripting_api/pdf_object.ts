@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import type { ScriptingDocProperties } from "@pdf.ts-web/app.ts";
+import type { ScriptingDocProperties } from "@fe-pdf.ts-web/app.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface SendData {

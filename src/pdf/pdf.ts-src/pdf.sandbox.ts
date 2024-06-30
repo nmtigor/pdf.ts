@@ -23,7 +23,7 @@
 
 import ModuleLoader from "@fe-3rd/quickjs-2022-05-02/quickjs-eval.js";
 import { TESTING } from "@fe-src/global.ts";
-import type { EventInSandBox } from "@pdf.ts-web/interfaces.ts";
+import type { EventInSandBox } from "@fe-pdf.ts-web/interfaces.ts";
 import { SandboxSupportBase } from "./pdf.sandbox.external.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -133,7 +133,7 @@ export class Sandbox {
   }
 
   nukeSandbox() {
-    if (this._module !== null) {
+    if (this._module != undefined) {
       this.support.destroy();
       (this as any).support = undefined;
       (this._module as any).ccall("nukeSandbox", null, []);

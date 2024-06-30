@@ -5,6 +5,10 @@
  * @module pdf/pdf.ts-src/core/jbig2.ts
  * @license Apache-2.0
  ******************************************************************************/
+import { BaseException } from "../shared/util.js";
+export declare class Jbig2Error extends BaseException {
+    constructor(msg: string);
+}
 export interface Chunk {
     data: Uint8Array | Uint8ClampedArray;
     start: number;

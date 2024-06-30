@@ -31,10 +31,11 @@ import type { StructTreeRoot } from "./struct_tree.js";
 import type { WorkerTask } from "./worker.js";
 import type { XFAHTMLObj } from "./xfa/alias.js";
 import type { XRef } from "./xref.js";
+import type { Dot } from "../alias.js";
 type AnnotType = "Caret" | "Circle" | "FileAttachment" | "FreeText" | "Ink" | "Line" | "Link" | "Highlight" | "Polygon" | "PolyLine" | "Popup" | "Stamp" | "Square" | "Squiggly" | "StrikeOut" | "Text" | "Underline" | "Widget";
 interface Dependency_ {
     ref: Ref;
-    data: string;
+    data: string | undefined;
 }
 type CreateNewAnnotationP_ = {
     evaluator?: PartialEvaluator;
@@ -73,7 +74,8 @@ export declare class AnnotationFactory {
     }>;
     static printNewAnnotations(annotationGlobals: AnnotationGlobals, evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises?: Map<string, Promise<AnnotImage>> | undefined): Promise<MarkupAnnotation[] | undefined>;
 }
-export declare function getQuadPoints(dict: Dict, rect?: rect_t): TupleOf<AnnotPoint, 4>[] | null;
+type QuadPoint_ = TupleOf<Dot, 4>;
+export declare function getQuadPoints(dict: Dict, rect?: rect_t): QuadPoint_[] | null;
 interface AnnotationCtorP_ {
     xref: XRef;
     ref: Ref;
@@ -117,7 +119,12 @@ export type AnnotationData = {
     name?: string;
     state?: string | undefined;
     stateModel?: string | undefined;
-    quadPoints?: TupleOf<AnnotPoint, 4>[] | null;
+    /**
+     * ! `null` and `undefined` are used differently.
+     * @see {@linkcode Annotation.viewable}
+     * @see {@linkcode Annotation.printable}
+     */
+    quadPoints?: QuadPoint_[] | null;
     fieldValue?: string | string[] | undefined;
     defaultFieldValue?: string | string[] | undefined;
     alternativeText?: string;
@@ -151,12 +158,12 @@ export type AnnotationData = {
     creationDate?: string | undefined;
     popupRef?: string | undefined;
     lineCoordinates?: rect_t;
-    vertices?: AnnotPoint[];
+    vertices?: Dot[];
     lineEndings?: [
         LineEndingStr_,
         LineEndingStr_
     ];
-    inkLists?: AnnotPoint[][];
+    inkLists?: Dot[][];
     file?: Attachment;
     fillAlpha?: number | undefined;
     parentType?: string | undefined;
@@ -172,7 +179,7 @@ export type AnnotationData = {
 export type DashArray = [number, number, number] | [number, number] | [number] | [];
 export type AnnotSaveData = {
     ref: Ref;
-    data: string;
+    data: string | undefined;
     xfa?: {
         path: string | undefined;
         value: string;
@@ -416,10 +423,6 @@ export declare class AnnotationBorderStyle {
      */
     setVerticalCornerRadius(radius: number): void;
 }
-export interface AnnotPoint {
-    x: number;
-    y: number;
-}
 type AColor = TupleOf<number, 0 | 1 | 3 | 4>;
 interface SetDefaultAppearanceP_ {
     xref: XRef;
@@ -429,7 +432,7 @@ interface SetDefaultAppearanceP_ {
     fillColor?: AColor | undefined;
     fillAlpha?: number | undefined;
     blendMode?: string;
-    pointsCallback: (buffer: string[], points: TupleOf<AnnotPoint, 4>) => rect_t;
+    pointsCallback: (buffer: string[], points: QuadPoint_) => rect_t;
 }
 interface CreateNewDictP_ {
     apRef?: Ref;

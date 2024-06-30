@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals, fail } from "@std/assert/mod.ts";
+import { assertEquals, fail } from "@std/assert";
 import {
   afterAll,
   afterEach,
@@ -160,7 +160,7 @@ describe("CFFParser", () => {
       }
 
       const privateDict = topDict.privateDict!;
-      assertEquals(privateDict.getByName("BlueValues"), null);
+      assertEquals(privateDict.getByName("BlueValues"), undefined);
     },
   );
 
@@ -269,7 +269,7 @@ describe("CFFParser", () => {
   });
 
   it("parses predefined charsets", () => {
-    const charset = parser.parseCharsets(0, 0, null as any, true);
+    const charset = parser.parseCharsets(0, 0, undefined as any, true);
     assertEquals(charset.predefined, true);
   });
 
@@ -341,7 +341,7 @@ describe("CFFParser", () => {
       2,
       {} as FontProps,
       new CFFStrings(),
-      null as any,
+      undefined as any,
     );
     assertEquals(encoding.encoding, createWithNullProto({ 0x8: 1 }));
   });
@@ -361,7 +361,7 @@ describe("CFFParser", () => {
       2,
       {} as FontProps,
       new CFFStrings(),
-      null as any,
+      undefined as any,
     );
     assertEquals(
       encoding.encoding,

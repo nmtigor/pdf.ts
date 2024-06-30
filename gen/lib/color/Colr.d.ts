@@ -172,8 +172,8 @@ export declare function randomCsscRRR(): CsscRGB;
 export declare function randomCsscRGB(): CsscRGB;
 export declare function randomRRGGBB(): RRGGBB;
 export declare const csscNameMap: {
-    "__#165@#map": ReadonlyMap<CsscName, CsscHexNorm>;
-    "__#165@#revmap": Map<CsscHexNorm, CsscName>;
+    "__#167@#map": ReadonlyMap<CsscName, CsscHexNorm>;
+    "__#167@#revmap": Map<CsscHexNorm, CsscName>;
     hasN(key: string): boolean;
     getX(key: CsscName): CsscHexNorm;
     getN(key: CsscHex_): CsscName | undefined;

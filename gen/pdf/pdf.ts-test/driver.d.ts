@@ -6,11 +6,12 @@
  * @license Apache-2.0
  ******************************************************************************/
 import type { uint } from "../../lib/alias.js";
-import type { Cssc } from "../../lib/color/alias.js";
+import type { StatTime } from "../pdf.ts-src/display/display_utils.js";
+import type { T_browser, T_info, T_task_results } from "../../test/pdf.ts/alias.js";
 import type { FieldObjectsPromise } from "../alias.js";
-import type { AnnotStorageValue } from "../pdf.ts-src/display/annotation_layer.js";
 import type { OptionalContentConfig, PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import { GenericL10n } from "../pdf.ts-web/genericl10n.js";
+import type { TestFilter, TestTask } from "./alias.js";
 type DriverOptions_ = {
     /**
      * Field displaying the number of inflight requests.
@@ -33,45 +34,13 @@ type DriverOptions_ = {
      */
     end: HTMLDivElement;
 };
-interface TaskJson_ {
-    id: string;
-    file: string;
-    md5: string;
-    rounds: number;
-    link?: boolean;
-    firstPage?: number;
-    skipPages?: number[];
-    lastPage?: number;
-    pageColors?: {
-        background: Cssc;
-        foreground: Cssc;
-    };
-    enableXfa?: boolean;
-    type: "eq" | "fbf" | "highlight" | "load" | "text" | "other";
-    save?: boolean;
-    print?: boolean;
-    forms?: boolean;
-    annotations?: boolean;
-    loadAnnotations?: boolean;
-    annotationStorage?: Record<string, AnnotStorageValue & {
-        bitmapName: string;
-    }>;
-    isOffscreenCanvasSupported?: boolean;
-    renderTaskOnContinue?: boolean;
-    optionalContent?: Record<string, boolean>;
-    enableAutoFetch?: boolean;
-    useSystemFonts?: boolean;
-    useWorkerFetch?: boolean;
-    outputScale?: number;
-    rotation?: 0 | 90 | 180 | 270;
-    password?: string;
-    aboud?: string;
-}
-interface TaskData_ extends TaskJson_ {
+interface TaskData_ extends TestTask {
+    /** 0-based */
     round: uint;
-    pageNum: number;
+    /** 1-based */
+    pageNum: uint;
     stats: {
-        times: unknown[];
+        times: StatTime[];
     };
     fontRules?: string;
     pdfDoc?: PDFDocumentProxy;
@@ -81,10 +50,6 @@ interface TaskData_ extends TaskJson_ {
     viewportHeight?: uint;
     renderPrint?: boolean;
 }
-type FilterJson_ = {
-    tasks: string[];
-    limit: uint;
-};
 export declare class Driver {
     _l10n: GenericL10n;
     inflight: HTMLSpanElement;
@@ -92,13 +57,12 @@ export declare class Driver {
     output: HTMLPreElement;
     snapshot: HTMLPreElement;
     end: HTMLDivElement;
-    browser: string;
+    browser: T_browser;
     manifestFile: string;
-    filterFile: string | undefined;
+    filterFile: string;
     delay: any;
     inFlightRequests: number;
-    testFilter: FilterJson_;
-    xfaOnly: boolean;
+    testFilter: TestFilter;
     canvas: HTMLCanvasElement;
     textLayerCanvas?: HTMLCanvasElement;
     annotationLayerCanvas?: HTMLCanvasElement;
@@ -118,7 +82,7 @@ export declare class Driver {
     _nextTask(): void;
     _cleanup(): Promise<void[]>;
     _exceptionToString(e: unknown): string;
-    _getLastPageNumber(task: TaskData_): number;
+    _getLastPageNumber(task: TaskData_): uint;
     _nextPage(task: TaskData_, loadError?: string): void;
     _clearCanvas(): void;
     _snapshot(task: TaskData_, failure: string | false): void;
@@ -127,7 +91,9 @@ export declare class Driver {
     _log(message: string): void;
     _done(): void;
     _sendResult(snapshot: string, task: TaskData_, failure: string | false): Promise<void>;
-    _send(url: string, message: string): Promise<void>;
+    _send(url: string, message?: T_info | T_task_results | {
+        browser: T_browser;
+    }): Promise<void>;
 }
 export {};
 //# sourceMappingURL=driver.d.ts.map

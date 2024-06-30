@@ -24,7 +24,8 @@ import { CHROME, GENERIC, LIB, MOZCENTRAL, PDFJSDev, TESTING, } from "../../glob
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel, } from "../pdf.ts-src/pdf.js";
 import { LinkTarget } from "./pdf_link_service.js";
 import { CursorTool, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
-import { AD_gh, D_cmap_url, D_standard_font_data_url, D_web, } from "../alias.js";
+import { AD_gh } from "../alias.js";
+import { D_rp_web, D_rpe_cmap, D_rpe_sfont } from "../../alias.js";
 /*80--------------------------------------------------------------------------*/
 export var OptionKind;
 (function (OptionKind) {
@@ -199,7 +200,7 @@ const defaultOptions = {
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     imageResourcesPath: {
-        value: /*#static*/ `${AD_gh}/${D_web}/images/`,
+        value: /*#static*/ `${AD_gh}/${D_rp_web}/images/`,
         kind: OptionKind.VIEWER,
     },
     locale: {
@@ -257,7 +258,7 @@ const defaultOptions = {
     cMapUrl: {
         value: 
         // eslint-disable-next-line no-nested-ternary
-        /*#static*/ `${AD_gh}/${D_cmap_url}/`,
+        /*#static*/ `${AD_gh}/${D_rpe_cmap}/`,
         kind: OptionKind.API,
     },
     disableAutoFetch: {
@@ -311,7 +312,7 @@ const defaultOptions = {
     standardFontDataUrl: {
         value: 
         // eslint-disable-next-line no-nested-ternary
-        /*#static*/ `${AD_gh}/${D_standard_font_data_url}/`,
+        /*#static*/ `${AD_gh}/${D_rpe_sfont}/`,
         kind: OptionKind.API,
     },
     verbosity: {
@@ -336,7 +337,7 @@ const defaultOptions = {
 };
 /*#static*/  {
     defaultOptions.defaultUrl = {
-        value: /*#static*/ `${AD_gh}/${D_web}/compressed.tracemonkey-pldi-09.pdf`,
+        value: /*#static*/ `${AD_gh}/${D_rp_web}/compressed.tracemonkey-pldi-09.pdf`,
         kind: OptionKind.VIEWER,
     };
     defaultOptions.sandboxBundleSrc = {

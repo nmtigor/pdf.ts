@@ -19,6 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { isObjectLike } from "../../../lib/jslang.js";
 import { FORMS_VERSION, USERACTIVATION_CALLBACKID, VIEWER_TYPE, VIEWER_VARIATION, VIEWER_VERSION, } from "./app_utils.js";
 import { Color } from "./color.js";
 import { EventDispatcher } from "./event.js";
@@ -359,7 +360,7 @@ export class App extends PDFObject {
             return 0;
         }
         this._document.obj._userActivation = false;
-        if (cMsg && typeof cMsg === "object") {
+        if (isObjectLike(cMsg)) {
             nType = cMsg.nType;
             cMsg = cMsg.cMsg;
         }
@@ -486,7 +487,7 @@ export class App extends PDFObject {
         /* Not implemented */
     }
     response(cQuestion, cTitle = "", cDefault = "", bPassword = "", cLabel = "") {
-        if (cQuestion && typeof cQuestion === "object") {
+        if (isObjectLike(cQuestion)) {
             cDefault = cQuestion.cDefault;
             cQuestion = cQuestion.cQuestion;
         }
@@ -495,7 +496,7 @@ export class App extends PDFObject {
         return this._externalCall("prompt", [cQuestion, cDefault || ""]);
     }
     setInterval(cExpr, nMilliseconds = 0) {
-        if (cExpr && typeof cExpr === "object") {
+        if (isObjectLike(cExpr)) {
             nMilliseconds = cExpr.nMilliseconds || 0;
             cExpr = cExpr.cExpr;
         }
@@ -510,7 +511,7 @@ export class App extends PDFObject {
         return this._registerTimeout(callbackId, true);
     }
     setTimeOut(cExpr, nMilliseconds = 0) {
-        if (cExpr && typeof cExpr === "object") {
+        if (isObjectLike(cExpr)) {
             nMilliseconds = cExpr.nMilliseconds || 0;
             cExpr = cExpr.cExpr;
         }

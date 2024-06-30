@@ -121,12 +121,12 @@ export class PDFLayerViewer extends BaseTreeViewer {
     element.style.fontStyle = "italic";
   };
 
-  #addToggleButton = (
+  #addToggleButton(
     div: HTMLDivElement,
     { name = undefined }: { name: string | undefined },
-  ) => {
+  ) {
     super._addToggleButton(div, /* hidden = */ name === undefined);
-  };
+  }
 
   protected override toggleAllTreeItems$() {
     if (!this.#optionalContentConfig) {

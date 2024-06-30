@@ -38,6 +38,7 @@ import { getUnicodeForGlyph } from "./unicode.ts";
 export const SEAC_ANALYSIS_ENABLED = true;
 
 export const enum FontFlags {
+  unknown = 0,
   FixedPitch = 0b0_0001,
   Serif = 0b0_0010,
   Symbolic = 0b0_0100,

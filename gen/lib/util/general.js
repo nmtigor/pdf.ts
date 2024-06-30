@@ -39,11 +39,15 @@ export const space = (n_) => {
     }
     return space_a_[n_];
 };
+const textEncoder = new TextEncoder();
+export const encodeStr = textEncoder.encode.bind(textEncoder);
+const textDecoder = new TextDecoder();
+export const decodeABV = textDecoder.decode.bind(textDecoder);
 /*80--------------------------------------------------------------------------*/
 /**
- * @param ms time in milliseconds
- *
  * Ref. [What is the JavaScript version of sleep()?](https://stackoverflow.com/a/39914235)
+ *
+ * @param ms time in milliseconds
  */
 export const wait = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 /*80--------------------------------------------------------------------------*/

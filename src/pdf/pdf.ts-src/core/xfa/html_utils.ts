@@ -431,7 +431,7 @@ export function toStyle(node: XFAObject, ...names: string[]) {
   const style: XFAStyleData = Object.create(null);
   for (const name of names) {
     const value = (node as any)[name];
-    if (value === null || value === undefined) {
+    if (value == undefined) {
       continue;
     }
     if (Object.hasOwn(converters, name)) {

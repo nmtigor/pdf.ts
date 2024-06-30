@@ -47,6 +47,6 @@ declare global {
 }
 export declare function initSandbox(params: {
     data: CreateSandboxP;
-}): (name: "timeoutCb" | "dispatchEvent", args: unknown) => void;
+}): (name: "dispatchEvent" | "timeoutCb", args: unknown) => void;
 export {};
 //# sourceMappingURL=initialization.d.ts.map

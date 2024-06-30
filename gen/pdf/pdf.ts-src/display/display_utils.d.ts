@@ -34,6 +34,8 @@ export declare class DOMFilterFactory extends BaseFilterFactory {
     constructor({ docId, ownerDocument }?: DOMFilterFactoryCtorP_);
     addFilter(maps?: number[][]): string;
     addHCMFilter(fgColor: string, bgColor: string): string;
+    addAlphaFilter(map: Uint8Array): string;
+    addLuminosityFilter(map: Uint8Array | undefined): string;
     addHighlightHCMFilter(filterName: string, fgColor: string, bgColor: string, newFgColor: string, newBgColor: string): string;
     destroy(keepHCM?: boolean): void;
 }
@@ -67,11 +69,6 @@ export declare class DOMStandardFontDataFactory extends BaseStandardFontDataFact
     _fetchData(url: string): Promise<Uint8Array>;
 }
 export declare class DOMSVGFactory extends BaseSVGFactory {
-    /**
-     * @ignore
-     * @implement
-     */
-    _createSVG(type: keyof SVGElementTagNameMap): SVGSymbolElement | SVGSetElement | SVGClipPathElement | SVGFilterElement | SVGMarkerElement | SVGMaskElement | SVGAElement | SVGScriptElement | SVGStyleElement | SVGTitleElement | SVGAnimateElement | SVGAnimateMotionElement | SVGAnimateTransformElement | SVGCircleElement | SVGDefsElement | SVGDescElement | SVGEllipseElement | SVGFEBlendElement | SVGFEColorMatrixElement | SVGFEComponentTransferElement | SVGFECompositeElement | SVGFEConvolveMatrixElement | SVGFEDiffuseLightingElement | SVGFEDisplacementMapElement | SVGFEDistantLightElement | SVGFEDropShadowElement | SVGFEFloodElement | SVGFEFuncAElement | SVGFEFuncBElement | SVGFEFuncGElement | SVGFEFuncRElement | SVGFEGaussianBlurElement | SVGFEImageElement | SVGFEMergeElement | SVGFEMergeNodeElement | SVGFEMorphologyElement | SVGFEOffsetElement | SVGFEPointLightElement | SVGFESpecularLightingElement | SVGFESpotLightElement | SVGFETileElement | SVGFETurbulenceElement | SVGForeignObjectElement | SVGGElement | SVGImageElement | SVGLineElement | SVGLinearGradientElement | SVGMetadataElement | SVGMPathElement | SVGPathElement | SVGPatternElement | SVGPolygonElement | SVGPolylineElement | SVGRadialGradientElement | SVGRectElement | SVGStopElement | SVGSVGElement | SVGSwitchElement | SVGTextElement | SVGTextPathElement | SVGTSpanElement | SVGUseElement | SVGViewElement;
 }
 interface PageViewportP_ {
     /**
@@ -205,7 +202,7 @@ export declare function isPdfFile(filename: unknown): filename is string;
 /**
  * Gets the filename from a given URL.
  */
-export declare function getFilenameFromUrl(url: string, onlyStripPath?: boolean): string;
+export declare function getFilenameFromUrl(url: string): string;
 /**
  * Returns the filename or guessed filename from the url (see issue 3455).
  * @param url The original PDF location.
@@ -214,11 +211,11 @@ export declare function getFilenameFromUrl(url: string, onlyStripPath?: boolean)
  * @return Guessed PDF filename.
  */
 export declare function getPdfFilenameFromUrl(url: unknown, defaultFilename?: string): string;
-interface StatTime {
+export type StatTime = {
     name: string;
     start: number;
     end: number;
-}
+};
 export declare class StatTimer {
     started: any;
     times: StatTime[];

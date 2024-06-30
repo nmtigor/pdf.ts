@@ -34,13 +34,18 @@ export class AnnotationLayerBuilder {
     _fieldObjectsPromise;
     _annotationCanvasMap;
     _accessibilityManager;
+    _annotationEditorUIManager;
     #onAppend;
     annotationLayer;
     div;
     _cancelled = false;
     _eventBus;
-    #onPresentationModeChanged;
-    constructor({ pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, onAppend, }) {
+    //kkkk TOCLEANUP
+    // #onPresentationModeChanged:
+    //   | ((evt: { state: PresentationModeState }) => void)
+    //   | undefined;
+    #eventAbortController;
+    constructor({ pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, annotationEditorUIManager, onAppend, }) {
         this.pdfPage = pdfPage;
         this.linkService = linkService;
         this.downloadManager = downloadManager;
@@ -53,6 +58,7 @@ export class AnnotationLayerBuilder {
             Promise.resolve(undefined);
         this._annotationCanvasMap = annotationCanvasMap;
         this._accessibilityManager = accessibilityManager;
+        this._annotationEditorUIManager = annotationEditorUIManager;
         this.#onAppend = onAppend;
         this._eventBus = linkService.eventBus;
     }
@@ -95,6 +101,7 @@ export class AnnotationLayerBuilder {
             div,
             accessibilityManager: this._accessibilityManager,
             annotationCanvasMap: this._annotationCanvasMap,
+            annotationEditorUIManager: this._annotationEditorUIManager,
             page: this.pdfPage,
             viewport: viewport.clone({ dontFlip: true }),
         });
@@ -114,19 +121,17 @@ export class AnnotationLayerBuilder {
         if (this.linkService.isInPresentationMode) {
             this.#updatePresentationModeState(PresentationModeState.FULLSCREEN);
         }
-        if (!this.#onPresentationModeChanged) {
-            this.#onPresentationModeChanged = (evt) => {
+        if (!this.#eventAbortController) {
+            this.#eventAbortController = new AbortController();
+            this._eventBus?._on("presentationmodechanged", (evt) => {
                 this.#updatePresentationModeState(evt.state);
-            };
-            this._eventBus?._on("presentationmodechanged", this.#onPresentationModeChanged);
+            }, { signal: this.#eventAbortController.signal });
         }
     }
     cancel() {
         this._cancelled = true;
-        if (this.#onPresentationModeChanged) {
-            this._eventBus?._off("presentationmodechanged", this.#onPresentationModeChanged);
-            this.#onPresentationModeChanged = undefined;
-        }
+        this.#eventAbortController?.abort();
+        this.#eventAbortController = undefined;
     }
     hide() {
         if (!this.div)

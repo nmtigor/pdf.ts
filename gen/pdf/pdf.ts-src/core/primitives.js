@@ -333,6 +333,11 @@ export class RefSetCache {
     clear() {
         this.#map.clear();
     }
+    *items() {
+        for (const [ref, value] of this.#map) {
+            yield [Ref.fromString(ref), value];
+        }
+    }
 }
 export function isName(v, name) {
     return v instanceof Name && (name === undefined || v.name === name);

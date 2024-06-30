@@ -36,7 +36,7 @@ export declare class RadialAxialShadingPattern implements RadialAxialPattern {
     constructor(IR: RadialAxialIR);
     _createGradient(ctx: C2D): CanvasGradient | null;
     /** @implement */
-    getPattern(ctx: C2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasPattern | CanvasGradient | null;
+    getPattern(ctx: C2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasGradient | CanvasPattern | null;
 }
 export interface MeshCanvasContext {
     coords: Float32Array;
@@ -62,7 +62,7 @@ export declare class TilingPattern implements STPattern {
      */
     static readonly MAX_PATTERN_SIZE = 3000;
     operatorList: OpListIR;
-    matrix: matrix_t;
+    matrix: [number, number, number, number, number, number] | undefined;
     bbox: [number, number, number, number];
     xstep: number;
     ystep: number;

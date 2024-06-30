@@ -14,7 +14,7 @@ import { BaseStream } from "./base_stream.js";
 import { bidi } from "./bidi.js";
 import { CMapFactory, IdentityCMap } from "./cmap.js";
 import { ColorSpace } from "./colorspace.js";
-import { MissingDataException } from "./core_utils.js";
+import { isNumberArray, lookupMatrix, lookupNormalRect, MissingDataException, } from "./core_utils.js";
 import { DecodeStream } from "./decode_stream.js";
 import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, WinAnsiEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
 import { getFontSubstitution } from "./font_substitutions.js";
@@ -164,9 +164,11 @@ export class PartialEvaluator {
     globalImageCache;
     systemFontCache;
     options;
-    parsingType3Font = false;
-    _regionalImageCache;
     type3FontRefs;
+    get parsingType3Font() {
+        return !!this.type3FontRefs;
+    }
+    _regionalImageCache;
     constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, systemFontCache, options, }) {
         this.xref = xref;
         this.handler = handler;
@@ -382,11 +384,8 @@ export class PartialEvaluator {
     }
     async buildFormXObject(resources, xobj, smask, operatorList, task, initialState, localColorSpaceCache) {
         const dict = xobj.dict;
-        const matrix = dict.getArray("Matrix");
-        let bbox = dict.getArray("BBox");
-        bbox = Array.isArray(bbox) && bbox.length === 4
-            ? Util.normalizeRect(bbox)
-            : undefined;
+        const matrix = lookupMatrix(dict.getArray("Matrix"), undefined);
+        const bbox = lookupNormalRect(dict.getArray("BBox"), undefined);
         let optionalContent, groupOptions;
         if (dict.has("OC")) {
             optionalContent = await this.parseMarkedContentProps(dict.get("OC"), resources);
@@ -585,9 +584,9 @@ export class PartialEvaluator {
         const SMALL_IMAGE_DIMENSIONS = 200;
         // Inlining small images into the queue as RGB data
         if (isInline &&
+            w + h < SMALL_IMAGE_DIMENSIONS &&
             !dict.has("SMask") &&
-            !dict.has("Mask") &&
-            w + h < SMALL_IMAGE_DIMENSIONS) {
+            !dict.has("Mask")) {
             try {
                 const imageObj = new PDFImage({
                     xref: this.xref,
@@ -633,25 +632,38 @@ export class PartialEvaluator {
         operatorList.addDependency(objId);
         args = [objId, w, h];
         operatorList.addImageOps(OPS.paintImageXObject, args, optionalContent);
-        // For large images, at least 500x500 in size, that we'll cache globally
-        // check if the image is still cached locally on the main-thread to avoid
-        // having to re-parse the image (since that can be slow).
-        if (cacheGlobally && w * h > 250000) {
-            const localLength = await this.handler.sendWithPromise("commonobj", [
-                objId,
-                "CopyLocalImage",
-                { imageRef },
-            ]);
-            if (localLength) {
+        if (cacheGlobally) {
+            if (this.globalImageCache.hasDecodeFailed(imageRef)) {
                 this.globalImageCache.setData(imageRef, {
                     objId,
                     fn: OPS.paintImageXObject,
                     args,
                     optionalContent,
-                    byteSize: 0, // Temporary entry, to avoid `setData` returning early.
+                    byteSize: 0, // Data is `null`, since decoding failed previously.
                 });
-                this.globalImageCache.addByteSize(imageRef, localLength);
+                this._sendImgData(objId, /* imgData = */ undefined, cacheGlobally);
                 return;
+            }
+            // For large (at least 500x500) or more complex images that we'll cache
+            // globally, check if the image is still cached locally on the main-thread
+            // to avoid having to re-parse the image (since that can be slow).
+            if (w * h > 250000 || dict.has("SMask") || dict.has("Mask")) {
+                const localLength = await this.handler.sendWithPromise("commonobj", [
+                    objId,
+                    "CopyLocalImage",
+                    { imageRef },
+                ]);
+                if (localLength) {
+                    this.globalImageCache.setData(imageRef, {
+                        objId,
+                        fn: OPS.paintImageXObject,
+                        args,
+                        optionalContent,
+                        byteSize: 0, // Temporary entry, to avoid `setData` returning early.
+                    });
+                    this.globalImageCache.addByteSize(imageRef, localLength);
+                    return;
+                }
             }
         }
         PDFImage.buildImage({
@@ -678,6 +690,9 @@ export class PartialEvaluator {
         })
             .catch((reason) => {
             warn(`Unable to decode image "${objId}": "${reason}".`);
+            if (imageRef) {
+                this.globalImageCache.addDecodeFailed(imageRef);
+            }
             return this._sendImgData(objId, 
             /* imgData = */ undefined, cacheGlobally);
         });
@@ -968,14 +983,19 @@ export class PartialEvaluator {
         }
         let fontDict = font;
         if (fontRef) {
-            if (this.parsingType3Font && this.type3FontRefs.has(fontRef)) {
+            if (this.type3FontRefs?.has(fontRef)) {
                 return errorFont();
             }
             if (this.fontCache.has(fontRef)) {
                 return this.fontCache.get(fontRef);
             }
-            // Table 111,
-            fontDict = this.xref.fetchIfRef(fontRef);
+            try {
+                // Table 111,
+                fontDict = this.xref.fetchIfRef(fontRef);
+            }
+            catch (ex) {
+                warn(`loadFont - lookup failed: "${ex}".`);
+            }
         }
         if (!(fontDict instanceof Dict)) {
             if (!this.options.ignoreErrors && !this.parsingType3Font) {
@@ -1090,7 +1110,7 @@ export class PartialEvaluator {
             // *extremely* rare that shouldn't really matter much in practice.
             if (parsingText) {
                 warn(`Encountered path operator "${fn}" inside of a text object.`);
-                operatorList.addOp(OPS.save, null);
+                operatorList.addOp(OPS.save);
             }
             let minMax;
             switch (fn) {
@@ -1114,7 +1134,7 @@ export class PartialEvaluator {
             }
             operatorList.addOp(OPS.constructPath, [[fn], args, minMax]);
             if (parsingText) {
-                operatorList.addOp(OPS.restore, null);
+                operatorList.addOp(OPS.restore);
             }
         }
         else {
@@ -1240,7 +1260,7 @@ export class PartialEvaluator {
                         localShadingPatternCache,
                     });
                     if (objId) {
-                        const matrix = dict.getArray("Matrix");
+                        const matrix = lookupMatrix(dict.getArray("Matrix"), undefined);
                         operatorList.addOp(fn, ["Shading", objId, matrix]);
                     }
                     return undefined;
@@ -1393,7 +1413,7 @@ export class PartialEvaluator {
                 // cannot reuse the same array on each iteration. Therefore we pass
                 // in |null| as the initial value (see the comment on
                 // EvaluatorPreprocessor_read() for why).
-                operation.args = null;
+                operation.args = undefined;
                 if (!preprocessor.read(operation)) {
                     break;
                 }
@@ -1409,7 +1429,7 @@ export class PartialEvaluator {
                             if (localImage) {
                                 operatorList.addImageOps(localImage.fn, localImage.args, localImage.optionalContent);
                                 incrementCachedImageMaskCount(localImage);
-                                args = null;
+                                args = undefined;
                                 continue;
                             }
                         }
@@ -1510,7 +1530,7 @@ export class PartialEvaluator {
                             if (localImage) {
                                 operatorList.addImageOps(localImage.fn, localImage.args, localImage.optionalContent);
                                 incrementCachedImageMaskCount(localImage);
-                                args = null;
+                                args = undefined;
                                 continue;
                             }
                         }
@@ -1701,7 +1721,7 @@ export class PartialEvaluator {
                                 if (localGStateObj.length > 0) {
                                     operatorList.addOp(OPS.setGState, [localGStateObj]);
                                 }
-                                args = null;
+                                args = undefined;
                                 continue;
                             }
                         }
@@ -1809,7 +1829,7 @@ export class PartialEvaluator {
                         // Note: Ignore the operator if it has `Dict` arguments, since
                         // those are non-serializable, otherwise postMessage will throw
                         // "An object could not be cloned.".
-                        if (args !== null) {
+                        if (args != undefined) {
                             let i, ii;
                             for (i = 0, ii = args.length; i < ii; i++) {
                                 if (args[i] instanceof Dict) {
@@ -1845,7 +1865,7 @@ export class PartialEvaluator {
             throw reason;
         });
     }
-    getTextContent({ stream, task, resources, stateManager, includeMarkedContent = false, disableNormalization = false, sink, seenStyles = new Set(), viewBox, markedContentData = undefined, keepWhiteSpace = false, }) {
+    getTextContent({ stream, task, resources, stateManager, includeMarkedContent = false, disableNormalization = false, sink, seenStyles = new Set(), viewBox, lang = undefined, markedContentData = undefined, keepWhiteSpace = false, }) {
         // Ensure that `resources`/`stateManager` is correctly initialized,
         // even if the provided parameter is e.g. `null`.
         resources ||= Dict.empty;
@@ -1856,6 +1876,7 @@ export class PartialEvaluator {
         const textContent = {
             items: [],
             styles: Object.create(null),
+            lang,
         };
         const textContentItem = {
             initialized: false,
@@ -2626,8 +2647,8 @@ export class PartialEvaluator {
                             // NOTE: Only an issue when `options.ignoreErrors === true`.
                             const currentState = stateManager.state.clone();
                             const xObjStateManager = new StateManager(currentState);
-                            const matrix = xobj.dict.getArray("Matrix");
-                            if (Array.isArray(matrix) && matrix.length === 6) {
+                            const matrix = lookupMatrix(xobj.dict.getArray("Matrix"), undefined);
+                            if (matrix) {
                                 xObjStateManager.transform(matrix);
                             }
                             // Enqueue the `textContent` chunk before parsing the /Form
@@ -2655,6 +2676,7 @@ export class PartialEvaluator {
                                 sink: sinkWrapper,
                                 seenStyles,
                                 viewBox,
+                                lang,
                                 markedContentData,
                                 disableNormalization,
                                 keepWhiteSpace,
@@ -3198,68 +3220,158 @@ export class PartialEvaluator {
         let defaultWidth = 0;
         const glyphsVMetrics = [];
         let defaultVMetrics;
-        let i, ii, j, jj, start, code, widths;
+        //kkkk TOCLEANUP
+        // let i, ii, j, jj, start: number, code, widths;
         if (properties.composite) {
-            defaultWidth = dict.has("DW") ? dict.get("DW") : 1000;
-            widths = dict.get("W"); // 9.7.4.3
-            if (widths) {
-                for (i = 0, ii = widths.length; i < ii; i++) {
-                    start = xref.fetchIfRef(widths[i++]);
-                    code = xref.fetchIfRef(widths[i]);
+            //kkkk TOCLEANUP
+            // defaultWidth = dict.has("DW") ? <number> dict.get("DW") : 1000;
+            // widths = <(number | number[] | Ref)[]> dict.get("W"); // 9.7.4.3
+            // if (widths) {
+            //   for (i = 0, ii = widths.length; i < ii; i++) {
+            //     start = <number> xref.fetchIfRef(widths[i++]);
+            //     code = xref.fetchIfRef(widths[i]);
+            //     if (Array.isArray(code)) {
+            //       for (j = 0, jj = code.length; j < jj; j++) {
+            //         glyphsWidths[start++] = <number> xref.fetchIfRef(code[j]);
+            //       }
+            //     } else {
+            //       const width = <number> xref.fetchIfRef(widths[++i]);
+            //       for (j = start; j <= <number> code; j++) {
+            //         glyphsWidths[j] = width;
+            //       }
+            //     }
+            //   }
+            // }
+            // if (properties.vertical) {
+            //   const vmetrics_ = <[number, number]> dict.getArray("DW2") ??
+            //     [880, -1000];
+            //   defaultVMetrics = [vmetrics_[1], defaultWidth * 0.5, vmetrics_[0]];
+            //   const vmetrics = <(number | number[] | Ref)[]> dict.get("W2"); // 9.7.4.3
+            //   if (vmetrics) {
+            //     for (i = 0, ii = vmetrics.length; i < ii; i++) {
+            //       start = <number> xref.fetchIfRef(vmetrics[i++]);
+            //       code = xref.fetchIfRef(vmetrics[i]);
+            //       if (Array.isArray(code)) {
+            //         for (j = 0, jj = code.length; j < jj; j++) {
+            //           glyphsVMetrics[start++] = <VMetric> [
+            //             xref.fetchIfRef(code[j++]),
+            //             xref.fetchIfRef(code[j++]),
+            //             xref.fetchIfRef(code[j]),
+            //           ];
+            //         }
+            //       } else {
+            //         const vmetric = <VMetric> [
+            //           xref.fetchIfRef(vmetrics[++i]),
+            //           xref.fetchIfRef(vmetrics[++i]),
+            //           xref.fetchIfRef(vmetrics[++i]),
+            //         ];
+            //         for (j = start; j <= <number> code; j++) {
+            //           glyphsVMetrics[j] = vmetric;
+            //         }
+            //       }
+            //     }
+            //   }
+            // }
+            const dw = dict.get("DW");
+            defaultWidth = Number.isInteger(dw) ? dw : 1000;
+            const widths = dict.get("W"); // 9.7.4.3
+            if (Array.isArray(widths)) {
+                for (let i = 0, ii = widths.length; i < ii; i++) {
+                    let start = xref.fetchIfRef(widths[i++]);
+                    if (!Number.isInteger(start)) {
+                        break; // Invalid /W data.
+                    }
+                    const code = xref.fetchIfRef(widths[i]);
                     if (Array.isArray(code)) {
-                        for (j = 0, jj = code.length; j < jj; j++) {
-                            glyphsWidths[start++] = xref.fetchIfRef(code[j]);
+                        for (const c of code) {
+                            const width = xref.fetchIfRef(c);
+                            if (typeof width === "number") {
+                                glyphsWidths[start] = width;
+                            }
+                            start++;
+                        }
+                    }
+                    else if (Number.isInteger(code)) {
+                        const width = xref.fetchIfRef(widths[++i]);
+                        if (typeof width !== "number") {
+                            continue;
+                        }
+                        for (let j = start; j <= code; j++) {
+                            glyphsWidths[j] = width;
                         }
                     }
                     else {
-                        const width = xref.fetchIfRef(widths[++i]);
-                        for (j = start; j <= code; j++) {
-                            glyphsWidths[j] = width;
-                        }
+                        break; // Invalid /W data.
                     }
                 }
             }
             if (properties.vertical) {
-                const vmetrics_ = dict.getArray("DW2") ??
-                    [880, -1000];
-                defaultVMetrics = [vmetrics_[1], defaultWidth * 0.5, vmetrics_[0]];
-                const vmetrics = dict.get("W2"); // 9.7.4.3
-                if (vmetrics) {
-                    for (i = 0, ii = vmetrics.length; i < ii; i++) {
-                        start = xref.fetchIfRef(vmetrics[i++]);
-                        code = xref.fetchIfRef(vmetrics[i]);
+                const dw2 = dict.getArray("DW2");
+                let vmetrics = isNumberArray(dw2, 2) ? dw2 : [880, -1000];
+                defaultVMetrics = [vmetrics[1], defaultWidth * 0.5, vmetrics[0]];
+                vmetrics = dict.get("W2"); // 9.7.4.3
+                if (Array.isArray(vmetrics)) {
+                    for (let i = 0, ii = vmetrics.length; i < ii; i++) {
+                        let start = xref.fetchIfRef(vmetrics[i++]);
+                        if (!Number.isInteger(start)) {
+                            break; // Invalid /W2 data.
+                        }
+                        const code = xref.fetchIfRef(vmetrics[i]);
                         if (Array.isArray(code)) {
-                            for (j = 0, jj = code.length; j < jj; j++) {
-                                glyphsVMetrics[start++] = [
+                            for (let j = 0, jj = code.length; j < jj; j++) {
+                                const vmetric = [
                                     xref.fetchIfRef(code[j++]),
                                     xref.fetchIfRef(code[j++]),
                                     xref.fetchIfRef(code[j]),
                                 ];
+                                if (isNumberArray(vmetric, undefined)) {
+                                    glyphsVMetrics[start] = vmetric;
+                                }
+                                start++;
                             }
                         }
-                        else {
+                        else if (Number.isInteger(code)) {
                             const vmetric = [
                                 xref.fetchIfRef(vmetrics[++i]),
                                 xref.fetchIfRef(vmetrics[++i]),
                                 xref.fetchIfRef(vmetrics[++i]),
                             ];
-                            for (j = start; j <= code; j++) {
+                            if (!isNumberArray(vmetric, undefined)) {
+                                continue;
+                            }
+                            for (let j = start; j <= code; j++) {
                                 glyphsVMetrics[j] = vmetric;
                             }
+                        }
+                        else {
+                            break; // Invalid /W2 data.
                         }
                     }
                 }
             }
         }
         else {
-            const firstChar = properties.firstChar;
-            widths = dict.get("Widths");
-            if (widths) {
-                j = firstChar;
-                for (i = 0, ii = widths.length; i < ii; i++) {
-                    glyphsWidths[j++] = xref.fetchIfRef(widths[i]);
+            //kkkk TOCLEANUP
+            // const firstChar = properties.firstChar;
+            // widths = <(number | Ref)[] | undefined> dict.get("Widths");
+            // if (widths) {
+            //   j = firstChar;
+            //   for (i = 0, ii = widths.length; i < ii; i++) {
+            //     glyphsWidths[j++] = <number> xref.fetchIfRef(widths[i]);
+            //   }
+            //   defaultWidth = parseFloat(<any> descriptor.get("MissingWidth")) || 0;
+            const widths = dict.get("Widths");
+            if (Array.isArray(widths)) {
+                let j = properties.firstChar;
+                for (const w of widths) {
+                    const width = xref.fetchIfRef(w);
+                    if (typeof width === "number") {
+                        glyphsWidths[j] = width;
+                    }
+                    j++;
                 }
-                defaultWidth = parseFloat(descriptor.get("MissingWidth")) || 0;
+                const missingWidth = descriptor.get("MissingWidth");
+                defaultWidth = typeof missingWidth === "number" ? missingWidth : 0;
             }
             else {
                 // Trying get the BaseFont metrics (see comment above).
@@ -3374,8 +3486,18 @@ export class PartialEvaluator {
             }
             composite = true;
         }
-        const firstChar = dict.get("FirstChar") || 0, lastChar = dict.get("LastChar") || (composite ? 0xffff : 0xff);
-        // Table 122
+        //kkkk TOCLEANUP
+        // const firstChar = dict.get("FirstChar") as number || 0,
+        //   lastChar = dict.get("LastChar") as number || (composite ? 0xffff : 0xff);
+        let firstChar = dict.get("FirstChar");
+        if (!Number.isInteger(firstChar)) {
+            firstChar = 0;
+        }
+        let lastChar = dict.get("LastChar");
+        if (!Number.isInteger(lastChar)) {
+            lastChar = composite ? 0xffff : 0xff;
+        }
+        /* Table 122 */
         const descriptor = dict.get("FontDescriptor");
         const toUnicode = (dict.get("ToUnicode") || baseDict.get("ToUnicode"));
         if (descriptor) {
@@ -3483,11 +3605,12 @@ export class PartialEvaluator {
         const isType3Font = type === "Type3";
         if (!descriptor) {
             if (isType3Font) {
+                const bbox = lookupNormalRect(dict.getArray("FontBBox"), [0, 0, 0, 0]);
                 // FontDescriptor is only required for Type3 fonts when the document
                 // is a tagged pdf. Create a barbebones one to get by.
                 descriptor = new Dict();
                 descriptor.set("FontName", Name.get(type));
-                descriptor.set("FontBBox", dict.getArray("FontBBox") || [0, 0, 0, 0]);
+                descriptor.set("FontBBox", bbox);
             }
             else {
                 // Before PDF 1.5 if the font was one of the base 14 fonts, having a
@@ -3531,14 +3654,25 @@ export class PartialEvaluator {
                     properties.isInternalFont = !!file;
                 }
                 if (!properties.isInternalFont && this.options.useSystemFonts) {
-                    properties.systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, this.options.standardFontDataUrl, baseFontName, standardFontName);
+                    properties.systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, this.options.standardFontDataUrl, baseFontName, standardFontName, type);
                 }
                 const newProperties = await this.extractDataStructures(dict, properties);
-                if (widths) {
+                //kkkk TOCLEANUP
+                // if (widths) {
+                //   const glyphWidths: Record<number, number> = [];
+                //   let j = firstChar;
+                //   for (const width of widths) {
+                //     glyphWidths[j++] = this.xref.fetchIfRef(width) as number;
+                //   }
+                if (Array.isArray(widths)) {
                     const glyphWidths = [];
                     let j = firstChar;
-                    for (const width of widths) {
-                        glyphWidths[j++] = this.xref.fetchIfRef(width);
+                    for (const w of widths) {
+                        const width = this.xref.fetchIfRef(w);
+                        if (typeof width === "number") {
+                            glyphWidths[j] = width;
+                        }
+                        j++;
                     }
                     newProperties.widths = glyphWidths;
                 }
@@ -3632,8 +3766,34 @@ export class PartialEvaluator {
                 isInternalFont = !!fontFile;
             }
             if (!isInternalFont && this.options.useSystemFonts) {
-                systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, this.options.standardFontDataUrl, fontName.name, standardFontName);
+                systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, this.options.standardFontDataUrl, fontName.name, standardFontName, type);
             }
+        }
+        const fontMatrix = lookupMatrix(dict.getArray("FontMatrix"), FONT_IDENTITY_MATRIX);
+        const bbox = lookupNormalRect(descriptor.getArray("FontBBox") || dict.getArray("FontBBox"), undefined);
+        let ascent = descriptor.get("Ascent");
+        if (typeof ascent !== "number") {
+            ascent = undefined;
+        }
+        let descent = descriptor.get("Descent");
+        if (typeof descent !== "number") {
+            descent = undefined;
+        }
+        let xHeight = descriptor.get("XHeight");
+        if (typeof xHeight !== "number") {
+            xHeight = 0;
+        }
+        let capHeight = descriptor.get("CapHeight");
+        if (typeof capHeight !== "number") {
+            capHeight = 0;
+        }
+        let flags = descriptor.get("Flags");
+        if (!Number.isInteger(flags)) {
+            flags = 0;
+        }
+        let italicAngle = descriptor.get("ItalicAngle");
+        if (typeof italicAngle !== "number") {
+            italicAngle = 0;
         }
         const properties = {
             type,
@@ -3647,18 +3807,17 @@ export class PartialEvaluator {
             loadedName: baseDict.loadedName,
             composite,
             fixedPitch: false,
-            fontMatrix: dict.getArray("FontMatrix") ||
-                FONT_IDENTITY_MATRIX,
+            fontMatrix,
             firstChar,
             lastChar,
             toUnicode,
-            bbox: (descriptor.getArray("FontBBox") || dict.getArray("FontBBox")),
-            ascent: descriptor.get("Ascent"),
-            descent: descriptor.get("Descent"),
-            xHeight: descriptor.get("XHeight") || 0,
-            capHeight: descriptor.get("CapHeight") || 0,
-            flags: descriptor.get("Flags"),
-            italicAngle: descriptor.get("ItalicAngle") || 0,
+            bbox,
+            ascent,
+            descent,
+            xHeight,
+            capHeight,
+            flags,
+            italicAngle,
             isType3Font,
             cssFontInfo,
             scaleFactors: glyphScaleFactors,
@@ -3774,7 +3933,6 @@ export class TranslatedFont {
         // Compared to the parsing of e.g. an entire page, it doesn't really
         // make sense to only be able to render a Type3 glyph partially.
         const type3Evaluator = evaluator.clone({ ignoreErrors: false });
-        type3Evaluator.parsingType3Font = true;
         // Prevent circular references in Type3 fonts.
         const type3FontRefs = new RefSet(evaluator.type3FontRefs);
         if (this.dict.objId && !type3FontRefs.has(this.dict.objId)) {
@@ -4156,7 +4314,7 @@ export class EvaluatorPreprocessor {
                 }
                 const fn = opSpec.id;
                 const numArgs = opSpec.numArgs;
-                let argsLength = args !== null ? args.length : 0;
+                let argsLength = args != undefined ? args.length : 0;
                 // If the *previous* command wasn't a path operator, reset the heuristic
                 // used with incomplete path operators below (fixes issue14917.pdf).
                 if (!this._isPathOp) {
@@ -4172,7 +4330,7 @@ export class EvaluatorPreprocessor {
                             argsLength--;
                         }
                         while (argsLength < numArgs && nonProcessedArgs.length !== 0) {
-                            if (args === null) {
+                            if (args == undefined) {
                                 args = [];
                             }
                             args.unshift(nonProcessedArgs.pop());
@@ -4194,7 +4352,7 @@ export class EvaluatorPreprocessor {
                         // If we receive too few arguments, it's not possible to execute
                         // the command, hence we skip the command.
                         warn(`Skipping ${partialMsg}`);
-                        if (args !== null) {
+                        if (args != undefined) {
                             args.length = 0;
                         }
                         continue;
@@ -4214,8 +4372,8 @@ export class EvaluatorPreprocessor {
                 return false;
             }
             // argument
-            if (obj !== null) {
-                if (args === null) {
+            if (obj != undefined) {
+                if (args == undefined) {
                     args = [];
                 }
                 args.push(obj);

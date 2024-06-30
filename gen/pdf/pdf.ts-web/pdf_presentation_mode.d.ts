@@ -27,6 +27,7 @@ interface TouchSwipeState {
     endX: number;
     endY: number;
 }
+/** @final */
 export declare class PDFPresentationMode {
     #private;
     get active(): boolean;

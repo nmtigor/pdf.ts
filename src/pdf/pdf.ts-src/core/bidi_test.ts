@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { bidi } from "./bidi.ts";
 /*80--------------------------------------------------------------------------*/

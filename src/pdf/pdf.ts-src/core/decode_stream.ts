@@ -75,7 +75,7 @@ export abstract class DecodeStream extends BaseStream {
     }
   }
 
-  protected abstract readBlock(): void;
+  protected abstract readBlock(ignoreColorSpace?: boolean): void;
 
   ensureBuffer(requested: number) {
     const buffer = this.buffer;
@@ -106,11 +106,8 @@ export abstract class DecodeStream extends BaseStream {
     return this.buffer[this.pos++];
   }
 
-  /**
-   * @implement
-   * @final
-   */
-  getBytes(length?: number) {
+  /** @final @implement */
+  getBytes(length?: number, ignoreColorSpace = false) {
     const pos = this.pos;
     let end;
 
@@ -119,7 +116,7 @@ export abstract class DecodeStream extends BaseStream {
       end = pos + length;
 
       while (!this.eof && this.bufferLength < end) {
-        this.readBlock();
+        this.readBlock(ignoreColorSpace);
       }
       const bufEnd = this.bufferLength;
       if (end > bufEnd) {
@@ -127,7 +124,7 @@ export abstract class DecodeStream extends BaseStream {
       }
     } else {
       while (!this.eof) {
-        this.readBlock();
+        this.readBlock(ignoreColorSpace);
       }
       end = this.bufferLength;
     }

@@ -8,6 +8,7 @@
 import type { AnnotationEditorName } from "../shared/util.js";
 import type { AnnotStorageRecord, AnnotStorageValue } from "./annotation_layer.js";
 import type { TFD_AnnotationEditor } from "./editor/editor.js";
+import { AnnotationEditor } from "./editor/editor.js";
 export type Serializable = {
     map?: AnnotStorageRecord | undefined;
     hash: string;
@@ -30,7 +31,7 @@ export declare class AnnotationStorage {
     /**
      * Get the value for a given key.
      */
-    getRawValue(key: string): AnnotStorageValue | undefined;
+    getRawValue(key: string): AnnotStorageValue | AnnotationEditor | undefined;
     /**
      * Remove a value from the storage.
      */
@@ -38,12 +39,12 @@ export declare class AnnotationStorage {
     /**
      * Set the value for a given key
      */
-    setValue(key: string, value: AnnotStorageValue): void;
+    setValue(key: string, value: AnnotStorageValue | AnnotationEditor): void;
     /**
      * Check if the storage contains the given key.
      */
     has(key: string): boolean;
-    getAll(): Record<string, AnnotStorageValue> | undefined;
+    getAll(): Record<string, AnnotationEditor | AnnotStorageValue> | undefined;
     setAll(obj: Record<string, AnnotStorageValue>): void;
     resetModified(): void;
     get print(): PrintAnnotationStorage;

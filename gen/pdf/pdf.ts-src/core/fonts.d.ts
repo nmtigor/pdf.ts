@@ -115,7 +115,6 @@ export declare class Font extends FontExpotDataEx {
     fallbackToSystemFont(properties: FontProps): void;
     checkAndRepair(name: string, font: BaseStream, properties: FontProps): Uint8Array;
     convert(fontName: string, font: CFFFont | Type1Font, properties: FontProps): Uint8Array;
-    get spaceWidth(): number | undefined;
     charsToGlyphs(chars: string): Glyph[];
     /**
      * Chars can have different sizes (depends on the encoding).

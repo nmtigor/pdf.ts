@@ -5,25 +5,11 @@
  * @module pdf/pdf.ts-web/pdf_outline_viewer.ts
  * @license Apache-2.0
  ******************************************************************************/
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { html } from "../../lib/dom.js";
-import { isObjectLike } from "../../lib/jslang.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";
 import { SidebarView } from "./ui_utils.js";
+import { isObjectLike } from "../../lib/jslang.js";
 export class PDFOutlineViewer extends BaseTreeViewer {
     #outline;
     #pageNumberToDestHashCapability;
@@ -257,19 +243,9 @@ export class PDFOutlineViewer extends BaseTreeViewer {
                 if (Array.isArray(explicitDest)) {
                     const [destRef] = explicitDest;
                     if (isObjectLike(destRef)) {
-                        pageNumber = this.linkService._cachedPageNumber(destRef);
-                        if (!pageNumber) {
-                            try {
-                                pageNumber = (await pdfDocument.getPageIndex(destRef)) + 1;
-                                if (pdfDocument !== this._pdfDocument) {
-                                    return undefined; // The document was closed while the data resolved.
-                                }
-                                this.linkService.cachePageRef(pageNumber, destRef);
-                            }
-                            catch {
-                                // Invalid page reference, ignore it and continue parsing.
-                            }
-                        }
+                        // The page reference must be available, since the current method
+                        // won't be invoked until all pages have been loaded.
+                        pageNumber = pdfDocument.cachedPageNumber(destRef);
                     }
                     else if (Number.isInteger(destRef)) {
                         pageNumber = destRef + 1;

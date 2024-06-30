@@ -5,12 +5,15 @@
  * @module pdf/pdf.ts-src/core/font_renderer.ts
  * @license Apache-2.0
  ******************************************************************************/
+import type { id_t, uint } from "../../../lib/alias.js";
+import type { matrix_t } from "../shared/util.js";
+import { FontRenderOps } from "../shared/util.js";
 import type { CFFFDSelect, CFFTopDict } from "./cff_parser.js";
 import type { Font } from "./fonts.js";
 interface Range {
     start: number;
     end: number;
-    idDelta: number;
+    idDelta: uint;
     ids?: number[];
 }
 interface CffInfo {
@@ -21,32 +24,31 @@ interface CffInfo {
     fdSelect?: CFFFDSelect | undefined;
     fdArray: CFFTopDict[];
 }
-type FontMatrix = [number, number, number, number, number, number];
-type C2DCmd = "moveTo" | "lineTo" | "bezierCurveTo" | "quadraticCurveTo" | "transform" | "scale" | "translate" | "save" | "restore";
-export interface CmdArgs {
-    cmd: C2DCmd;
-    args?: (number | string)[];
+export type Cmds = (FontRenderOps | number)[];
+declare class Commands {
+    cmds: Cmds;
+    add(cmd: FontRenderOps, args?: unknown[]): void;
 }
 declare abstract class CompiledFont {
-    fontMatrix: FontMatrix;
-    compiledGlyphs: CmdArgs[][];
+    fontMatrix: [number, number, number, number, number, number];
+    compiledGlyphs: Record<id_t, Cmds>;
     compiledCharCodeToGlyphId: number[];
     glyphs: (Uint8Array | Uint8ClampedArray | number[])[];
     cmap?: Range[] | undefined;
     isCFFCIDFont?: boolean;
     fdSelect?: CFFFDSelect | undefined;
     fdArray?: CFFTopDict[];
-    constructor(fontMatrix: FontMatrix);
-    getPathJs(unicode: string): CmdArgs[];
-    compileGlyph(code: Uint8Array | Uint8ClampedArray | number[], glyphId: number): CmdArgs[];
-    abstract compileGlyphImpl(code: Uint8Array | Uint8ClampedArray | number[], cmds: CmdArgs[], glyphId: number): void;
+    constructor(fontMatrix: matrix_t);
+    getPathJs(unicode: string): Cmds;
+    compileGlyph(code: Uint8Array | Uint8ClampedArray | number[], glyphId: number): Cmds;
+    abstract compileGlyphImpl(code: Uint8Array | Uint8ClampedArray | number[], cmds: Commands, glyphId: number): void;
     /** @final */
     hasBuiltPath(unicode: string): boolean;
 }
 export declare class TrueTypeCompiled extends CompiledFont {
-    constructor(glyphs: Uint8Array[], cmap?: Range[], fontMatrix?: FontMatrix);
+    constructor(glyphs: Uint8Array[], cmap?: Range[], fontMatrix?: matrix_t);
     /** @implement */
-    compileGlyphImpl(code: Uint8Array, cmds: CmdArgs[], glyphId: number): void;
+    compileGlyphImpl(code: Uint8Array, cmds: Commands, glyphId: number): void;
 }
 export declare class Type2Compiled extends CompiledFont {
     gsubrs: (number[] | Uint8Array | Uint8ClampedArray)[];
@@ -54,9 +56,9 @@ export declare class Type2Compiled extends CompiledFont {
     glyphNameMap: Record<string, string | number>;
     gsubrsBias: number;
     subrsBias: number;
-    constructor(cffInfo: CffInfo, cmap?: Range[], fontMatrix?: FontMatrix, glyphNameMap?: Record<string, string | number>);
+    constructor(cffInfo: CffInfo, cmap?: Range[], fontMatrix?: matrix_t, glyphNameMap?: Record<string, string | number>);
     /** @implement */
-    compileGlyphImpl(code: Uint8Array, cmds: CmdArgs[], glyphId: number): void;
+    compileGlyphImpl(code: Uint8Array, cmds: Commands, glyphId: number): void;
 }
 export declare class FontRendererFactory {
     static create(font: Font, seacAnalysisEnabled: boolean): TrueTypeCompiled | Type2Compiled;

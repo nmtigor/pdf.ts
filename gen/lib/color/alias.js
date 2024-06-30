@@ -2,7 +2,7 @@
  * @module lib/color/alias
  * @license Apache-2.0
  ******************************************************************************/
-import { z } from "../../3rd/zod-3.22.2/lib/index.mjs";
+import { z } from "../../3rd/zod-3.23.8/lib/index.mjs";
 import { zRatio, zUint8 } from "../alias.js";
 export const zRed = zUint8;
 export const zAlpha = zRatio.min(0).max(1);

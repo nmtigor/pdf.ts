@@ -617,6 +617,7 @@ export class AnnotationEditor {
         const pointerMoveOptions = { passive: true, capture: true };
         this.parent.togglePointerEvents(false);
         window.on("pointermove", boundResizerPointermove, pointerMoveOptions);
+        window.on("contextmenu", noContextMenu);
         const savedX = this.x;
         const savedY = this.y;
         const savedWidth = this.width;
@@ -633,6 +634,7 @@ export class AnnotationEditor {
             window.off("pointerup", pointerUpCallback);
             window.off("blur", pointerUpCallback);
             window.off("pointermove", boundResizerPointermove, pointerMoveOptions);
+            window.off("contextmenu", noContextMenu);
             this.parent.div.style.cursor = savedParentCursor;
             this.div.style.cursor = savedCursor;
             this.#addResizeToUndoStack(savedX, savedY, savedWidth, savedHeight);
@@ -1049,6 +1051,14 @@ export class AnnotationEditor {
         return editor;
     }
     /**
+     * Check if an existing annotation associated with this editor has been
+     * modified.
+     */
+    get hasBeenModified() {
+        return (!!this.annotationElementId &&
+            (this.deleted || this.serialize() !== undefined));
+    }
+    /**
      * Remove this editor.
      * It's used on ctrl+backspace action.
      */
@@ -1380,6 +1390,31 @@ export class AnnotationEditor {
             this.div.tabIndex = -1;
         }
         this.#disabled = true;
+    }
+    /**
+     * Render an annotation in the annotation layer.
+     */
+    renderAnnotationElement(annotation) {
+        let content = annotation.container.querySelector(".annotationContent");
+        if (!content) {
+            content = html("div");
+            content.classList.add("annotationContent", this.editorType);
+            annotation.container.prepend(content);
+        }
+        else if (content.nodeName === "CANVAS") {
+            const canvas = content;
+            content = html("div");
+            content.classList.add("annotationContent", this.editorType);
+            canvas.before(content);
+        }
+        return content;
+    }
+    resetAnnotationElement(annotation) {
+        const { firstChild } = annotation.container;
+        if (firstChild.nodeName === "DIV" &&
+            firstChild.classList.contains("annotationContent")) {
+            firstChild.remove();
+        }
     }
 }
 _a = AnnotationEditor;

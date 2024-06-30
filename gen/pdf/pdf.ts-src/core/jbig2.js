@@ -25,9 +25,9 @@ import { ArithmeticDecoder } from "./arithmetic_decoder.js";
 import { CCITTFaxDecoder } from "./ccitt.js";
 import { log2, readInt8, readUint16, readUint32 } from "./core_utils.js";
 /*80--------------------------------------------------------------------------*/
-class Jbig2Error extends BaseException {
+export class Jbig2Error extends BaseException {
     constructor(msg) {
-        super(`JBIG2 error: ${msg}`, "Jbig2Error");
+        super(msg, "Jbig2Error");
     }
 }
 /*49-------------------------------------------*/

@@ -929,5 +929,17 @@ export function getUuid() {
     return bytesToString(buf);
 }
 export const AnnotationPrefix = "pdfjs_internal_id_";
+export var FontRenderOps;
+(function (FontRenderOps) {
+    FontRenderOps[FontRenderOps["BEZIER_CURVE_TO"] = 0] = "BEZIER_CURVE_TO";
+    FontRenderOps[FontRenderOps["MOVE_TO"] = 1] = "MOVE_TO";
+    FontRenderOps[FontRenderOps["LINE_TO"] = 2] = "LINE_TO";
+    FontRenderOps[FontRenderOps["QUADRATIC_CURVE_TO"] = 3] = "QUADRATIC_CURVE_TO";
+    FontRenderOps[FontRenderOps["RESTORE"] = 4] = "RESTORE";
+    FontRenderOps[FontRenderOps["SAVE"] = 5] = "SAVE";
+    FontRenderOps[FontRenderOps["SCALE"] = 6] = "SCALE";
+    FontRenderOps[FontRenderOps["TRANSFORM"] = 7] = "TRANSFORM";
+    FontRenderOps[FontRenderOps["TRANSLATE"] = 8] = "TRANSLATE";
+})(FontRenderOps || (FontRenderOps = {}));
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=util.js.map

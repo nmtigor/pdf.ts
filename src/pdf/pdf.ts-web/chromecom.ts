@@ -35,7 +35,7 @@ import type { OverlayManager } from "./overlay_manager.ts";
 import type { HistoryState } from "./pdf_history.ts";
 import { BasePreferences } from "./preferences.ts";
 import { CursorTool } from "./ui_utils.ts";
-import { D_web } from "../alias.ts";
+import { D_rp_web } from "@fe-src/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 /*#static*/ if (PDFJSDev || !CHROME) {
@@ -234,7 +234,7 @@ function requestAccessToLocalFile(
     // because the shown string should match the UI at chrome://extensions.
     // These strings are from chrome/app/resources/generated_resources_*.xtb.
     const jo_ =
-      (await import(`/${D_web}/chrome-i18n-allow-access-to-file-urls.json`, {
+      (await import(`/${D_rp_web}/chrome-i18n-allow-access-to-file-urls.json`, {
         assert: { type: "json" },
       })).default;
     const i18nFileAccessLabel =

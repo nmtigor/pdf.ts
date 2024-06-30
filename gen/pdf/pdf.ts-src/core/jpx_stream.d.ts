@@ -16,7 +16,7 @@ export declare class JpxStream extends ImageStream {
     constructor(stream: BaseStream, maybeLength?: number, params?: Dict);
     get bytes(): Uint8Array | Uint8ClampedArray;
     /** @implement */
-    readBlock(): void;
+    readBlock(ignoreColorSpace?: boolean): void;
     ensureBuffer(requested: number): any;
 }
 //# sourceMappingURL=jpx_stream.d.ts.map

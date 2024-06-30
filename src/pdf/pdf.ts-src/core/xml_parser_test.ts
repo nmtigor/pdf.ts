@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/testing/asserts.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { parseXFAPath } from "./core_utils.ts";
 import { SimpleXMLParser, XMLParserBase } from "./xml_parser.ts";

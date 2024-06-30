@@ -5,14 +5,9 @@
  * @module pdf/pdf.ts-src/display/text_layer.ts
  * @license Apache-2.0
  ******************************************************************************/
-import type { C2D, OC2D } from "../../../lib/alias.js";
-import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import type { TextContent } from "./api.js";
-import { type PageViewport } from "./display_utils.js";
-/**
- * Text layer render parameters.
- */
-type TextLayerRenderP_ = {
+import type { PageViewport } from "./display_utils.js";
+type TextLayerP_ = {
     /**
      * Text content to
      * render, i.e. the value returned by the page's `streamTextContent` or
@@ -27,52 +22,16 @@ type TextLayerRenderP_ = {
      * The target viewport to properly layout the text runs.
      */
     viewport: PageViewport;
-    /**
-     * HTML elements that correspond to
-     * the text items of the textContent input.
-     * This is output and shall initially be set to an empty array.
-     */
-    textDivs?: HTMLElement[];
-    /**
-     * Some properties
-     * weakly mapped to the HTML elements used to render the text.
-     */
-    textDivProperties?: WeakMap<HTMLElement, TextDivProps>;
-    /**
-     * Strings that correspond to
-     * the `str` property of the text items of the textContent input.
-     * This is output and shall initially be set to an empty array.
-     */
-    textContentItemsStr?: string[];
 };
 type TextLayerUpdateP_ = {
-    /**
-     * The DOM node that will contain the text runs.
-     */
-    container: HTMLDivElement;
     /**
      * The target viewport to properly layout the text runs.
      */
     viewport: PageViewport;
     /**
-     * HTML elements that correspond to
-     * the text items of the textContent input.
-     * This is output and shall initially be set to an empty array.
+     * Callback invoked before the textLayer is updated in the DOM.
      */
-    textDivs?: HTMLElement[];
-    /**
-     * Some properties
-     * weakly mapped to the HTML elements used to render the text.
-     */
-    textDivProperties: WeakMap<HTMLElement, TextDivProps>;
-    /**
-     * true if the text layer must be rotated.
-     */
-    mustRotate?: boolean;
-    /**
-     * true if the text layer contents must be
-     */
-    mustRescale?: boolean;
+    onBefore?: () => void;
 };
 export type TextDivProps = {
     angle: number;
@@ -87,54 +46,47 @@ export type TextDivProps = {
     paddingTop?: number;
     scale?: number;
 };
-export declare function cleanupTextLayer(): void;
-type LayoutTextP_ = {
-    prevFontSize?: unknown;
-    prevFontFamily?: unknown;
-    div?: HTMLElement;
-    scale: number;
-    properties?: TextDivProps | undefined;
-    ctx: OC2D | C2D;
-};
-/**
- * Text layer rendering task.
- */
-export declare class TextLayerRenderTask {
+export declare class TextLayer {
     #private;
-    _textContentSource: TextContent | ReadableStream<TextContent>;
-    _isReadableStream: boolean;
-    _rootContainer: HTMLElement;
-    _container: HTMLElement;
-    _textDivs: HTMLSpanElement[];
-    _textContentItemsStr: string[];
-    _fontInspectorEnabled: boolean;
-    _reader?: ReadableStreamDefaultReader<TextContent> | undefined;
-    _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
-    _canceled: boolean;
-    _capability: PromiseCap<void>;
+    pageHeight: number;
+    pageWidth: number;
     /**
-     * Promise for textLayer rendering task completion.
+     * Strings that correspond to the `str` property of
+     * the text items of the textContent input.
+     * This is output and will initially be set to an empty array
      */
-    get promise(): Promise<void>;
-    _layoutTextParams: LayoutTextP_;
-    _transform: [number, number, number, number, number, number];
-    _pageWidth: number;
-    _pageHeight: number;
-    constructor({ textContentSource, container, viewport, textDivs, textDivProperties, textContentItemsStr, }: TextLayerRenderP_);
+    get textContentItemsStr(): string[];
+    /**
+     * HTML elements that correspond to the text items
+     * of the textContent input.
+     * This is output and will initially be set to an empty array.
+     */
+    get textDivs(): (HTMLDivElement | HTMLSpanElement)[];
+    constructor({ textContentSource, container, viewport }: TextLayerP_);
+    /**
+     * Render the textLayer.
+     * @returns {Promise}
+     */
+    render(): Promise<void>;
+    /**
+     * Update a previously rendered textLayer, if necessary.
+     */
+    update({ viewport, onBefore }: TextLayerUpdateP_): void;
     /**
      * Cancel rendering of the textLayer.
      */
     cancel(): void;
     /**
-     * @private
+     * Clean-up global textLayer data.
+     * @returns {undefined}
      */
-    _layoutText(textDiv: HTMLSpanElement): void;
-    /**
-     * @private
-     */
-    _render(): void;
+    static cleanup(): void;
 }
-export declare function renderTextLayer(params: TextLayerRenderP_): TextLayerRenderTask;
-export declare function updateTextLayer({ container, viewport, textDivs, textDivProperties, mustRotate, mustRescale, }: TextLayerUpdateP_): void;
+export declare function renderTextLayer(): {
+    promise: Promise<void>;
+    textDivs: (HTMLDivElement | HTMLSpanElement)[];
+    textContentItemsStr: string[];
+} | undefined;
+export declare function updateTextLayer(): void;
 export {};
 //# sourceMappingURL=text_layer.d.ts.map

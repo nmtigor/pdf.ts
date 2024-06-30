@@ -20,9 +20,11 @@ declare abstract class NameOrNumberTree<T extends string | number> {
     getAll(): Map<T, Dict>;
     get(key: number | string): import("./primitives.js").ObjNoRef | undefined;
 }
+/** @final */
 export declare class NameTree extends NameOrNumberTree<string> {
     constructor(root: Ref, xref: XRef);
 }
+/** @final */
 export declare class NumberTree extends NameOrNumberTree<number> {
     constructor(root: Ref | Dict, xref: XRef);
 }

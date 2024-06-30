@@ -413,6 +413,12 @@ export class RefSetCache<T = Obj> {
   clear() {
     this.#map.clear();
   }
+
+  *items() {
+    for (const [ref, value] of this.#map) {
+      yield [Ref.fromString(ref), value] as [Ref, T];
+    }
+  }
 }
 
 export function isName(v: any, name?: string) {

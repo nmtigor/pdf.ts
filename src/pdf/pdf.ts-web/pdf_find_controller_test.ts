@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import type { TestServer } from "../pdf.ts-test/test_utils.ts";
@@ -34,6 +34,7 @@ import { EventBus, type EventMap } from "./event_utils.ts";
 import type { FindCtrlState } from "./pdf_find_controller.ts";
 import { FindState, PDFFindController } from "./pdf_find_controller.ts";
 import { SimpleLinkService } from "./pdf_link_service.ts";
+import { see_ui_testing } from "@fe-src/pdf/pdf.ts-test/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 const tracemonkeyFileName = "tracemonkey.pdf";
@@ -48,7 +49,7 @@ class MockLinkService extends SimpleLinkService {
   }
 
   _pdfDocument: PDFDocumentProxy | undefined;
-  setDocument(pdfDocument?: PDFDocumentProxy) {
+  override setDocument(pdfDocument?: PDFDocumentProxy) {
     this._pdfDocument = pdfDocument;
   }
   override get pagesCount() {
@@ -251,9 +252,9 @@ describe("pdf_find_controller", () => {
     tempServer = createTemporaryDenoServer();
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     const { server } = tempServer;
-    server.shutdown();
+    await server.shutdown();
     tempServer = undefined as any;
   });
 
@@ -792,50 +793,10 @@ describe("pdf_find_controller", () => {
     });
   });
 
-  it("performs a search in a text containing diacritics before -\\n", async () => {
-    // if (isNodeJS) {
-    //   pending("Linked test-cases are not supported in Node.js.");
-    // }
-
-    const inited = await initPdfFindController(tempServer, "issue14562.pdf");
-    const { eventBus, pdfFindController } = inited;
-
-    await testSearch({
-      eventBus,
-      pdfFindController,
-      state: {
-        query: "ä",
-        matchDiacritics: true,
-      },
-      matchesPerPage: [80],
-      selectedMatch: {
-        pageIndex: 0,
-        matchIndex: 0,
-      },
-      // deno-fmt-ignore
-      pageMatches: [
-        [
-          302, 340, 418, 481, 628, 802, 983, 989, 1015, 1063, 1084, 1149, 1157,
-          1278, 1346, 1394, 1402, 1424, 1500, 1524, 1530, 1686, 1776, 1788,
-          1859, 1881, 1911, 1948, 2066, 2076, 2163, 2180, 2215, 2229, 2274,
-          2324, 2360, 2402, 2413, 2424, 2463, 2532, 2538, 2553, 2562, 2576,
-          2602, 2613, 2638, 2668, 2792, 2805, 2836, 2847, 2858, 2895, 2901,
-          2915, 2939, 2959, 3089, 3236, 3246, 3336, 3384, 3391, 3465, 3474,
-          3482, 3499, 3687, 3693, 3708, 3755, 3786, 3862, 3974, 4049, 4055,
-          4068,
-        ],
-      ],
-      // deno-fmt-ignore
-      pageMatchesLength: [
-        [
-          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        ],
-      ],
-    });
-  });
+  it(
+    "performs a search in a text containing diacritics before -\\n",
+    see_ui_testing,
+  );
 
   it("performs a search in a text containing some Hangul syllables", async () => {
     await using inited = await initPdfFindController(
@@ -942,45 +903,10 @@ describe("pdf_find_controller", () => {
     });
   });
 
-  it("performs a search in a text containing combining diacritics", async () => {
-    // if (isNodeJS) {
-    //   pending("Linked test-cases are not supported in Node.js.");
-    // }
-
-    await using inited = await initPdfFindController(
-      tempServer,
-      "issue12909.pdf",
-    );
-    const { eventBus, pdfFindController } = inited;
-
-    await testSearch({
-      eventBus,
-      pdfFindController,
-      state: {
-        query: "הספר",
-        matchDiacritics: true,
-      },
-      matchesPerPage: [0, 0, 0, 0, 0, 0, 0, 0, 1],
-      selectedMatch: {
-        pageIndex: 8,
-        matchIndex: 0,
-      },
-    });
-
-    await testSearch({
-      eventBus,
-      pdfFindController,
-      state: {
-        query: "הספר",
-        matchDiacritics: false,
-      },
-      matchesPerPage: [0, 1, 0, 0, 0, 0, 0, 0, 1],
-      selectedMatch: {
-        pageIndex: 8,
-        matchIndex: 0,
-      },
-    });
-  });
+  it(
+    "performs a search in a text containing combining diacritics",
+    see_ui_testing,
+  );
 
   it("performs a search in a text with some Hiragana diacritics at the end of a line", async () => {
     await using inited = await initPdfFindController(
@@ -1020,33 +946,7 @@ describe("pdf_find_controller", () => {
     });
   });
 
-  //kkkk
-  it.ignore("performs a search in a text with some UTF-32 chars", async () => {
-    // if (isNodeJS) {
-    //   pending("Linked test-cases are not supported in Node.js.");
-    // }
-
-    await using inited = await initPdfFindController(
-      tempServer,
-      "bug1820909.pdf",
-    );
-    const { eventBus, pdfFindController } = inited;
-
-    await testSearch({
-      eventBus,
-      pdfFindController,
-      state: {
-        query: "31350",
-      },
-      matchesPerPage: [1, 2],
-      selectedMatch: {
-        pageIndex: 0,
-        matchIndex: 0,
-      },
-      pageMatches: [[41], [131, 1359]],
-      pageMatchesLength: [[5], [5, 5]],
-    });
-  });
+  it("performs a search in a text with some UTF-32 chars", see_ui_testing);
 
   it("performs a search in a text with some UTF-32 chars followed by a dash at the end of a line", async () => {
     await using inited = await initPdfFindController(

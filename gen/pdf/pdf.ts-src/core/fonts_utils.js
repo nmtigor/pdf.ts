@@ -34,6 +34,7 @@ import { getUnicodeForGlyph } from "./unicode.js";
 export const SEAC_ANALYSIS_ENABLED = true;
 export var FontFlags;
 (function (FontFlags) {
+    FontFlags[FontFlags["unknown"] = 0] = "unknown";
     FontFlags[FontFlags["FixedPitch"] = 1] = "FixedPitch";
     FontFlags[FontFlags["Serif"] = 2] = "Serif";
     FontFlags[FontFlags["Symbolic"] = 4] = "Symbolic";

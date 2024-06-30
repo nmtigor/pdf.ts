@@ -5,7 +5,7 @@
  * @module pdf/pdf.ts-web/pdf_viewer.ts
  * @license Apache-2.0
  ******************************************************************************/
-import type { dot2d_t } from "../../lib/alias.js";
+import type { dot2d_t, uint } from "../../lib/alias.js";
 import type { ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorType, AnnotationMode } from "../pdf.ts-src/pdf.js";
 import type { AltTextManager } from "./alt_text_manager.js";
@@ -15,7 +15,6 @@ import type { MLManager as MLManager_f } from "./firefoxcom.js";
 import type { MLManager as MLManager_g } from "./genericcom.js";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.js";
 import type { PDFFindController } from "./pdf_find_controller.js";
-import { SimpleLinkService } from "./pdf_link_service.js";
 import { type LayerProps, PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import type { PDFScriptingManager } from "./pdf_scripting_manager.js";
@@ -186,6 +185,10 @@ type ChangeScaleOptions = {
     drawingDelay?: number;
     scaleFactor?: number | undefined;
     steps?: number | undefined;
+    /**
+     * x and y coordinates of the scale transformation origin.
+     */
+    origin?: dot2d_t | undefined;
 };
 /**
  * Simple viewer control to display PDF content/pages.
@@ -195,7 +198,7 @@ export declare class PDFViewer {
     container: HTMLDivElement;
     viewer: HTMLDivElement;
     eventBus: EventBus;
-    linkService: IPDFLinkService | SimpleLinkService;
+    linkService: IPDFLinkService;
     downloadManager: IDownloadManager | undefined;
     findController: PDFFindController | undefined;
     _scriptingManager: PDFScriptingManager | undefined;
@@ -213,6 +216,10 @@ export declare class PDFViewer {
         right: boolean;
         down: boolean;
         lastX: number;
+        /**
+         * Enables automatic rotation of
+         * landscape pages upon printing. The default is `false`.
+         */
         lastY: number;
         _eventHandler: (evt: unknown) => void;
     };
@@ -222,12 +229,12 @@ export declare class PDFViewer {
     _pages: PDFPageView[];
     get pagesCount(): number;
     getPageView(index: number): PDFPageView;
-    protected _currentPageNumber: number;
-    get currentPageNumber(): number;
+    protected _currentPageNumber: uint;
+    get currentPageNumber(): uint;
     /**
      * @param val The page number.
      */
-    set currentPageNumber(val: number);
+    set currentPageNumber(val: uint);
     /**
      * In PDF unit.
      */
@@ -289,7 +296,7 @@ export declare class PDFViewer {
      */
     set pagesRotation(rotation: number);
     get _layerProperties(): LayerProps;
-    getAllText(): Promise<string | null>;
+    getAllText(): Promise<string | undefined>;
     /** @final */
     setDocument(pdfDocument?: PDFDocumentProxy): void;
     setPageLabels(labels: string[] | null): void;
@@ -364,13 +371,17 @@ export declare class PDFViewer {
      */
     previousPage(): boolean;
     /**
+     * Changes the current zoom level by the specified amount.
+     */
+    updateScale({ drawingDelay, scaleFactor, steps, origin }: ChangeScaleOptions): void;
+    /**
      * Increase the current zoom level one, or more, times.
      */
-    increaseScale({ drawingDelay, scaleFactor, steps }?: ChangeScaleOptions): void;
+    increaseScale(options?: ChangeScaleOptions): void;
     /**
      * Decrease the current zoom level one, or more, times.
      */
-    decreaseScale({ drawingDelay, scaleFactor, steps }?: ChangeScaleOptions): void;
+    decreaseScale(options?: ChangeScaleOptions): void;
     get containerTopLeft(): dot2d_t;
     get annotationEditorMode(): AnnotationEditorType;
     set annotationEditorMode({ mode, editId, isFromKeyboard }: EventMap["switchannotationeditormode"]);

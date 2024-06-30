@@ -411,7 +411,7 @@ export declare class Util {
     static getAxialAlignedBoundingBox(r: rect_t, m: matrix_t): rect_t;
     static inverseTransform(m: matrix_t): matrix_t;
     static singularValueDecompose2dScale(m: matrix_t): number[];
-    static normalizeRect(rect: rect_t): [number, number, number, number];
+    static normalizeRect(rect: rect_t): rect_t;
     static intersect(rect1: rect_t, rect2: rect_t): rect_t | undefined;
     static bezierBoundingBox(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, minMax?: rect_t): rect_t;
 }
@@ -422,5 +422,16 @@ export declare function getModificationDate(date?: Date): string;
 export declare function normalizeUnicode(str: string): string;
 export declare function getUuid(): string;
 export declare const AnnotationPrefix = "pdfjs_internal_id_";
+export declare const enum FontRenderOps {
+    BEZIER_CURVE_TO = 0,
+    MOVE_TO = 1,
+    LINE_TO = 2,
+    QUADRATIC_CURVE_TO = 3,
+    RESTORE = 4,
+    SAVE = 5,
+    SCALE = 6,
+    TRANSFORM = 7,
+    TRANSLATE = 8
+}
 export {};
 //# sourceMappingURL=util.d.ts.map

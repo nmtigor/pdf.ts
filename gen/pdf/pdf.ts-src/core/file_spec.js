@@ -19,11 +19,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { stringToPDFString, warn } from "../shared/util.js";
+import { shadow, stringToPDFString, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { Dict } from "./primitives.js";
 /*80--------------------------------------------------------------------------*/
 function pickPlatformItem(dict) {
+    if (!(dict instanceof Dict)) {
+        return undefined;
+    }
     // Look for the filename in this order:
     // UF, F, Unix, Mac, DOS
     if (dict.has("UF"))
@@ -38,6 +41,9 @@ function pickPlatformItem(dict) {
         return dict.get("DOS");
     return undefined;
 }
+function stripPath(str) {
+    return str.substring(str.lastIndexOf("/") + 1);
+}
 /**
  * "A PDF file can refer to the contents of another file by using a File
  * Specification (PDF 1.1)", see the spec (7.11) for more details.
@@ -49,20 +55,8 @@ export class FileSpec {
     xref;
     root;
     fs;
-    description;
     #contentAvailable = false;
-    #filename;
-    get filename() {
-        if (!this.#filename && this.root) {
-            const filename = pickPlatformItem(this.root) || "unnamed";
-            this.#filename = stringToPDFString(filename)
-                .replaceAll("\\\\", "\\")
-                .replaceAll("\\/", "/")
-                .replaceAll("\\", "/");
-        }
-        return this.#filename;
-    }
-    contentRef;
+    _contentRef;
     constructor(root, xref, skipContent = false) {
         if (!(root instanceof Dict)) {
             return;
@@ -72,9 +66,6 @@ export class FileSpec {
         if (root.has("FS")) {
             this.fs = root.get("FS");
         }
-        this.description = root.has("Desc")
-            ? stringToPDFString(root.get("Desc"))
-            : "";
         if (root.has("RF")) {
             warn("Related file specifications are not supported");
         }
@@ -87,16 +78,25 @@ export class FileSpec {
             }
         }
     }
+    get filename() {
+        let filename = "";
+        const item = pickPlatformItem(this.root);
+        if (item && typeof item === "string") {
+            filename = stringToPDFString(item)
+                .replaceAll("\\\\", "\\")
+                .replaceAll("\\/", "/")
+                .replaceAll("\\", "/");
+        }
+        return shadow(this, "filename", filename || "unnamed");
+    }
     get content() {
         if (!this.#contentAvailable) {
             return undefined;
         }
-        if (!this.contentRef && this.root) {
-            this.contentRef = pickPlatformItem(this.root.get("EF"));
-        }
+        this._contentRef ||= pickPlatformItem(this.root?.get("EF"));
         let content = undefined;
-        if (this.contentRef) {
-            const fileObj = this.xref.fetchIfRef(this.contentRef);
+        if (this._contentRef) {
+            const fileObj = this.xref.fetchIfRef(this._contentRef);
             if (fileObj instanceof BaseStream) {
                 content = fileObj.getBytes();
             }
@@ -106,14 +106,24 @@ export class FileSpec {
             }
         }
         else {
-            warn("Embedded file specification does not have a content");
+            warn("Embedded file specification does not have any content");
         }
         return content;
     }
+    get description() {
+        let description = "";
+        const desc = this.root?.get("Desc");
+        if (desc && typeof desc === "string") {
+            description = stringToPDFString(desc);
+        }
+        return shadow(this, "description", description);
+    }
     get serializable() {
         return {
-            filename: this.filename,
+            rawFilename: this.filename,
+            filename: stripPath(this.filename),
             content: this.content,
+            description: this.description,
         };
     }
 }

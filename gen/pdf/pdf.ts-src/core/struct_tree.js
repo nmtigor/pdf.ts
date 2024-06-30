@@ -95,17 +95,17 @@ export class StructTreeRoot {
         // console.log("🚀 ~ StructTreeRoot.createStructureTree() ~ newRefs:");
         // console.dir(newRefs);
         const root = pdfManager.catalog.cloneDict();
+        const cache = new RefSetCache();
+        cache.put(catalogRef, root);
         const structTreeRootRef = xref.getNewTemporaryRef();
         root.set("StructTreeRoot", structTreeRootRef);
-        const buffer = [];
-        await writeObject(catalogRef, root, buffer, xref);
-        newRefs.push({ ref: catalogRef, data: buffer.join("") });
         const structTreeRoot = new Dict(xref);
         structTreeRoot.set("Type", Name.get("StructTreeRoot"));
         const parentTreeRef = xref.getNewTemporaryRef();
         structTreeRoot.set("ParentTree", parentTreeRef);
         const kids = [];
         structTreeRoot.set("K", kids);
+        cache.put(structTreeRootRef, structTreeRoot);
         const parentTree = new Dict(xref);
         const nums = [];
         parentTree.set("Nums", nums);
@@ -116,18 +116,18 @@ export class StructTreeRoot {
             nums,
             xref,
             pdfManager,
-            newRefs,
-            buffer,
+            cache,
         });
         structTreeRoot.set("ParentTreeNextKey", nextKey);
         // console.log("🚀 ~ StructTreeRoot.createStructureTree() ~ newRefs:");
         // console.dir(newRefs);
-        buffer.length = 0;
-        await writeObject(parentTreeRef, parentTree, buffer, xref);
-        newRefs.push({ ref: parentTreeRef, data: buffer.join("") });
-        buffer.length = 0;
-        await writeObject(structTreeRootRef, structTreeRoot, buffer, xref);
-        newRefs.push({ ref: structTreeRootRef, data: buffer.join("") });
+        cache.put(parentTreeRef, parentTree);
+        const buffer = [];
+        for (const [ref, obj] of cache.items()) {
+            buffer.length = 0;
+            await writeObject(ref, obj, buffer, xref);
+            newRefs.push({ ref, data: buffer.join("") });
+        }
     }
     async canUpdateStructTree({ pdfManager, xref, newAnnotationsByPage }) {
         if (!this.ref) {
@@ -195,6 +195,8 @@ export class StructTreeRoot {
         const xref = this.dict.xref;
         const structTreeRoot = this.dict.clone();
         const structTreeRootRef = this.ref;
+        const cache = new RefSetCache();
+        cache.put(structTreeRootRef, structTreeRoot);
         let parentTreeRef = structTreeRoot.getRaw("ParentTree");
         let parentTree;
         if (parentTreeRef instanceof Ref) {
@@ -206,6 +208,7 @@ export class StructTreeRoot {
             structTreeRoot.set("ParentTree", parentTreeRef);
         }
         parentTree = parentTree.clone();
+        cache.put(parentTreeRef, parentTree);
         let nums = parentTree.getRaw("Nums");
         let numsRef;
         if (nums instanceof Ref) {
@@ -216,45 +219,27 @@ export class StructTreeRoot {
         if (!numsRef) {
             parentTree.set("Nums", nums);
         }
-        let kids = structTreeRoot.getRaw("K");
-        let kidsRef;
-        if (kids instanceof Ref) {
-            kidsRef = kids;
-            kids = xref.fetch(kidsRef);
-        }
-        else {
-            kidsRef = xref.getNewTemporaryRef();
-            structTreeRoot.set("K", kidsRef);
-        }
-        kids = Array.isArray(kids) ? kids.slice() : [kids];
-        const buffer = [];
         const newNextkey = await StructTreeRoot.#writeKids({
             newAnnotationsByPage,
             structTreeRootRef,
-            kids,
+            kids: undefined,
             nums,
             xref,
             pdfManager,
-            newRefs,
-            buffer,
+            cache,
         });
         structTreeRoot.set("ParentTreeNextKey", newNextkey);
-        buffer.length = 0;
-        await writeObject(kidsRef, kids, buffer, xref);
-        newRefs.push({ ref: kidsRef, data: buffer.join("") });
         if (numsRef) {
-            buffer.length = 0;
-            await writeObject(numsRef, nums, buffer, xref);
-            newRefs.push({ ref: numsRef, data: buffer.join("") });
+            cache.put(numsRef, nums);
         }
-        buffer.length = 0;
-        await writeObject(parentTreeRef, parentTree, buffer, xref);
-        newRefs.push({ ref: parentTreeRef, data: buffer.join("") });
-        buffer.length = 0;
-        await writeObject(structTreeRootRef, structTreeRoot, buffer, xref);
-        newRefs.push({ ref: structTreeRootRef, data: buffer.join("") });
+        const buffer = [];
+        for (const [ref, obj] of cache.items()) {
+            buffer.length = 0;
+            await writeObject(ref, obj, buffer, xref);
+            newRefs.push({ ref, data: buffer.join("") });
+        }
     }
-    static async #writeKids({ newAnnotationsByPage, structTreeRootRef, kids, nums, xref, pdfManager, newRefs, buffer, }) {
+    static async #writeKids({ newAnnotationsByPage, structTreeRootRef, kids, nums, xref, pdfManager, cache, }) {
         const objr = Name.get("OBJR");
         let nextKey = -Infinity;
         for (const [pageIndex, elements] of newAnnotationsByPage) {
@@ -287,20 +272,15 @@ export class StructTreeRoot {
                 if (actualText) {
                     tagDict.set("ActualText", actualText);
                 }
-                if (structTreeParent) {
-                    await this.#updateParentTag({
-                        structTreeParent,
-                        tagDict,
-                        newTagRef: tagRef,
-                        fallbackRef: structTreeRootRef,
-                        xref,
-                        newRefs,
-                        buffer,
-                    });
-                }
-                else {
-                    tagDict.set("P", structTreeRootRef);
-                }
+                await this.#updateParentTag({
+                    structTreeParent,
+                    tagDict,
+                    newTagRef: tagRef,
+                    structTreeRootRef,
+                    fallbackKids: kids,
+                    xref,
+                    cache,
+                });
                 const objDict = new Dict(xref);
                 tagDict.set("K", objDict);
                 objDict.set("Type", objr);
@@ -308,23 +288,24 @@ export class StructTreeRoot {
                     // Pg is optional.
                     objDict.set("Pg", pageRef);
                 }
-                objDict.set("Pg", pageRef);
                 objDict.set("Obj", ref);
-                buffer.length = 0;
-                await writeObject(tagRef, tagDict, buffer, xref);
-                newRefs.push({ ref: tagRef, data: buffer.join("") });
+                cache.put(tagRef, tagDict);
                 nums.push(parentTreeId, tagRef);
-                kids.push(tagRef);
             }
         }
         return nextKey + 1;
     }
     static #collectParents({ elements, xref, pageDict, numberTree }) {
-        const idToElement = new Map();
+        const idToElements = new Map();
         for (const element of elements) {
             if (element.structTreeParentId) {
                 const id = parseInt(element.structTreeParentId.split("_mc")[1], 10);
-                idToElement.set(id, element);
+                let elems = idToElements.get(id);
+                if (!elems) {
+                    elems = [];
+                    idToElements.set(id, elems);
+                }
+                elems.push(element);
             }
         }
         const id = pageDict.get("StructParents");
@@ -334,13 +315,16 @@ export class StructTreeRoot {
         // The parentArray type has already been checked by the caller.
         const parentArray = numberTree.get(id);
         const updateElement = (kid, pageKid, kidRef) => {
-            const element = idToElement.get(kid);
-            if (element) {
+            const elems = idToElements.get(kid);
+            if (elems) {
                 const parentRef = pageKid.getRaw("P");
                 const parentDict = xref.fetchIfRef(parentRef);
                 if (parentRef instanceof Ref && parentDict instanceof Dict) {
                     // It should always the case, but we check just in case.
-                    element.structTreeParent = { ref: kidRef, dict: pageKid };
+                    const params = { ref: kidRef, dict: pageKid };
+                    for (const element of elems) {
+                        element.structTreeParent = params;
+                    }
                 }
                 return true;
             }
@@ -364,55 +348,105 @@ export class StructTreeRoot {
                 if (Number.isInteger(kid) && updateElement(kid, pageKid, kidRef)) {
                     break;
                 }
+                if (!(kid instanceof Dict)) {
+                    continue;
+                }
+                if (!isName(kid.get("Type"), "MCR")) {
+                    break;
+                }
+                const mcid = kid.get("MCID");
+                if (Number.isInteger(mcid) && updateElement(mcid, pageKid, kidRef)) {
+                    break;
+                }
             }
         }
     }
-    static async #updateParentTag({ structTreeParent: { ref, dict }, tagDict, newTagRef, fallbackRef, xref, newRefs, buffer, }) {
-        // We get the parent of the tag.
-        const parentRef = dict.getRaw("P");
-        let parentDict = xref.fetchIfRef(parentRef);
-        tagDict.set("P", parentRef);
-        // We get the kids in order to insert a new tag at the right position.
-        let saveParentDict = false;
-        let parentKids;
-        let parentKidsRef = parentDict.getRaw("K");
-        if (!(parentKidsRef instanceof Ref)) {
-            parentKids = parentKidsRef;
-            parentKidsRef = xref.getNewTemporaryRef();
-            parentDict = parentDict.clone();
-            parentDict.set("K", parentKidsRef);
-            saveParentDict = true;
+    static async #updateParentTag({ structTreeParent, tagDict, newTagRef, 
+    // fallbackRef,
+    structTreeRootRef, fallbackKids, xref, 
+    // newRefs,
+    // buffer,
+    cache, }) {
+        //kkkk TOCLEANUP
+        // // We get the parent of the tag.
+        // const parentRef = dict.getRaw("P") as Ref;
+        // let parentDict = xref.fetchIfRef(parentRef) as Dict;
+        // tagDict.set("P", parentRef);
+        // // We get the kids in order to insert a new tag at the right position.
+        // let saveParentDict = false;
+        // let parentKids: Ref[] | Dict;
+        // let parentKidsRef = parentDict.getRaw("K") as Ref[] | Dict | Ref;
+        // if (!(parentKidsRef instanceof Ref)) {
+        //   parentKids = parentKidsRef;
+        //   parentKidsRef = xref.getNewTemporaryRef();
+        //   parentDict = parentDict.clone();
+        //   parentDict.set("K", parentKidsRef);
+        //   saveParentDict = true;
+        // } else {
+        //   parentKids = xref.fetch(parentKidsRef) as Ref[] | Dict;
+        // }
+        // if (Array.isArray(parentKids)) {
+        //   const index = parentKids.indexOf(ref);
+        //   if (index >= 0) {
+        //     parentKids = parentKids.slice();
+        //     parentKids.splice(index + 1, 0, newTagRef);
+        //   } else {
+        //     warn("Cannot update the struct tree: parent kid not found.");
+        //     tagDict.set("P", fallbackRef);
+        //     return;
+        //   }
+        // } else if (parentKids instanceof Dict) {
+        //   parentKids = [parentKidsRef, newTagRef];
+        //   parentKidsRef = xref.getNewTemporaryRef();
+        //   parentDict.set("K", parentKidsRef);
+        //   saveParentDict = true;
+        // }
+        // buffer.length = 0;
+        // await writeObject(parentKidsRef, parentKids, buffer, xref);
+        // newRefs.push({ ref: parentKidsRef, data: buffer.join("") });
+        // if (!saveParentDict) {
+        //   return;
+        // }
+        // buffer.length = 0;
+        // await writeObject(parentRef, parentDict, buffer, xref);
+        // newRefs.push({ ref: parentRef, data: buffer.join("") });
+        let ref;
+        let parentRef;
+        if (structTreeParent) {
+            ({ ref } = structTreeParent);
+            // We get the parent of the tag.
+            parentRef = structTreeParent.dict.getRaw("P") || structTreeRootRef;
         }
         else {
-            parentKids = xref.fetch(parentKidsRef);
+            parentRef = structTreeRootRef;
         }
-        if (Array.isArray(parentKids)) {
-            const index = parentKids.indexOf(ref);
-            if (index >= 0) {
-                parentKids = parentKids.slice();
-                parentKids.splice(index + 1, 0, newTagRef);
-            }
-            else {
-                warn("Cannot update the struct tree: parent kid not found.");
-                tagDict.set("P", fallbackRef);
-                return;
-            }
-        }
-        else if (parentKids instanceof Dict) {
-            parentKids = [parentKidsRef, newTagRef];
-            parentKidsRef = xref.getNewTemporaryRef();
-            parentDict.set("K", parentKidsRef);
-            saveParentDict = true;
-        }
-        buffer.length = 0;
-        await writeObject(parentKidsRef, parentKids, buffer, xref);
-        newRefs.push({ ref: parentKidsRef, data: buffer.join("") });
-        if (!saveParentDict) {
+        tagDict.set("P", parentRef);
+        // We get the kids in order to insert a new tag at the right position.
+        const parentDict = xref.fetchIfRef(parentRef);
+        if (!parentDict) {
+            fallbackKids.push(newTagRef);
             return;
         }
-        buffer.length = 0;
-        await writeObject(parentRef, parentDict, buffer, xref);
-        newRefs.push({ ref: parentRef, data: buffer.join("") });
+        let cachedParentDict = cache.get(parentRef);
+        if (!cachedParentDict) {
+            cachedParentDict = parentDict.clone();
+            cache.put(parentRef, cachedParentDict);
+        }
+        const parentKidsRaw = cachedParentDict.getRaw("K");
+        let cachedParentKids = parentKidsRaw instanceof Ref
+            ? cache.get(parentKidsRaw)
+            : undefined;
+        if (!cachedParentKids) {
+            cachedParentKids = xref.fetchIfRef(parentKidsRaw);
+            cachedParentKids = Array.isArray(cachedParentKids)
+                ? cachedParentKids.slice()
+                : [parentKidsRaw];
+            const parentKidsRef = xref.getNewTemporaryRef();
+            cachedParentDict.set("K", parentKidsRef);
+            cache.put(parentKidsRef, cachedParentKids);
+        }
+        const index = cachedParentKids.indexOf(ref);
+        cachedParentKids.splice(index >= 0 ? index + 1 : cachedParentKids.length, 0, newTagRef);
     }
 }
 /**

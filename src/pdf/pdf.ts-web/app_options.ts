@@ -43,12 +43,8 @@ import {
   SpreadMode,
   TextLayerMode,
 } from "./ui_utils.ts";
-import {
-  AD_gh,
-  D_cmap_url,
-  D_standard_font_data_url,
-  D_web,
-} from "../alias.ts";
+import { AD_gh } from "../alias.ts";
+import { D_rp_web, D_rpe_cmap, D_rpe_sfont } from "@fe-src/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 export enum OptionKind {
@@ -244,8 +240,8 @@ const defaultOptions = {
   imageResourcesPath: {
     value: /*#static*/ MOZCENTRAL
       // ? "resource://pdf.js/web/images/"
-      ? `${AD_gh}/${D_web}/images/`
-      : `${AD_gh}/${D_web}/images/`,
+      ? `${AD_gh}/${D_rp_web}/images/`
+      : `${AD_gh}/${D_rp_web}/images/`,
     kind: OptionKind.VIEWER,
   },
   locale: {
@@ -306,11 +302,11 @@ const defaultOptions = {
       // eslint-disable-next-line no-nested-ternary
       /*#static*/ PDFJSDev
         // ? "../external/bcmaps/"
-        ? `${AD_gh}/${D_cmap_url}/`
+        ? `${AD_gh}/${D_rpe_cmap}/`
         : /*#static*/ MOZCENTRAL
         // ? "resource://pdf.js/web/cmaps/"
-        ? `${AD_gh}/${D_cmap_url}/`
-        : `${AD_gh}/${D_cmap_url}/`,
+        ? `${AD_gh}/${D_rpe_cmap}/`
+        : `${AD_gh}/${D_rpe_cmap}/`,
     kind: OptionKind.API,
   },
   disableAutoFetch: {
@@ -366,11 +362,11 @@ const defaultOptions = {
       // eslint-disable-next-line no-nested-ternary
       /*#static*/ PDFJSDev
         // ? "../external/standard_fonts/"
-        ? `${AD_gh}/${D_standard_font_data_url}/`
+        ? `${AD_gh}/${D_rpe_sfont}/`
         : /*#static*/ MOZCENTRAL
         // ? "resource://pdf.js/web/standard_fonts/"
-        ? `${AD_gh}/${D_standard_font_data_url}/`
-        : `${AD_gh}/${D_standard_font_data_url}/`,
+        ? `${AD_gh}/${D_rpe_sfont}/`
+        : `${AD_gh}/${D_rpe_sfont}/`,
     kind: OptionKind.API,
   },
   verbosity: {
@@ -405,7 +401,7 @@ const defaultOptions = {
     value: /*#static*/ CHROME
       ? ""
       // : "compressed.tracemonkey-pldi-09.pdf",
-      : `${AD_gh}/${D_web}/compressed.tracemonkey-pldi-09.pdf`,
+      : `${AD_gh}/${D_rp_web}/compressed.tracemonkey-pldi-09.pdf`,
     kind: OptionKind.VIEWER,
   };
   defaultOptions.sandboxBundleSrc = {

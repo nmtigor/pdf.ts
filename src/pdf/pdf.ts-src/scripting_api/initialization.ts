@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import type { CreateSandboxP } from "@pdf.ts-web/interfaces.ts";
+import type { CreateSandboxP } from "@fe-pdf.ts-web/interfaces.ts";
 import type { FieldObject } from "../core/annotation.ts";
 import { AForm } from "./aform.ts";
 import { App, DocWrapped, ScriptingAppData, SendAppData } from "./app.ts";

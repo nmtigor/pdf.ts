@@ -318,7 +318,7 @@ export class AForm {
         if (!value) {
             return;
         }
-        if (this._parseDate(cFormat, value) === null) {
+        if (this._parseDate(cFormat, value) == undefined) {
             const invalid = GlobalConstants.IDS_INVALID_DATE;
             const invalid2 = GlobalConstants.IDS_INVALID_DATE2;
             const err = `${invalid} ${this._mkTargetName(event)}${invalid2}${cFormat}`;

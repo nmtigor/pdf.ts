@@ -316,6 +316,7 @@ export function createDefaultAppearance(
   }`;
 }
 
+//kkkk try not to mix deno-ts and browser-ts in one module
 let denoCanvas:
   | { createCanvas: (width: number, height: number) => unknown }
   | undefined;

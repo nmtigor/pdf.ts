@@ -96,6 +96,7 @@ interface GetTextContentP_ {
     sink: StreamSink<Thread.main, "GetTextContent">;
     seenStyles?: Set<string>;
     viewBox: rect_t;
+    lang?: string | undefined;
     markedContentData?: {
         level: number;
     } | undefined;
@@ -209,9 +210,9 @@ export declare class PartialEvaluator {
     globalImageCache: GlobalImageCache | undefined;
     systemFontCache: Map<string, SubstitutionInfo> | undefined;
     options: EvaluatorOptions;
-    parsingType3Font: boolean;
-    _regionalImageCache: RegionalImageCache;
     type3FontRefs?: RefSet;
+    get parsingType3Font(): boolean;
+    _regionalImageCache: RegionalImageCache;
     constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, systemFontCache, options, }: PartialEvaluatorCtorP_);
     /**
      * Since Functions are only cached (locally) by reference, we can share one
@@ -244,7 +245,7 @@ export declare class PartialEvaluator {
     private _parseVisibilityExpression;
     parseMarkedContentProps(contentProperties: Dict | Name, resources: Dict | undefined): Promise<MarkedContentProps | undefined>;
     getOperatorList({ stream, task, resources, operatorList, initialState, fallbackFontDict, }: GetOperatorListP_): Promise<void>;
-    getTextContent({ stream, task, resources, stateManager, includeMarkedContent, disableNormalization, sink, seenStyles, viewBox, markedContentData, keepWhiteSpace, }: GetTextContentP_): Promise<void>;
+    getTextContent({ stream, task, resources, stateManager, includeMarkedContent, disableNormalization, sink, seenStyles, viewBox, lang, markedContentData, keepWhiteSpace, }: GetTextContentP_): Promise<void>;
     extractDataStructures(dict: FontDict, properties: FontProps): Promise<FontProps>;
     private _simpleFontToUnicode;
     /**
@@ -253,8 +254,8 @@ export declare class PartialEvaluator {
      * @return A Promise that is resolved with a
      *   {ToUnicodeMap|IdentityToUnicodeMap} object.
      */
-    buildToUnicode(properties: FontProps): Promise<ToUnicodeMap | IdentityToUnicodeMap>;
-    readToUnicode(cmapObj?: Name | DecodeStream): Promise<ToUnicodeMap | IdentityToUnicodeMap | undefined>;
+    buildToUnicode(properties: FontProps): Promise<IdentityToUnicodeMap | ToUnicodeMap>;
+    readToUnicode(cmapObj?: Name | DecodeStream): Promise<IdentityToUnicodeMap | ToUnicodeMap | undefined>;
     readCidToGidMap(glyphsData: Uint8Array | Uint8ClampedArray, toUnicode: IdentityToUnicodeMap | ToUnicodeMap): number[];
     extractWidths(dict: FontDict, descriptor: FontDict, properties: FontProps): void;
     isSerifFont(baseFontName: string): boolean;
@@ -346,10 +347,10 @@ interface OpInfo {
     variableArgs: boolean;
 }
 export type OpMap = Record<string, OpInfo | null>;
-export type OpArgs = any[] | Uint8ClampedArray | null;
+export type OpArgs = unknown[] | Uint8ClampedArray;
 export interface Operation {
     fn: OPS;
-    args: OpArgs;
+    args: OpArgs | undefined;
 }
 export declare class EvaluatorPreprocessor {
     #private;
@@ -362,7 +363,7 @@ export declare class EvaluatorPreprocessor {
     constructor(stream: BaseStream, xref?: XRef, stateManager?: StateManager<EvalState | TextState>);
     get savedStatesDepth(): number;
     read(operation: Operation): boolean;
-    preprocessCommand(fn: OPS, args: OpArgs): void;
+    preprocessCommand(fn: OPS, args: OpArgs | undefined): void;
 }
 export {};
 //# sourceMappingURL=evaluator.d.ts.map

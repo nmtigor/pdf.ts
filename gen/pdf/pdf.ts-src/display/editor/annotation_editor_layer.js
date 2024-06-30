@@ -160,7 +160,9 @@ export class AnnotationEditorLayer {
         const annotationElementIds = new Set();
         for (const editor of this.#editors.values()) {
             editor.enableEditing();
+            editor.show(true);
             if (editor.annotationElementId) {
+                this.#uiManager.removeChangedExistingAnnotation(editor);
                 annotationElementIds.add(editor.annotationElementId);
             }
         }
@@ -192,12 +194,19 @@ export class AnnotationEditorLayer {
         this.#isDisabling = true;
         this.div.tabIndex = -1;
         this.togglePointerEvents(false);
-        const hiddenAnnotationIds = new Set();
+        const changedAnnotations = new Map();
+        const resetAnnotations = new Map();
         for (const editor of this.#editors.values()) {
             editor.disableEditing();
-            if (!editor.annotationElementId || editor.serialize() !== undefined) {
-                hiddenAnnotationIds.add(editor.annotationElementId);
+            if (!editor.annotationElementId) {
                 continue;
+            }
+            if (editor.serialize() !== undefined) {
+                changedAnnotations.set(editor.annotationElementId, editor);
+                continue;
+            }
+            else {
+                resetAnnotations.set(editor.annotationElementId, editor);
             }
             this.getEditableAnnotation(editor.annotationElementId)?.show();
             editor.remove();
@@ -207,9 +216,21 @@ export class AnnotationEditorLayer {
             const editables = this.#annotationLayer.getEditableAnnotations();
             for (const editable of editables) {
                 const { id } = editable.data;
-                if (hiddenAnnotationIds.has(id) ||
-                    this.#uiManager.isDeletedAnnotationElement(id)) {
+                if (this.#uiManager.isDeletedAnnotationElement(id)) {
                     continue;
+                }
+                let editor = resetAnnotations.get(id);
+                if (editor) {
+                    editor.resetAnnotationElement(editable);
+                    editor.show(false);
+                    editable.show();
+                    continue;
+                }
+                editor = changedAnnotations.get(id);
+                if (editor) {
+                    this.#uiManager.addChangedExistingAnnotation(editor);
+                    editor.renderAnnotationElement(editable);
+                    editor.show(false);
                 }
                 editable.show();
             }
@@ -328,7 +349,7 @@ export class AnnotationEditorLayer {
         if (editor.parent === this) {
             return;
         }
-        if (editor.annotationElementId) {
+        if (editor.parent && editor.annotationElementId) {
             // this.#uiManager.addDeletedAnnotationElement(editor.annotationElementId); //kkkk bug?
             this.#uiManager.addDeletedAnnotationElement(editor);
             AnnotationEditor.deleteAnnotationElement(editor);

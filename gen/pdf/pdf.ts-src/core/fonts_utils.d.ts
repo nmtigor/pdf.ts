@@ -8,6 +8,7 @@
 import type { FontProps } from "./evaluator.js";
 export declare const SEAC_ANALYSIS_ENABLED = true;
 export declare const enum FontFlags {
+    unknown = 0,
     FixedPitch = 1,
     Serif = 2,
     Symbolic = 4,

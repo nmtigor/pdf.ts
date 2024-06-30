@@ -25,10 +25,12 @@ import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import {
   assertEquals,
   assertInstanceOf,
+  assertStringIncludes,
   assertThrows,
-} from "@std/assert/mod.ts";
+} from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import {
+  BaseException,
   bytesToString,
   createValidAbsoluteUrl,
   getModificationDate,
@@ -39,6 +41,27 @@ import {
 /*80--------------------------------------------------------------------------*/
 
 describe("util", () => {
+  describe("BaseException", () => {
+    it("can initialize exception classes derived from BaseException", () => {
+      class DerivedException extends BaseException {
+        foo;
+
+        constructor(message: string) {
+          super(message, "DerivedException");
+          this.foo = "bar";
+        }
+      }
+
+      const exception = new DerivedException("Something went wrong");
+      assertInstanceOf(exception, DerivedException);
+      assertInstanceOf(exception, BaseException as any);
+      assertEquals(exception.message, "Something went wrong");
+      assertEquals(exception.name, "DerivedException");
+      assertEquals(exception.foo, "bar");
+      // assertStringIncludes(exception.stack!, "BaseExceptionClosure");
+    });
+  });
+
   describe("bytesToString", () => {
     it("handles non-array arguments", () => {
       assertThrows(

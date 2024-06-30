@@ -30,8 +30,8 @@ declare namespace NsCFFParser {
         undefStack: boolean;
         hints: number;
         firstStackClearing: boolean;
-        seac: number[] | null;
-        width: number | null;
+        seac: number[] | undefined;
+        width: number | undefined;
         hasVStems: boolean;
     }
     type CFFDictParsed = [number, number[]][];
@@ -125,14 +125,14 @@ interface CFFTables {
     keyToNameMap: string[];
     nameToKeyMap: Record<string, number>;
     types: (string[] | string)[];
-    defaults: (number[] | number | null)[];
+    defaults: (number[] | number | undefined)[];
     opcodes: ([number, number] | [number])[];
     order: number[];
 }
 declare abstract class CFFDict {
     keyToNameMap: string[];
     nameToKeyMap: Record<string, number>;
-    defaults: (number | number[] | null)[];
+    defaults: (number | number[] | undefined)[];
     types: (string | string[])[];
     opcodes: ([number] | [number, number])[];
     order: number[];
@@ -142,7 +142,7 @@ declare abstract class CFFDict {
     setByKey(key: number, value: number[]): boolean;
     setByName(name: string, value?: number | number[]): void;
     hasName(name: string): boolean;
-    getByName(name: string): number | number[] | null | undefined;
+    getByName(name: string): number | number[] | undefined;
     removeByName(name: string): void;
     static createTables(layout: CFFLayout): CFFTables;
 }
@@ -150,7 +150,7 @@ type CFFLayoutEntry = [
     key: [number, number] | number,
     name: string,
     types: string[] | string,
-    defaults: number[] | number | null
+    defaults: number[] | number | undefined
 ];
 type CFFLayout = CFFLayoutEntry[];
 declare namespace NsCFFTopDict {

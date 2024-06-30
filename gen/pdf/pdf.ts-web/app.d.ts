@@ -5,6 +5,7 @@
  * @module pdf/pdf.ts-web/app
  * @license Apache-2.0
  ******************************************************************************/
+import type { dot2d_t, int } from "../../lib/alias.js";
 import "../../lib/jslang.js";
 import type { DocumentInfo, Metadata, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
@@ -80,6 +81,7 @@ type OpenP_ = {
     filename?: string;
     range?: PDFDataRangeTransport;
     originalUrl?: string | undefined;
+    useSystemFonts?: boolean;
 };
 type TouchInfo_ = {
     touch0X: number;
@@ -126,11 +128,14 @@ export declare class PDFViewerApplication {
     url: string;
     baseUrl: string;
     _downloadUrl: string;
-    _boundEvents: Record<string, ((...args: any[]) => void) | undefined>;
+    _eventBusAbortController: AbortController | undefined;
+    _windowAbortController: AbortController | undefined;
     documentInfo: DocumentInfo | undefined;
     metadata: Metadata | undefined;
     _contentLength: number | undefined;
     _saveInProgress: boolean;
+    _lastScrollTop: number | undefined;
+    _lastScrollLeft: number | undefined;
     _wheelUnusedTicks: number;
     _wheelUnusedFactor: number;
     _touchUnusedTicks: number;
@@ -144,8 +149,6 @@ export declare class PDFViewerApplication {
     _nimbusDataPromise?: Promise<NimbusExperimentData | undefined>;
     _caretBrowsing: CaretBrowsingMode | undefined;
     _isScrolling: boolean;
-    _lastScrollTop: number;
-    _lastScrollLeft: number;
     disableAutoFetchLoadingBarTimeout: number | undefined;
     _annotationStorageModified?: boolean;
     _openFileInput: HTMLInputElement | undefined;
@@ -159,8 +162,9 @@ export declare class PDFViewerApplication {
     get mlManager(): import("./firefoxcom.js").MLManager | import("./chromecom.js").MLManager | import("./genericcom.js").MLManager | undefined;
     get initialized(): boolean;
     get initializedPromise(): Promise<void>;
-    zoomIn(steps?: number, scaleFactor?: number): void;
-    zoomOut(steps?: number, scaleFactor?: number): void;
+    updateZoom(steps?: int, scaleFactor?: number, origin?: dot2d_t): void;
+    zoomIn(): void;
+    zoomOut(): void;
     zoomReset(): void;
     get pagesCount(): number;
     get page(): number;
@@ -235,7 +239,6 @@ export declare class PDFViewerApplication {
     unbindWindowEvents(): void;
     _accumulateTicks(ticks: number, prop: "_wheelUnusedTicks" | "_touchUnusedTicks"): number;
     _accumulateFactor(previousScale: number, factor: number, prop: "_wheelUnusedFactor" | "_touchUnusedFactor"): number;
-    _centerAtPos(previousScale: number, x: number, y: number): void;
     /**
      * Used together with the integration-tests, to enable awaiting full
      * initialization of the scripting/sandbox.

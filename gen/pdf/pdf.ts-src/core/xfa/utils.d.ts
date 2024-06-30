@@ -42,7 +42,11 @@ export interface XFAColor {
     g: number;
     b: number;
 }
-export declare function getColor(data?: string, def?: number[]): XFAColor;
+export declare function getColor(data?: string, def?: number[]): {
+    r: number;
+    g: number;
+    b: number;
+};
 export interface XFABBox {
     x: number;
     y: number;

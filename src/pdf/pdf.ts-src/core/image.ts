@@ -21,9 +21,9 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import type { OC2D, TypedArray } from "../../../lib/alias.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import type { OC2D, TypedArray } from "@fe-lib/alias.ts";
+import { assert } from "@fe-lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import {
   convertBlackAndWhiteToRGBA,
   convertToRGBA,
@@ -44,7 +44,6 @@ import { ImageResizer } from "./image_resizer.ts";
 import type { LocalColorSpaceCache } from "./image_utils.ts";
 import { JpegStream } from "./jpeg_stream.ts";
 import { JpxImage } from "./jpx.ts";
-import type { JpxStream } from "./jpx_stream.ts";
 import { type Dict, Name } from "./primitives.ts";
 import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
@@ -174,6 +173,7 @@ export class PDFImage {
   bpc: number;
   colorSpace?: ColorSpace;
   numComps?: number | undefined;
+  ignoreColorSpace: boolean | undefined;
 
   decode;
   needsDecode: boolean;
@@ -195,6 +195,7 @@ export class PDFImage {
     localColorSpaceCache,
   }: PDFImageCtorP_) {
     this.image = image;
+    let jpxDecode = false;
     const dict = image.dict!;
 
     const filter = dict.get("F", "Filter");
@@ -209,14 +210,23 @@ export class PDFImage {
     }
     switch (filterName) {
       case "JPXDecode":
-        const jpxImage = new JpxImage();
-        jpxImage.parseImageProperties(image.stream as JpxStream);
-        (image.stream as JpxStream).reset();
+        //kkkk TOCLEANUP
+        // const jpxImage = new JpxImage();
+        // jpxImage.parseImageProperties(image.stream as JpxStream);
+        // (image.stream as JpxStream).reset();
 
-        image.width = jpxImage.width;
-        image.height = jpxImage.height;
-        image.bitsPerComponent = jpxImage.bitsPerComponent;
-        image.numComps = jpxImage.componentsCount;
+        // image.width = jpxImage.width;
+        // image.height = jpxImage.height;
+        // image.bitsPerComponent = jpxImage.bitsPerComponent;
+        // image.numComps = jpxImage.componentsCount;
+        ({
+          width: image.width,
+          height: image.height,
+          componentsCount: image.numComps,
+          bitsPerComponent: image.bitsPerComponent,
+        } = JpxImage.parseImageProperties(image.stream));
+        image.stream.reset();
+        jpxDecode = true;
         break;
       case "JBIG2Decode":
         image.bitsPerComponent = 1;
@@ -291,17 +301,22 @@ export class PDFImage {
             );
         }
       }
+
       this.colorSpace = ColorSpace.parse({
-        cs: <CS> colorSpace,
+        cs: colorSpace as CS,
         xref,
         resources: isInline ? res : undefined,
         pdfFunctionFactory,
         localColorSpaceCache,
       });
       this.numComps = this.colorSpace.numComps;
+
+      // If the jpx image has a color space then it musn't be used in order to
+      // be able to use the color space that comes from the pdf.
+      this.ignoreColorSpace = jpxDecode && this.colorSpace.name === "Indexed";
     }
 
-    this.decode = <number[] | undefined> dict.getArray("D", "Decode");
+    this.decode = dict.getArray("D", "Decode") as number[] | undefined;
     this.needsDecode = false;
     if (
       this.decode &&
@@ -1092,7 +1107,7 @@ export class PDFImage {
     this.image.drawHeight = drawHeight || this.height;
     this.image.forceRGBA = !!forceRGBA;
     this.image.forceRGB = !!forceRGB;
-    const imageBytes = this.image.getBytes(length);
+    const imageBytes = this.image.getBytes(length, this.ignoreColorSpace);
 
     // If imageBytes came from a DecodeStream, we're safe to transfer it
     // (and thus detach its underlying buffer) because it will constitute

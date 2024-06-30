@@ -29,10 +29,14 @@ export class TextHighlighter {
     matches = [];
     eventBus;
     pageIdx;
-    _onUpdateTextLayerMatches;
+    //kkkk TOCLEANUP
+    // _onUpdateTextLayerMatches:
+    //   | ((evt: EventMap["updatetextlayermatches"]) => void)
+    //   | undefined;
     textDivs;
     textContentItemsStr;
     enabled = false;
+    #eventAbortController;
     constructor({ findController, eventBus, pageIndex }) {
         this.findController = findController;
         this.eventBus = eventBus;
@@ -60,24 +64,23 @@ export class TextHighlighter {
             throw new Error("TextHighlighter is already enabled.");
         }
         this.enabled = true;
-        if (!this._onUpdateTextLayerMatches) {
-            this._onUpdateTextLayerMatches = (evt) => {
+        if (!this.#eventAbortController) {
+            this.#eventAbortController = new AbortController();
+            this.eventBus._on("updatetextlayermatches", (evt) => {
                 if (evt.pageIndex === this.pageIdx || evt.pageIndex === -1) {
                     this._updateMatches();
                 }
-            };
-            this.eventBus._on("updatetextlayermatches", this._onUpdateTextLayerMatches);
+            }, { signal: this.#eventAbortController.signal });
         }
         this._updateMatches();
     }
     disable() {
-        if (!this.enabled)
+        if (!this.enabled) {
             return;
-        this.enabled = false;
-        if (this._onUpdateTextLayerMatches) {
-            this.eventBus._off("updatetextlayermatches", this._onUpdateTextLayerMatches);
-            this._onUpdateTextLayerMatches = undefined;
         }
+        this.enabled = false;
+        this.#eventAbortController?.abort();
+        this.#eventAbortController = undefined;
         this._updateMatches(/* reset = */ true);
     }
     #convertMatches(matches, matchesLength) {
@@ -131,7 +134,7 @@ export class TextHighlighter {
         const isSelectedPage = pageIdx === findController.selected.pageIdx;
         const selectedMatchIdx = findController.selected.matchIdx;
         const highlightAll = findController.state.highlightAll;
-        let prevEnd = null;
+        let prevEnd;
         const infinity = {
             divIdx: -1,
             offset: undefined,
@@ -191,7 +194,7 @@ export class TextHighlighter {
             // Match inside new div.
             if (!prevEnd || begin.divIdx !== prevEnd.divIdx) {
                 // If there was a previous div, then add the text at the end.
-                if (prevEnd !== null) {
+                if (prevEnd !== undefined) {
                     appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
                 }
                 // Clear the divs and set the content until the starting point.

@@ -6,18 +6,19 @@
  * @license Apache-2.0
  ******************************************************************************/
 import type { Locale } from "../../lib/Locale.js";
-import type { AnnotActions, AppInfo, Destination, DocInfo, ExplicitDest, FieldObject, PDFDocumentProxy, PrintAnnotationStorage, RefProxy, ScriptingActionName, SetOCGState } from "../pdf.ts-src/pdf.js";
+import type { AnnotActions, AppInfo, Destination, DocInfo, ExplicitDest, FieldObject, PDFDocumentProxy, PrintAnnotationStorage, ScriptingActionName, SetOCGState } from "../pdf.ts-src/pdf.js";
 import type { EventBus } from "./event_utils.js";
 import type { LinkTarget } from "./pdf_link_service.js";
 import type { RenderingStates } from "./ui_utils.js";
 import type { FluentMessageArgs } from "../../3rd/fluent/dom/esm/localization.js";
 import type { PDFViewerApplication } from "./app.js";
 import type { PageOverview } from "./pdf_viewer.js";
+import type { uint } from "../../lib/alias.js";
 export interface IPDFLinkService {
     eventBus?: EventBus;
     get pagesCount(): number;
-    get page(): number;
-    set page(value: number);
+    get page(): uint;
+    set page(value: uint);
     get rotation(): number;
     set rotation(value: number);
     get isInPresentationMode(): boolean;
@@ -50,12 +51,6 @@ export interface IPDFLinkService {
     setHash(hash: string): void;
     executeNamedAction(action: string): void;
     executeSetOCGState(action: SetOCGState): void;
-    /**
-     * @param pageNum page number.
-     * @param pageRef reference to the page.
-     */
-    cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
-    _cachedPageNumber(pageRef: RefProxy | undefined): number | undefined;
 }
 export interface HistoryInitP {
     /**

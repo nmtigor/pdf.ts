@@ -12,6 +12,7 @@ import type { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.js";
 import type { MLManager as MLManager_f } from "../../../pdf.ts-web/firefoxcom.js";
 import type { MLManager as MLManager_g } from "../../../pdf.ts-web/genericcom.js";
 import type { PageColors } from "../../../pdf.ts-web/pdf_viewer.js";
+import type { Box } from "../../alias.js";
 import type { AnnotationEditorName } from "../../shared/util.js";
 import { AnnotationEditorType } from "../../shared/util.js";
 import type { PDFDocumentProxy } from "../api.js";
@@ -22,7 +23,7 @@ import { FreeTextEditor } from "./freetext.js";
 import type { HighlightEditor } from "./highlight.js";
 import { InkEditor } from "./ink.js";
 import { StampEditor } from "./stamp.js";
-import type { Box } from "../../alias.js";
+import type { AnnotationElement } from "../annotation_layer.js";
 export declare function bindEvents<T extends AnnotationEditor | AnnotationEditorLayer>(obj: T, element: HTMLElement, names: (keyof HTMLElementEventMap & keyof T)[]): void;
 /**
  * Convert a number between 0 and 100 into an hex number between 0 and 255.
@@ -380,6 +381,9 @@ export declare class AnnotationEditorUIManager {
     isActive(editor: AnnotationEditor): boolean;
     get imageManager(): ImageManager;
     getSelectionBoxes(textLayer: Element | null): Box[] | undefined;
+    addChangedExistingAnnotation({ annotationElementId, id }: AnnotationEditor): void;
+    removeChangedExistingAnnotation({ annotationElementId }: AnnotationEditor): void;
+    renderAnnotationElement(annotation: AnnotationElement): void;
 }
 export {};
 //# sourceMappingURL=tools.d.ts.map

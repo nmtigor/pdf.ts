@@ -21,7 +21,6 @@
  */
 import { html } from "../../lib/dom.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
-import { getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";
 import { waitOnEventOrTimeout } from "./event_utils.js";
 export class PDFAttachmentViewer extends BaseTreeViewer {
@@ -75,7 +74,10 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
         });
     }
     /** @implement */
-    _bindLink(element, { content, filename }) {
+    _bindLink(element, { content, description, filename }) {
+        if (description) {
+            element.title = description;
+        }
         element.onclick = () => {
             this.downloadManager.openOrDownloadData(content, filename);
             return false;
@@ -95,13 +97,11 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
         let attachmentsCount = 0;
         for (const name in attachments) {
             const item = attachments[name];
-            const content = item.content, filename = getFilenameFromUrl(item.filename, 
-            /* onlyStripPath = */ true);
             const div = html("div");
             div.className = "treeItem";
             const element = html("a");
-            this._bindLink(element, { content, filename });
-            element.textContent = this._normalizeTextContent(filename);
+            this._bindLink(element, item);
+            element.textContent = this._normalizeTextContent(item.filename);
             div.append(element);
             fragment.append(div);
             attachmentsCount++;
@@ -111,7 +111,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
     /**
      * Used to append FileAttachment annotations to the sidebar.
      */
-    #appendAttachment = ({ filename, content }) => {
+    #appendAttachment = (item) => {
         const renderedPromise = this.#renderedCapability.promise;
         renderedPromise.then(() => {
             if (renderedPromise !== this.#renderedCapability.promise) {
@@ -121,15 +121,11 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
             const attachments = this._attachments ||
                 Object.create(null);
             for (const name in attachments) {
-                if (filename === name) {
-                    // Ignore the new attachment if it already exists.
-                    return;
+                if (item.filename === name) {
+                    return; // Ignore the new attachment if it already exists.
                 }
             }
-            attachments[filename] = {
-                filename,
-                content,
-            };
+            attachments[item.filename] = item;
             this.render({
                 attachments,
                 keepRenderedCapability: true,

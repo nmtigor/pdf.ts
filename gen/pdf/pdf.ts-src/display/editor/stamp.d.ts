@@ -19,7 +19,6 @@ export interface StampEditorP extends AnnotationEditorP {
 }
 export interface StampEditorSerialized extends AnnotStorageValue {
     bitmapUrl?: string;
-    isSvg?: boolean | undefined;
 }
 /**
  * Basic text editor in order to create a FreeTex annotation.

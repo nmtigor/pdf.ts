@@ -80,8 +80,7 @@ export class XFAObject {
         if (!proto._attributes) {
             const attributes = (proto._attributes = new Set());
             for (const name of Object.getOwnPropertyNames(this)) {
-                if (this[name] === null ||
-                    this[name] === undefined ||
+                if (this[name] == undefined ||
                     this[name] instanceof XFAObject ||
                     this[name] instanceof XFAObjectArray) {
                     break;
@@ -295,7 +294,7 @@ export class XFAObject {
         }
         for (const name of Object.getOwnPropertyNames(this)) {
             const value = this[name];
-            if (value === null || value === undefined) {
+            if (value == undefined) {
                 continue;
             }
             if (value instanceof XFAObject) {
@@ -507,7 +506,7 @@ export class XFAObject {
                 }
                 continue;
             }
-            if (value !== null && value !== undefined) {
+            if (value != undefined) {
                 value[$resolvePrototypes](ids, ancestors);
                 if (protoValue) {
                     // protoValue must be treated as a prototype for value.
@@ -515,7 +514,7 @@ export class XFAObject {
                 }
                 continue;
             }
-            if (protoValue !== null && protoValue !== undefined) {
+            if (protoValue != undefined) {
                 const child = protoValue[$clone]();
                 child[_parent] = this;
                 this[name] = child;
@@ -801,7 +800,7 @@ export class XmlObject extends XFAObject {
     /** @final */
     [$getChildrenByClass](name) {
         const value = this[_attributes]?.get(name);
-        if (value !== null && value !== undefined) {
+        if (value != undefined) {
             return value;
         }
         return this[$getChildren](name);

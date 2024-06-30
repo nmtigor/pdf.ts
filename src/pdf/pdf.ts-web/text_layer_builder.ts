@@ -22,24 +22,21 @@
  */
 
 import { html } from "@fe-lib/dom.ts";
-import { GENERIC, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
-import type { TextDivProps } from "../pdf.ts-src/display/text_layer.ts";
+import { CHROME, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
 import type {
+  GetTextContentP,
   PageViewport,
-  TextContent,
-  TextLayerRenderTask,
+  PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
-import {
-  normalizeUnicode,
-  renderTextLayer,
-  updateTextLayer,
-} from "../pdf.ts-src/pdf.ts";
+import { normalizeUnicode, TextLayer } from "../pdf.ts-src/pdf.ts";
 import type { TextAccessibilityManager } from "./text_accessibility.ts";
 import type { TextHighlighter } from "./text_highlighter.ts";
 import { removeNullCharacters } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface TextLayerBuilderOptions {
+  pdfPage: PDFPageProxy;
+
   /**
    * Optional object that will handle
    * highlighting text from the find controller.
@@ -67,33 +64,40 @@ interface TextLayerBuilderMatches {
  * contain text that matches the PDF text they are overlaying.
  */
 export class TextLayerBuilder {
-  textContentItemsStr: string[] = [];
-  renderingDone = false;
+  //kkkk TOCLEANUP
+  // textContentItemsStr: string[] = [];
 
-  textDivs: HTMLDivElement[] = [];
-  get numTextDivs() {
-    return this.textDivs.length;
-  }
+  //kkkk TOCLEANUP
+  // textDivs: HTMLDivElement[] = [];
+  // get numTextDivs() {
+  //   return this.textDivs.length;
+  // }
 
-  textDivProperties = new WeakMap<HTMLElement, TextDivProps>();
-  textLayerRenderTask?: TextLayerRenderTask | undefined;
+  pdfPage;
+  //kkkk TOCLEANUP
+  // textDivProperties = new WeakMap<HTMLElement, TextDivProps>();
   highlighter;
   accessibilityManager;
   #enablePermissions;
   #onAppend;
+  #renderingDone = false;
+  #textLayer: TextLayer | undefined;
+  //kkkk TOCLEANUP
+  // #textContentSource: ReadableStream<TextContent> | TextContent | undefined;
 
   div;
 
-  #rotation = 0;
-  #scale = 0;
-  #textContentSource: ReadableStream<TextContent> | TextContent | undefined;
+  static #textLayers = new Map<HTMLDivElement, HTMLDivElement>();
+  static #selectionChangeAbortController: AbortController | undefined;
 
   constructor({
+    pdfPage,
     highlighter,
     accessibilityManager,
     enablePermissions = false,
     onAppend,
   }: TextLayerBuilderOptions) {
+    this.pdfPage = pdfPage;
     this.highlighter = highlighter;
     this.accessibilityManager = accessibilityManager;
     this.#enablePermissions = enablePermissions === true;
@@ -105,63 +109,46 @@ export class TextLayerBuilder {
   }
 
   #finishRendering() {
-    this.renderingDone = true;
+    this.#renderingDone = true;
 
     const endOfContent = html("div");
     endOfContent.className = "endOfContent";
     this.div.append(endOfContent);
 
-    this.#bindMouse();
+    this.#bindMouse(endOfContent);
   }
 
   /**
    * Renders the text layer.
    */
-  async render(viewport: PageViewport) {
-    if (!this.#textContentSource) {
-      throw new Error('No "textContentSource" parameter specified.');
-    }
-
-    const scale = viewport.scale * (globalThis.devicePixelRatio || 1);
-    const { rotation } = viewport;
-    if (this.renderingDone) {
-      const mustRotate = rotation !== this.#rotation;
-      const mustRescale = scale !== this.#scale;
-      if (mustRotate || mustRescale) {
-        this.hide();
-        updateTextLayer({
-          container: this.div,
-          viewport,
-          textDivs: this.textDivs,
-          textDivProperties: this.textDivProperties,
-          mustRescale,
-          mustRotate,
-        });
-        this.#scale = scale;
-        this.#rotation = rotation;
-      }
+  async render(viewport: PageViewport, textContentParams?: GetTextContentP) {
+    if (this.#renderingDone && this.#textLayer) {
+      this.#textLayer.update({
+        viewport,
+        onBefore: this.hide.bind(this),
+      });
       this.show();
       return;
     }
 
     this.cancel();
-
-    this.highlighter?.setTextMapping(this.textDivs, this.textContentItemsStr);
-    this.accessibilityManager?.setTextMapping(this.textDivs);
-
-    this.textLayerRenderTask = renderTextLayer({
-      textContentSource: this.#textContentSource,
+    this.#textLayer = new TextLayer({
+      textContentSource: this.pdfPage.streamTextContent(
+        textContentParams || {
+          includeMarkedContent: true,
+          disableNormalization: true,
+        },
+      ),
       container: this.div,
       viewport,
-      textDivs: this.textDivs,
-      textDivProperties: this.textDivProperties,
-      textContentItemsStr: this.textContentItemsStr,
     });
 
-    await this.textLayerRenderTask.promise;
+    const { textDivs, textContentItemsStr } = this.#textLayer;
+    this.highlighter?.setTextMapping(textDivs, textContentItemsStr);
+    this.accessibilityManager?.setTextMapping(textDivs);
+
+    await this.#textLayer.render();
     this.#finishRendering();
-    this.#scale = scale;
-    this.#rotation = rotation;
     // Ensure that the textLayer is appended to the DOM *before* handling
     // e.g. a pending search operation.
     this.#onAppend?.(this.div);
@@ -170,7 +157,7 @@ export class TextLayerBuilder {
   }
 
   hide() {
-    if (!this.div.hidden && this.renderingDone) {
+    if (!this.div.hidden && this.#renderingDone) {
       // We turn off the highlighter in order to avoid to scroll into view an
       // element of the text layer which could be hidden.
       this.highlighter?.disable();
@@ -179,7 +166,7 @@ export class TextLayerBuilder {
   }
 
   show() {
-    if (this.div.hidden && this.renderingDone) {
+    if (this.div.hidden && this.#renderingDone) {
       this.div.hidden = false;
       this.highlighter?.enable();
     }
@@ -189,65 +176,65 @@ export class TextLayerBuilder {
    * Cancel rendering of the text layer.
    */
   cancel() {
-    if (this.textLayerRenderTask) {
-      this.textLayerRenderTask.cancel();
-      this.textLayerRenderTask = undefined;
-    }
+    this.#textLayer?.cancel();
+    this.#textLayer = undefined;
+
     this.highlighter?.disable();
     this.accessibilityManager?.disable();
-    this.textContentItemsStr.length = 0;
-    this.textDivs.length = 0;
-    this.textDivProperties = new WeakMap();
+    TextLayerBuilder.#removeGlobalSelectionListener(this.div);
   }
 
-  setTextContentSource(source: ReadableStream | TextContent) {
-    this.cancel();
-    this.#textContentSource = source;
-  }
+  //kkkk TOCLEANUP
+  // setTextContentSource(source: ReadableStream | TextContent) {
+  //   this.cancel();
+  //   this.#textContentSource = source;
+  // }
 
   /**
    * Improves text selection by adding an additional div where the mouse was
    * clicked. This reduces flickering of the content if the mouse is slowly
    * dragged up or down.
    */
-  #bindMouse() {
+  #bindMouse(end: HTMLDivElement) {
     const { div } = this;
 
     div.on("mousedown", (evt) => {
-      const end = div.querySelector<HTMLElement>(".endOfContent");
-      if (!end) {
-        return;
-      }
-      /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
-        // On non-Firefox browsers, the selection will feel better if the height
-        // of the `endOfContent` div is adjusted to start at mouse click
-        // location. This avoids flickering when the selection moves up.
-        // However it does not work when selection is started on empty space.
-        let adjustTop = evt.target !== div;
-        /*#static*/ if (PDFJSDev || GENERIC) {
-          adjustTop &&=
-            getComputedStyle(end).getPropertyValue("-moz-user-select") !==
-              "none";
-        }
-        if (adjustTop) {
-          const divBounds = div.getBoundingClientRect();
-          const r = Math.max(0, (evt.pageY - divBounds.top) / divBounds.height);
-          end.style.top = (r * 100).toFixed(2) + "%";
-        }
-      }
+      //kkkk TOCLEANUP
+      // const end = div.querySelector<HTMLElement>(".endOfContent");
+      // if (!end) {
+      //   return;
+      // }
+      // /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+      //   // On non-Firefox browsers, the selection will feel better if the height
+      //   // of the `endOfContent` div is adjusted to start at mouse click
+      //   // location. This avoids flickering when the selection moves up.
+      //   // However it does not work when selection is started on empty space.
+      //   let adjustTop = evt.target !== div;
+      //   /*#static*/ if (PDFJSDev || GENERIC) {
+      //     adjustTop &&=
+      //       getComputedStyle(end).getPropertyValue("-moz-user-select") !==
+      //         "none";
+      //   }
+      //   if (adjustTop) {
+      //     const divBounds = div.getBoundingClientRect();
+      //     const r = Math.max(0, (evt.pageY - divBounds.top) / divBounds.height);
+      //     end.style.top = (r * 100).toFixed(2) + "%";
+      //   }
+      // }
       end.classList.add("active");
     });
 
-    div.on("mouseup", () => {
-      const end = div.querySelector<HTMLElement>(".endOfContent");
-      if (!end) {
-        return;
-      }
-      /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
-        end.style.top = "";
-      }
-      end.classList.remove("active");
-    });
+    //kkkk TOCLEANUP
+    // div.on("mouseup", () => {
+    //   const end = div.querySelector<HTMLElement>(".endOfContent");
+    //   if (!end) {
+    //     return;
+    //   }
+    //   /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+    //     end.style.top = "";
+    //   }
+    //   end.classList.remove("active");
+    // });
 
     div.on("copy", (event) => {
       if (!this.#enablePermissions) {
@@ -260,6 +247,129 @@ export class TextLayerBuilder {
       event.preventDefault();
       event.stopPropagation();
     });
+
+    TextLayerBuilder.#textLayers.set(div, end);
+    TextLayerBuilder.#enableGlobalSelectionListener();
+  }
+
+  static #removeGlobalSelectionListener(textLayerDiv: HTMLDivElement) {
+    this.#textLayers.delete(textLayerDiv);
+
+    if (this.#textLayers.size === 0) {
+      this.#selectionChangeAbortController?.abort();
+      this.#selectionChangeAbortController = undefined;
+    }
+  }
+
+  static #enableGlobalSelectionListener() {
+    if (this.#selectionChangeAbortController) {
+      // document-level event listeners already installed
+      return;
+    }
+    this.#selectionChangeAbortController = new AbortController();
+    const { signal } = this.#selectionChangeAbortController;
+
+    const reset = (end: HTMLDivElement, textLayer: HTMLDivElement) => {
+      /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+        textLayer.append(end);
+        end.style.width = "";
+        end.style.height = "";
+      }
+      end.classList.remove("active");
+    };
+
+    document.addEventListener(
+      "pointerup",
+      () => {
+        this.#textLayers.forEach(reset);
+      },
+      { signal },
+    );
+
+    /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+      // eslint-disable-next-line no-var
+      var isFirefox: boolean | undefined, prevRange: Range | undefined;
+    }
+
+    document.addEventListener(
+      "selectionchange",
+      () => {
+        const selection = document.getSelection()!;
+        if (selection.rangeCount === 0) {
+          this.#textLayers.forEach(reset);
+          return;
+        }
+
+        // Even though the spec says that .rangeCount should be 0 or 1, Firefox
+        // creates multiple ranges when selecting across multiple pages.
+        // Make sure to collect all the .textLayer elements where the selection
+        // is happening.
+        const activeTextLayers = new Set<HTMLDivElement>();
+        for (let i = 0; i < selection.rangeCount; i++) {
+          const range = selection.getRangeAt(i);
+          for (const textLayerDiv of this.#textLayers.keys()) {
+            if (
+              !activeTextLayers.has(textLayerDiv) &&
+              range.intersectsNode(textLayerDiv)
+            ) {
+              activeTextLayers.add(textLayerDiv);
+            }
+          }
+        }
+
+        for (const [textLayerDiv, endDiv] of this.#textLayers) {
+          if (activeTextLayers.has(textLayerDiv)) {
+            endDiv.classList.add("active");
+          } else {
+            reset(endDiv, textLayerDiv);
+          }
+        }
+
+        /*#static*/ if (MOZCENTRAL) {
+          return;
+        }
+        /*#static*/ if (PDFJSDev || !CHROME) {
+          isFirefox ??= getComputedStyle(
+            this.#textLayers.values().next().value,
+          ).getPropertyValue("-moz-user-select") === "none";
+
+          if (isFirefox) {
+            return;
+          }
+        }
+        // In non-Firefox browsers, when hovering over an empty space (thus,
+        // on .endOfContent), the selection will expand to cover all the
+        // text between the current selection and .endOfContent. By moving
+        // .endOfContent to right after (or before, depending on which side
+        // of the selection the user is moving), we limit the selection jump
+        // to at most cover the enteirety of the <span> where the selection
+        // is being modified.
+        const range = selection.getRangeAt(0);
+        const modifyStart = prevRange &&
+          (range.compareBoundaryPoints(Range.END_TO_END, prevRange) === 0 ||
+            range.compareBoundaryPoints(Range.START_TO_END, prevRange) === 0);
+        let anchor = modifyStart ? range.startContainer : range.endContainer;
+        if (anchor.nodeType === Node.TEXT_NODE) {
+          anchor = anchor.parentNode!;
+        }
+
+        const parentTextLayer = anchor.parentElement!.closest(
+          ".textLayer",
+        ) as HTMLDivElement;
+        const endDiv = this.#textLayers.get(parentTextLayer);
+        if (endDiv) {
+          endDiv.style.width = parentTextLayer.style.width;
+          endDiv.style.height = parentTextLayer.style.height;
+          anchor.parentElement!.insertBefore(
+            endDiv,
+            modifyStart ? anchor : anchor.nextSibling,
+          );
+        }
+
+        prevRange = range.cloneRange();
+      },
+      { signal },
+    );
   }
 }
 /*80--------------------------------------------------------------------------*/

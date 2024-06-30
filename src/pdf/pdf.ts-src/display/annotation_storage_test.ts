@@ -21,8 +21,9 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/testing/asserts.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
+import type { AnnotStorageValue } from "./annotation_layer.ts";
 import { AnnotationStorage } from "./annotation_storage.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -73,7 +74,8 @@ describe("AnnotationStorage", () => {
     it("should set a new value in the annotation storage", () => {
       const annotationStorage = new AnnotationStorage();
       annotationStorage.setValue("123A", { value: "an other string" });
-      const value = annotationStorage.getAll()!["123A"].value;
+      const value =
+        (annotationStorage.getAll()!["123A"] as AnnotStorageValue).value;
       console.assert(value === "an other string");
     });
 

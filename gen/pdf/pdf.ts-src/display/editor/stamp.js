@@ -336,25 +336,21 @@ export class StampEditor extends AnnotationEditor {
             const offscreen = new OffscreenCanvas(width, height);
             const ctx = offscreen.getContext("2d");
             ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, 0, width, height);
-            offscreen.convertToBlob().then((blob) => {
-                const fileReader = new FileReader();
-                fileReader.onload = () => {
-                    const url = fileReader.result;
-                    this._uiManager
-                        .mlGuess({
-                        service: "image-to-text",
-                        request: {
-                            imageData: url,
-                        },
-                    })
-                        .then((response) => {
-                        const altText = response?.output || "";
-                        if (this.parent && altText && !this.hasAltText()) {
-                            this.altTextData = { altText, decorative: false };
-                        }
-                    });
-                };
-                fileReader.readAsDataURL(blob);
+            this._uiManager
+                .mlGuess({
+                service: "image-to-text",
+                request: {
+                    data: ctx.getImageData(0, 0, width, height).data,
+                    width,
+                    height,
+                    channels: 4,
+                },
+            })
+                .then((response) => {
+                const altText = response?.output || "";
+                if (this.parent && altText && !this.hasAltText()) {
+                    this.altTextData = { altText, decorative: false };
+                }
             });
         }
         const ctx = canvas.getContext("2d");

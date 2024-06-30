@@ -25,7 +25,7 @@ import type { C2D, dot2d_t, rect_t, TupleOf } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import { noContextMenu } from "@fe-lib/util/general.ts";
 import { MOZCENTRAL } from "@fe-src/global.ts";
-import type { IL10n } from "@pdf.ts-web/interfaces.ts";
+import type { IL10n } from "@fe-pdf.ts-web/interfaces.ts";
 import {
   AnnotationEditorParamsType,
   AnnotationEditorType,

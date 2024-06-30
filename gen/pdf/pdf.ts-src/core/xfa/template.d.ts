@@ -233,7 +233,11 @@ declare class ChoiceList extends XFAObject {
 }
 declare class Color extends XFAObject {
     cSpace: string;
-    value: "" | XFAColor;
+    value: "" | {
+        r: number;
+        g: number;
+        b: number;
+    };
     extras: unknown;
     constructor(attributes: XFAAttrs);
     [$hasSettableValue](): boolean;
@@ -1334,7 +1338,7 @@ declare class Variables extends XFAObject {
 }
 export type XFANsTemplate = typeof TemplateNamespace;
 export declare const TemplateNamespace: {
-    [$buildXFAObject](name: string, attributes: XFAAttrs): Template | BreakAfter | BreakBefore | Para | Draw | Field | Caption | Value | Margin | Font | Occur | ExData | ExclGroup | Subform | Border | Area | ContentArea | Assist | AppearanceFilter | Arc | Barcode | Bind | BindItems | Bookend | BooleanElement | Break | Button | Calculate | Certificate | Certificates | CheckButton | ChoiceList | Color | Comb | Connect | Corner | DateElement | DateTime | DateTimeEdit | Decimal | DefaultUi | Desc | DigestMethod | DigestMethods | Edge | Encoding | Encodings | Encrypt | EncryptData | Encryption | EncryptionMethod | EncryptionMethods | Event | ExObject | Execute | Extras | Fill | Filter | Float | Format | Handler | Hyphenation | Image | ImageEdit | Integer | Issuers | Items | Keep | KeyUsage | Line | Linear | LockDocument | Manifest | Mdp | Medium | Message | NumericEdit | Oid | Oids | Overflow | PageArea | PageSet | PasswordEdit | Pattern | Picture | Proto | Radial | Reason | Reasons | Rectangle | RefElement | Script | SetProperty | SignData | Signature | Signing | Solid | Speak | Stipple | SubformSet | SubjectDN | SubjectDNs | Submit | Text | TextEdit | Time | TimeStamp | ToolTip | Traversal | Traverse | Ui | Validate | Variables | undefined;
+    [$buildXFAObject](name: string, attributes: XFAAttrs): Template | Draw | Field | Caption | Value | Margin | Para | Font | Occur | ExData | ExclGroup | Subform | Border | Area | ContentArea | Assist | Bind | Break | Keep | Overflow | PageSet | BreakAfter | BreakBefore | SubformSet | Validate | Traversal | ToolTip | Speak | PageArea | Medium | AppearanceFilter | Arc | Edge | Fill | Barcode | Picture | BindItems | Bookend | BooleanElement | Corner | Button | Event | Script | Calculate | Certificate | Certificates | CheckButton | ChoiceList | Items | Color | Comb | Connect | DateElement | DateTime | DateTimeEdit | Decimal | DefaultUi | Desc | DigestMethod | DigestMethods | Encoding | Encodings | Encrypt | EncryptData | Encryption | EncryptionMethod | EncryptionMethods | ExObject | Execute | Extras | Ui | TextEdit | Text | Rectangle | Filter | Float | Format | Handler | Hyphenation | Image | ImageEdit | Integer | Issuers | KeyUsage | Line | Linear | LockDocument | Manifest | Mdp | Message | NumericEdit | Oid | Oids | PasswordEdit | Pattern | Proto | Radial | Reason | Reasons | RefElement | SetProperty | SignData | Signature | Signing | Solid | Stipple | SubjectDN | SubjectDNs | Submit | Time | TimeStamp | Traverse | Variables | undefined;
     appearanceFilter(attrs: XFAAttrs): AppearanceFilter;
     arc(attrs: XFAAttrs): Arc;
     area(attrs: XFAAttrs): Area;

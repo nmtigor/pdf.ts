@@ -5,22 +5,8 @@
  * @module pdf/pdf.ts-src/core/parser.ts
  * @license Apache-2.0
  ******************************************************************************/
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { bytesToString, FormatError, info, warn } from "../shared/util.js";
 import { Ascii85Stream } from "./ascii_85_stream.js";
 import { AsciiHexStream } from "./ascii_hex_stream.js";
@@ -552,11 +538,24 @@ export class Parser {
         this.shift();
         return imageStream;
     }
-    _findStreamLength(startPos, signature) {
+    #findStreamLength(startPos, signature) {
         const { stream } = this.lexer;
         stream.pos = startPos;
         const SCAN_BLOCK_LENGTH = 2048;
-        const signatureLength = signature.length;
+        const signatureLength = "endstream".length;
+        const END_SIGNATURE = new Uint8Array([0x65, 0x6e, 0x64]);
+        const endLength = END_SIGNATURE.length;
+        // Ideally we'd directly search for "endstream", however there are corrupt
+        // PDF documents where the command is incomplete; hence we search for:
+        //  1. The normal case.
+        //  2. The misspelled case (fixes issue18122.pdf).
+        //  3. The truncated case (fixes issue10004.pdf).
+        const PARTIAL_SIGNATURE = [
+            new Uint8Array([0x73, 0x74, 0x72, 0x65, 0x61, 0x6d]),
+            new Uint8Array([0x73, 0x74, 0x65, 0x61, 0x6d]),
+            new Uint8Array([0x73, 0x74, 0x72, 0x65, 0x61]), // "strea"
+        ];
+        const normalLength = signatureLength - endLength;
         while (stream.pos < stream.end) {
             const scanBytes = stream.peekBytes(SCAN_BLOCK_LENGTH);
             const scanLength = scanBytes.length - signatureLength;
@@ -566,13 +565,40 @@ export class Parser {
             let pos = 0;
             while (pos < scanLength) {
                 let j = 0;
-                while (j < signatureLength && scanBytes[pos + j] === signature[j]) {
+                while (j < endLength && scanBytes[pos + j] === END_SIGNATURE[j]) {
                     j++;
                 }
-                if (j >= signatureLength) {
-                    // `signature` found.
-                    stream.pos += pos;
-                    return stream.pos - startPos;
+                if (j >= endLength) {
+                    // "end" found, find the complete command.
+                    let found = false;
+                    for (const part of PARTIAL_SIGNATURE) {
+                        const partLen = part.length;
+                        let k = 0;
+                        while (k < partLen && scanBytes[pos + j + k] === part[k]) {
+                            k++;
+                        }
+                        if (k >= normalLength) {
+                            // Found "endstream" command.
+                            found = true;
+                            break;
+                        }
+                        if (k >= partLen) {
+                            // Found "endsteam" or "endstea" command.
+                            // Ensure that the byte immediately following the corrupt
+                            // endstream command is a space, to prevent false positives.
+                            const lastByte = scanBytes[pos + j + k];
+                            if (isWhiteSpace(lastByte)) {
+                                info(`Found "${bytesToString([...END_SIGNATURE, ...part])}" when ` +
+                                    "searching for endstream command.");
+                                found = true;
+                            }
+                            break;
+                        }
+                    }
+                    if (found) {
+                        stream.pos += pos;
+                        return stream.pos - startPos;
+                    }
                 }
                 pos++;
             }
@@ -601,46 +627,10 @@ export class Parser {
         }
         else {
             // Bad stream length, scanning for endstream command.
-            const ENDSTREAM_SIGNATURE = new Uint8Array([
-                0x65,
-                0x6e,
-                0x64,
-                0x73,
-                0x74,
-                0x72,
-                0x65,
-                0x61,
-                0x6d,
-            ]);
-            let actualLength = this._findStreamLength(startPos, ENDSTREAM_SIGNATURE);
-            if (actualLength < 0) {
-                // Only allow limited truncation of the endstream signature,
-                // to prevent false positives.
-                const MAX_TRUNCATION = 1;
-                // Check if the PDF generator included truncated endstream commands,
-                // such as e.g. "endstrea" (fixes issue10004.pdf).
-                for (let i = 1; i <= MAX_TRUNCATION; i++) {
-                    const end = ENDSTREAM_SIGNATURE.length - i;
-                    const TRUNCATED_SIGNATURE = ENDSTREAM_SIGNATURE.slice(0, end);
-                    const maybeLength = this._findStreamLength(startPos, TRUNCATED_SIGNATURE);
-                    if (maybeLength >= 0) {
-                        // Ensure that the byte immediately following the truncated
-                        // endstream command is a space, to prevent false positives.
-                        const lastByte = stream.peekBytes(end + 1)[end];
-                        if (!isWhiteSpace(lastByte)) {
-                            break;
-                        }
-                        info(`Found "${bytesToString(TRUNCATED_SIGNATURE)}" when ` +
-                            "searching for endstream command.");
-                        actualLength = maybeLength;
-                        break;
-                    }
-                }
-                if (actualLength < 0) {
-                    throw new FormatError("Missing endstream command.");
-                }
+            length = this.#findStreamLength(startPos);
+            if (length < 0) {
+                throw new FormatError("Missing endstream command.");
             }
-            length = actualLength;
             lexer.nextChar();
             this.shift();
             this.shift();

@@ -21,11 +21,7 @@
  * limitations under the License.
  */
 
-import {
-  assertEquals,
-  assertGreater,
-  assertLessOrEqual,
-} from "@std/assert/mod.ts";
+import { assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { objectSize } from "../pdf.ts-src/shared/util.ts";
 import { AppOptions, OptionKind } from "./app_options.ts";

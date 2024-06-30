@@ -21,9 +21,9 @@
  * limitations under the License.
  */
 
-import { assertMatch, assertObjectMatch } from "@std/assert/mod.ts";
+import { createIdFactory } from "@fe-pdf.ts-test/test_utils.ts";
+import { assertMatch, assertObjectMatch } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory } from "@pdf.ts-test/test_utils.ts";
 import { getFontSubstitution } from "./font_substitutions.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -39,6 +39,29 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       undefined,
+      "TrueType",
+    )!;
+    assertObjectMatch(fontSubstitution, {
+      guessFallback: true,
+      baseFontName: "Foo",
+      src: "local(Foo)",
+      style: {
+        style: "normal",
+        weight: "normal",
+      },
+    });
+    assertMatch(fontSubstitution.css, /^"Foo",g_d(\d+)_sf(\d+)$/);
+  });
+
+  it("should substitute an unknown font subset", () => {
+    const fontName = "ABCDEF+Foo";
+    const fontSubstitution = getFontSubstitution(
+      new Map(),
+      idFactory,
+      localFontPath,
+      fontName,
+      undefined,
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: true,
@@ -60,6 +83,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       undefined,
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: true,
@@ -81,6 +105,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       undefined,
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: true,
@@ -102,6 +127,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       undefined,
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: true,
@@ -123,6 +149,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       "Helvetica",
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: false,
@@ -151,6 +178,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       "Helvetica-Oblique",
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: false,
@@ -181,6 +209,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       "Helvetica-Bold",
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: false,
@@ -210,6 +239,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       "Helvetica-BoldOblique",
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: false,
@@ -242,6 +272,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       undefined,
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: false,
@@ -273,6 +304,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       undefined,
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: false,
@@ -306,6 +338,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       undefined,
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: false,
@@ -339,6 +372,7 @@ describe("getFontSubstitution", () => {
       localFontPath,
       fontName,
       undefined,
+      "TrueType",
     )!;
     assertObjectMatch(fontSubstitution, {
       guessFallback: false,

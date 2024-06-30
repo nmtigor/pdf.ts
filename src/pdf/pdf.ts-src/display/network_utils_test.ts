@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals, assertThrows } from "@std/testing/asserts.ts";
+import { assertEquals, assertThrows } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import {

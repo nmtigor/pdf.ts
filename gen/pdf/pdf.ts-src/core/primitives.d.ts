@@ -99,6 +99,7 @@ export declare class RefSetCache<T = Obj> {
     putAlias(ref: Ref, aliasRef: Ref): void;
     [Symbol.iterator](): IterableIterator<T>;
     clear(): void;
+    items(): Generator<[Ref, T], void, unknown>;
 }
 export declare function isName(v: any, name?: string): boolean;
 export declare function isCmd(v: any, cmd?: string): boolean;

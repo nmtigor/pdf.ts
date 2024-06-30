@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals, assertNotStrictEquals } from "@std/testing/asserts.ts";
+import { assertEquals, assertNotStrictEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { type ExplicitDest } from "../pdf.ts-src/pdf.ts";
 import { isDestArraysEqual, isDestHashesEqual } from "./pdf_history.ts";

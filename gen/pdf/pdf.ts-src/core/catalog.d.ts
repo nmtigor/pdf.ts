@@ -5,7 +5,7 @@
  * @module pdf/pdf.ts-src/core/catalog.ts
  * @license Apache-2.0
  ******************************************************************************/
-import type { rect_t } from "../../../lib/alias.js";
+import type { int, rect_t } from "../../../lib/alias.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import type { ResetForm } from "../display/annotation_layer.js";
 import type { Intent, OutlineNode } from "../display/api.js";
@@ -21,20 +21,24 @@ import type { Obj } from "./primitives.js";
 import { Dict, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { StructTreeRoot } from "./struct_tree.js";
 import { XRef } from "./xref.js";
-type DestPage = Ref | number | null;
+type DestPage = Ref | int | null;
 export type ExplicitDest = [
-    DestPage,
-    {
+    page: DestPage,
+    zoom: {
         name: "XYZ";
     },
     number | null,
     number | null,
-    number | string | null
-] | [DestPage, {
+    number | null
+] | [page: DestPage, zoom: {
     name: "Fit" | "FitB";
-}] | [DestPage, {
-    name: "FitH" | "FitBH" | "FitV" | "FitBV";
-}, number | null] | [DestPage, {
+}] | [
+    page: DestPage,
+    zoom: {
+        name: "FitH" | "FitBH" | "FitV" | "FitBV";
+    },
+    number | null
+] | [page: DestPage, zoom: {
     name: "FitR";
 }, ...rect_t];
 export type Destination = ExplicitDest | Name | string;

@@ -1,6 +1,8 @@
 # /gen/
 /built/
 # /res/
+/tmp/
+/src/baseurl.mjs
 
 # /node_modules/
 .vscode/

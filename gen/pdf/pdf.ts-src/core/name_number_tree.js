@@ -140,11 +140,13 @@ class NameOrNumberTree {
         return undefined;
     }
 }
+/** @final */
 export class NameTree extends NameOrNumberTree {
     constructor(root, xref) {
         super(root, xref, "Names");
     }
 }
+/** @final */
 export class NumberTree extends NameOrNumberTree {
     constructor(root, xref) {
         super(root, xref, "Nums");

@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { isObjectLike } from "@fe-lib/jslang.ts";
 import {
   FORMS_VERSION,
   USERACTIVATION_CALLBACKID,
@@ -501,7 +502,7 @@ export class App extends PDFObject<SendAppData> {
     }
     this._document.obj._userActivation = false;
 
-    if (cMsg && typeof cMsg === "object") {
+    if (isObjectLike(cMsg)) {
       nType = cMsg.nType;
       cMsg = cMsg.cMsg;
     }
@@ -665,7 +666,7 @@ export class App extends PDFObject<SendAppData> {
     bPassword = "",
     cLabel = "",
   ) {
-    if (cQuestion && typeof cQuestion === "object") {
+    if (isObjectLike(cQuestion)) {
       cDefault = cQuestion.cDefault;
       cQuestion = cQuestion.cQuestion;
     }
@@ -678,7 +679,7 @@ export class App extends PDFObject<SendAppData> {
     cExpr: string | { cExpr: string; nMilliseconds?: number },
     nMilliseconds = 0,
   ) {
-    if (cExpr && typeof cExpr === "object") {
+    if (isObjectLike(cExpr)) {
       nMilliseconds = cExpr.nMilliseconds || 0;
       cExpr = cExpr.cExpr;
     }
@@ -700,7 +701,7 @@ export class App extends PDFObject<SendAppData> {
     cExpr: string | { cExpr: string; nMilliseconds?: number },
     nMilliseconds = 0,
   ) {
-    if (cExpr && typeof cExpr === "object") {
+    if (isObjectLike(cExpr)) {
       nMilliseconds = cExpr.nMilliseconds || 0;
       cExpr = cExpr.cExpr;
     }

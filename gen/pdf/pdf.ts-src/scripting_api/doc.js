@@ -10,6 +10,7 @@ import { ZoomType } from "./constants.js";
 import { PDFObject } from "./pdf_object.js";
 import { PrintParams } from "./print_params.js";
 import { serializeError } from "./app_utils.js";
+import { isObjectLike } from "../../../lib/jslang.js";
 const DOC_EXTERNAL = false;
 class InfoProxyHandler {
     static get(obj, prop) {
@@ -724,7 +725,7 @@ export class Doc extends PDFObject {
         /* Not implemented */
     }
     _getField(cName) {
-        if (cName && typeof cName === "object") {
+        if (isObjectLike(cName)) {
             cName = cName.cName;
         }
         if (typeof cName !== "string") {
@@ -806,7 +807,7 @@ export class Doc extends PDFObject {
         /* Not implemented */
     }
     getNthFieldName(nIndex) {
-        if (nIndex && typeof nIndex === "object") {
+        if (isObjectLike(nIndex)) {
             nIndex = nIndex.nIndex;
         }
         if (typeof nIndex !== "number") {
@@ -903,7 +904,7 @@ export class Doc extends PDFObject {
             return;
         }
         this._userActivation = false;
-        if (bUI && typeof bUI === "object") {
+        if (isObjectLike(bUI)) {
             nStart = bUI.nStart;
             nEnd = bUI.nEnd;
             bSilent = bUI.bSilent;
@@ -957,7 +958,7 @@ export class Doc extends PDFObject {
     }
     resetForm(aFields) {
         // Handle the case resetForm({ aFields: ... })
-        if (aFields && typeof aFields === "object" && !Array.isArray(aFields)) {
+        if (isObjectLike(aFields) && !Array.isArray(aFields)) {
             aFields = aFields.aFields;
         }
         if (aFields && !Array.isArray(aFields)) {

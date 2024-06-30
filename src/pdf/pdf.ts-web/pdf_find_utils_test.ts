@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/testing/asserts.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { CharacterType, getCharacterType } from "./pdf_find_utils.ts";
 /*80--------------------------------------------------------------------------*/

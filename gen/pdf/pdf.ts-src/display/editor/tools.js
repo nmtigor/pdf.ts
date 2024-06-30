@@ -436,6 +436,7 @@ export class AnnotationEditorUIManager {
     }
     #altTextManager;
     #annotationStorage;
+    #changedExistingAnnotations;
     #commandManager = new CommandManager();
     #currentPageIndex = 0;
     get currentPageIndex() {
@@ -1373,6 +1374,7 @@ export class AnnotationEditorUIManager {
      */
     addDeletedAnnotationElement(editor) {
         this.#deletedAnnotationsElementIds.add(editor.annotationElementId);
+        this.addChangedExistingAnnotation(editor);
         editor.deleted = true;
     }
     /**
@@ -1386,6 +1388,7 @@ export class AnnotationEditorUIManager {
      */
     removeDeletedAnnotationElement(editor) {
         this.#deletedAnnotationsElementIds.delete(editor.annotationElementId);
+        this.removeChangedExistingAnnotation(editor);
         editor.deleted = false;
     }
     /**
@@ -1836,6 +1839,27 @@ export class AnnotationEditorUIManager {
             }
         }
         return boxes.length === 0 ? undefined : boxes;
+    }
+    addChangedExistingAnnotation({ annotationElementId, id }) {
+        (this.#changedExistingAnnotations ||= new Map()).set(annotationElementId, id);
+    }
+    removeChangedExistingAnnotation({ annotationElementId }) {
+        this.#changedExistingAnnotations?.delete(annotationElementId);
+    }
+    renderAnnotationElement(annotation) {
+        const editorId = this.#changedExistingAnnotations?.get(annotation.data.id);
+        if (!editorId) {
+            return;
+        }
+        const editor = this.#annotationStorage.getRawValue(editorId);
+        if (!editor) {
+            return;
+        }
+        if (this.#mode === AnnotationEditorType.NONE &&
+            !editor.hasBeenModified) {
+            return;
+        }
+        editor.renderAnnotationElement(annotation);
     }
 }
 /*80--------------------------------------------------------------------------*/

@@ -46,7 +46,7 @@ export declare class FakeUnicodeFont {
     widths: Map<number, number> | undefined;
     firstChar: number;
     lastChar: number;
-    fontFamily: "monospace" | "sans-serif";
+    fontFamily: "sans-serif" | "monospace";
     ctxMeasure: OffscreenCanvasRenderingContext2D;
     fontName: Name;
     static toUnicodeStream: StringStream;

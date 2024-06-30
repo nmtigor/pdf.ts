@@ -5,7 +5,7 @@
  * @module pdf/pdf.ts-src/shared/message_handler.ts
  * @license Apache-2.0
  ******************************************************************************/
-import type { rect_t } from "../../../lib/alias.js";
+import type { rect_t, uint } from "../../../lib/alias.js";
 import type { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { type ErrorJ } from "../../../lib/util/trace.js";
@@ -16,7 +16,7 @@ import type { AnnotActions } from "../core/core_utils.js";
 import type { DatasetReader } from "../core/dataset_reader.js";
 import type { DocumentInfo, XFAData } from "../core/document.js";
 import type { ImgData } from "../core/evaluator.js";
-import type { CmdArgs } from "../core/font_renderer.js";
+import type { Cmds } from "../core/font_renderer.js";
 import type { FontExpotDataEx } from "../core/fonts.js";
 import type { IWorker } from "../core/iworker.js";
 import type { SerializedMetadata } from "../core/metadata_parser.js";
@@ -58,6 +58,7 @@ interface PumpOperatorListP_ {
 export interface PageInfo {
     rotate: number;
     ref: RefProxy | undefined;
+    refStr: string | undefined;
     userUnit: number;
     view: rect_t;
 }
@@ -296,7 +297,7 @@ export interface MActionMap {
 }
 type MActionName = keyof MActionMap;
 export interface PDFInfo {
-    numPages: number;
+    numPages: uint;
     fingerprints: [string, string | undefined];
     htmlForXfa: XFAElObj | undefined;
 }
@@ -309,7 +310,7 @@ export interface WActionMap {
     commonobj: {
         Data: [string, "Font", FontExpotDataEx | {
             error: string;
-        }] | [string, "FontPath", CmdArgs[]] | [string, "Image", ImgData | undefined] | [string, "Pattern", ShadingPatternIR] | [string, "CopyLocalImage", {
+        }] | [string, "FontPath", Cmds] | [string, "Image", ImgData | undefined] | [string, "Pattern", ShadingPatternIR] | [string, "CopyLocalImage", {
             imageRef: string | undefined;
         }];
         Return: number | undefined;

@@ -10,7 +10,7 @@ import { MOZCENTRAL } from "../../../global.js";
 import { BaseException, FeatureTest, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseFilterFactory, BaseStandardFontDataFactory, BaseSVGFactory, } from "./base_factory.js";
 /*80--------------------------------------------------------------------------*/
-const SVG_NS = "http://www.w3.org/2000/svg";
+// const SVG_NS = "http://www.w3.org/2000/svg";
 export class PixelsPerInch {
     static CSS = 96.0;
     static PDF = 72.0;
@@ -75,6 +75,27 @@ export class DOMFilterFactory extends BaseFilterFactory {
         }
         return this.#_defs;
     }
+    #createTables(maps) {
+        if (maps.length === 1) {
+            const mapR = maps[0];
+            const buffer = new Array(256);
+            for (let i = 0; i < 256; i++) {
+                buffer[i] = mapR[i] / 255;
+            }
+            const table = buffer.join(",");
+            return [table, table, table];
+        }
+        const [mapR, mapG, mapB] = maps;
+        const bufferR = new Array(256);
+        const bufferG = new Array(256);
+        const bufferB = new Array(256);
+        for (let i = 0; i < 256; i++) {
+            bufferR[i] = mapR[i] / 255;
+            bufferG[i] = mapG[i] / 255;
+            bufferB[i] = mapB[i] / 255;
+        }
+        return [bufferR.join(","), bufferG.join(","), bufferB.join(",")];
+    }
     addFilter(maps) {
         if (!maps) {
             return "none";
@@ -85,34 +106,8 @@ export class DOMFilterFactory extends BaseFilterFactory {
         if (value) {
             return value;
         }
-        let tableR, tableG, tableB, key;
-        if (maps.length === 1) {
-            const mapR = maps[0];
-            const buffer = new Array(256);
-            for (let i = 0; i < 256; i++) {
-                buffer[i] = mapR[i] / 255;
-            }
-            key =
-                tableR =
-                    tableG =
-                        tableB =
-                            buffer.join(",");
-        }
-        else {
-            const [mapR, mapG, mapB] = maps;
-            const bufferR = new Array(256);
-            const bufferG = new Array(256);
-            const bufferB = new Array(256);
-            for (let i = 0; i < 256; i++) {
-                bufferR[i] = mapR[i] / 255;
-                bufferG[i] = mapG[i] / 255;
-                bufferB[i] = mapB[i] / 255;
-            }
-            tableR = bufferR.join(",");
-            tableG = bufferG.join(",");
-            tableB = bufferB.join(",");
-            key = `${tableR}${tableG}${tableB}`;
-        }
+        const [tableR, tableG, tableB] = this.#createTables(maps);
+        const key = maps.length === 1 ? tableR : `${tableR}${tableG}${tableB}`;
         value = this.#cache.get(key);
         if (value) {
             this.#cache.set(maps, value);
@@ -192,6 +187,59 @@ export class DOMFilterFactory extends BaseFilterFactory {
         this.#addTransferMapConversion(getSteps(0, 5), getSteps(1, 5), getSteps(2, 5), filter);
         info.url = `url(#${id})`;
         return info.url;
+    }
+    addAlphaFilter(map) {
+        // When a page is zoomed the page is re-drawn but the maps are likely
+        // the same.
+        let value = this.#cache.get(map);
+        if (value) {
+            return value;
+        }
+        const [tableA] = this.#createTables([map]);
+        const key = `alpha_${tableA}`;
+        value = this.#cache.get(key);
+        if (value) {
+            this.#cache.set(map, value);
+            return value;
+        }
+        const id = `g_${this.#docId}_alpha_map_${this.#id++}`;
+        const url = `url(#${id})`;
+        this.#cache.set(map, url);
+        this.#cache.set(key, url);
+        const filter = this.#createFilter(id);
+        this.#addTransferMapAlphaConversion(tableA, filter);
+        return url;
+    }
+    addLuminosityFilter(map) {
+        // When a page is zoomed the page is re-drawn but the maps are likely
+        // the same.
+        let value = this.#cache.get(map || "luminosity");
+        if (value) {
+            return value;
+        }
+        let tableA, key;
+        if (map) {
+            [tableA] = this.#createTables([map]);
+            key = `luminosity_${tableA}`;
+        }
+        else {
+            key = "luminosity";
+        }
+        value = this.#cache.get(key);
+        if (value) {
+            this.#cache.set(map, value);
+            return value;
+        }
+        const id = `g_${this.#docId}_luminosity_map_${this.#id++}`;
+        const url = `url(#${id})`;
+        this.#cache.set(map, url);
+        this.#cache.set(key, url);
+        const filter = this.#createFilter(id);
+        this.#addLuminosityConversion(filter);
+        if (map) {
+            this.#addTransferMapAlphaConversion(tableA, filter);
+        }
+        return url;
     }
     addHighlightHCMFilter(filterName, fgColor, bgColor, newFgColor, newBgColor) {
         const key = `${fgColor}-${bgColor}-${newFgColor}-${newBgColor}`;
@@ -281,11 +329,18 @@ export class DOMFilterFactory extends BaseFilterFactory {
         }
         this.#id = 0;
     }
+    #addLuminosityConversion(filter) {
+        const feColorMatrix = createSVG("feColorMatrix", this.#document)
+            .assignAttro({
+            type: "matrix",
+            values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.3 0.59 0.11 0 0",
+        });
+        filter.append(feColorMatrix);
+    }
     #addGrayConversion(filter) {
-        const feColorMatrix = createSVG("feColorMatrix", this.#document);
-        feColorMatrix.assignAttro({
-            typs: "matrix",
-            values: "0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0",
+        const feColorMatrix = createSVG("feColorMatrix", this.#document)
+            .assignAttro({
+            matrix: "0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0",
         });
         filter.append(feColorMatrix);
     }
@@ -299,8 +354,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
         return filter;
     }
     #appendFeFunc(feComponentTransfer, func, table) {
-        const feFunc = createSVG(func, this.#document);
-        feFunc.assignAttro({
+        const feFunc = createSVG(func, this.#document).assignAttro({
             type: "discrete",
             tableValues: table,
         });
@@ -312,6 +366,11 @@ export class DOMFilterFactory extends BaseFilterFactory {
         this.#appendFeFunc(feComponentTransfer, "feFuncR", rTable);
         this.#appendFeFunc(feComponentTransfer, "feFuncG", gTable);
         this.#appendFeFunc(feComponentTransfer, "feFuncB", bTable);
+    }
+    #addTransferMapAlphaConversion(aTable, filter) {
+        const feComponentTransfer = createSVG("feComponentTransfer", this.#document);
+        filter.append(feComponentTransfer);
+        this.#appendFeFunc(feComponentTransfer, "feFuncA", aTable);
     }
     #getRGB(color) {
         this.#defs.style.color = color;
@@ -402,13 +461,6 @@ export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
     }
 }
 export class DOMSVGFactory extends BaseSVGFactory {
-    /**
-     * @ignore
-     * @implement
-     */
-    _createSVG(type) {
-        return document.createElementNS(SVG_NS, type);
-    }
 }
 /**
  * PDF page viewport created based on scale, rotation and offset.
@@ -593,10 +645,8 @@ export function isPdfFile(filename) {
 /**
  * Gets the filename from a given URL.
  */
-export function getFilenameFromUrl(url, onlyStripPath = false) {
-    if (!onlyStripPath) {
-        [url] = url.split(/[#?]/, 1);
-    }
+export function getFilenameFromUrl(url) {
+    [url] = url.split(/[#?]/, 1);
     return url.substring(url.lastIndexOf("/") + 1);
 }
 /**

@@ -5,19 +5,20 @@
  * @module pdf/pdf.ts-src/display/annotation_layer.ts
  * @license Apache-2.0
  ******************************************************************************/
-import type { Ratio, rect_t } from "../../../lib/alias.js";
+import type { dot2d_t, Ratio, rect_t } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
 import type { HSElement } from "../../../lib/dom.js";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
 import type { TextAccessibilityManager } from "../../pdf.ts-web/text_accessibility.js";
+import type { FieldObjectsPromise } from "../../alias.js";
 import type { AnnotationData, FieldObject, RichText } from "../core/annotation.js";
 import type { BidiText } from "../core/bidi.js";
 import { Dict } from "../core/primitives.js";
-import type { Ref } from "../pdf.js";
+import type { AnnotationEditorUIManager, Ref } from "../pdf.js";
 import { type CSTag } from "../shared/scripting_utils.js";
 import { AnnotationEditorType } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
-import type { MetadataEx, PDFPageProxy } from "./api.js";
+import type { PDFPageProxy } from "./api.js";
 import type { PageViewport } from "./display_utils.js";
 import { DOMSVGFactory } from "./display_utils.js";
 import type { Outlines } from "./editor/outliner.js";
@@ -49,6 +50,10 @@ type AnnotationElementCtorP_ = {
     elements: AnnotationElement[];
 };
 type ColorConvertersDetail_ = Record<string, [CSTag, ...number[]]>;
+type UpdateEditedP_ = {
+    rect: rect_t;
+    popupContent: string;
+};
 export declare class AnnotationElement {
     #private;
     isRenderable: boolean;
@@ -74,6 +79,8 @@ export declare class AnnotationElement {
     });
     static _hasPopupData({ titleObj, contentsObj, richText }: AnnotationData): boolean;
     get hasPopupData(): boolean;
+    updateEdited(params: UpdateEditedP_): void;
+    resetEdited(): void;
     setRotation(angle: number, container?: HTMLElement): void;
     get _commonActions(): {
         display: (event: CustomEvent) => void;
@@ -175,13 +182,15 @@ declare class PopupElement {
     constructor({ container, color, elements, titleObj, modificationDate, contentsObj, richText, parent, rect, parentRect, open, }: PopupElementCtorP_);
     /** @implement */
     render(): void;
+    updateEdited({ rect, popupContent }: UpdateEditedP_): void;
+    resetEdited(): void;
     forceHide(): void;
     maybeShow(): void;
     get isVisible(): boolean;
 }
 export declare class FreeTextAnnotationElement extends AnnotationElement {
     textContent: string[] | undefined;
-    textPosition: import("@fe-lib/alias.js").dot2d_t | undefined;
+    textPosition: dot2d_t | undefined;
     constructor(parameters: AnnotationElementCtorP_);
     render(): HTMLElement;
     get _isEditable(): boolean;
@@ -235,9 +244,10 @@ export type AnnotationLayerP = {
      * The default value is `false`.
      */
     hasJSActions: boolean;
-    fieldObjects: boolean | Record<string, FieldObject[]> | MetadataEx | undefined;
+    fieldObjects: Awaited<FieldObjectsPromise>;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     accessibilityManager?: TextAccessibilityManager | undefined;
+    annotationEditorUIManager?: AnnotationEditorUIManager;
 };
 export type AccessibilityData = {
     type: "Figure";
@@ -267,6 +277,7 @@ export interface AnnotStorageValue {
     hidden?: boolean;
     id?: string | undefined;
     items?: Item[];
+    isSvg?: boolean | undefined;
     noPrint?: unknown;
     noView?: unknown;
     opacity?: Ratio;
@@ -289,7 +300,6 @@ export interface AnnotStorageValue {
     value?: string | string[] | number | boolean | undefined;
     valueAsString?: string | string[] | undefined;
 }
-export type ASVKey = keyof AnnotStorageValue;
 export type AnnotStorageRecord = Map<string, AnnotStorageValue>;
 /**
  * Manage the layer containing all the annotations.
@@ -300,8 +310,9 @@ export declare class AnnotationLayer {
     page: PDFPageProxy;
     viewport: PageViewport;
     zIndex: number;
+    _annotationEditorUIManager: AnnotationEditorUIManager | undefined;
     popupShow?: (() => void | Promise<void>)[];
-    constructor({ div, accessibilityManager, annotationCanvasMap, page, viewport, }: AnnotationLayerP);
+    constructor({ div, accessibilityManager, annotationCanvasMap, annotationEditorUIManager, page, viewport, }: AnnotationLayerP);
     /**
      * Render a new annotation layer with all annotation elements.
      */

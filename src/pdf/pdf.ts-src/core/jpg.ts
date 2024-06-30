@@ -21,16 +21,16 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import { assert } from "@fe-lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import { grayToRGBA } from "../shared/image_utils.ts";
 import { BaseException, warn } from "../shared/util.ts";
 import { readUint16 } from "./core_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
-class JpegError extends BaseException {
+export class JpegError extends BaseException {
   constructor(msg: string) {
-    super(`JPEG error: ${msg}`, "JpegError");
+    super(msg, "JpegError");
   }
 }
 

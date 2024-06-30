@@ -33,6 +33,7 @@ import type {
   AnnotationEditorType,
   AnnotationEditorUIManager,
   AnnotationElement,
+  Attachment,
   ColorPicker,
   DispatchUpdateStatesP,
   FileAttachmentAnnotationElement,
@@ -121,29 +122,24 @@ export async function waitOnEventOrTimeout({
     throw new Error("waitOnEventOrTimeout - invalid parameters.");
   }
   const { promise, resolve } = new PromiseCap<WaitOnType>();
+  const ac = new AbortController();
 
   function handler(type: WaitOnType) {
-    if (target instanceof EventBus) {
-      target._off(name, eventHandler);
-    } else {
-      target.removeEventListener(name, eventHandler);
-    }
+    ac.abort(); // Remove event listener.
+    clearTimeout(timeout);
 
-    if (timeout) {
-      clearTimeout(timeout);
-    }
     resolve(type);
   }
 
-  const eventHandler = handler.bind(null, WaitOnType.EVENT);
-  if (target instanceof EventBus) {
-    target._on(name, eventHandler);
-  } else {
-    target.addEventListener(name, eventHandler);
-  }
+  const evtMethod = target instanceof EventBus ? "_on" : "addEventListener";
+  (target as any)[evtMethod](name, handler.bind(undefined, WaitOnType.EVENT), {
+    signal: ac.signal,
+  });
 
-  const timeoutHandler = handler.bind(null, WaitOnType.TIMEOUT);
-  const timeout = setTimeout(timeoutHandler, delay);
+  const timeout = setTimeout(
+    handler.bind(undefined, WaitOnType.TIMEOUT),
+    delay,
+  );
 
   return promise;
 }
@@ -246,9 +242,7 @@ export interface EventMap {
   };
   fileattachmentannotation: {
     source: FileAttachmentAnnotationElement;
-    filename: string;
-    content?: Uint8Array | Uint8ClampedArray | undefined;
-  };
+  } & Attachment;
   fileinputchange: {
     source: HTMLInputElement | HTMLDivElement;
     fileInput: EventTarget | DataTransfer | null;
@@ -280,9 +274,6 @@ export interface EventMap {
   nextpage: {};
   openfile: {
     source: typeof window;
-  };
-  openinexternalapp: {
-    // sorce: Toolbar;
   };
   optionalcontentconfig: {
     source: PDFLayerViewer;
@@ -437,7 +428,9 @@ export interface EventMap {
     value: string | number | boolean | undefined;
   };
   switchcursortool: {
-    tool: CursorTool;
+    source: SecondaryToolbar;
+    reset: boolean;
+    tool?: CursorTool;
   };
   switchscrollmode: {
     mode: ScrollMode;
@@ -521,8 +514,15 @@ type Listener_1Ex_ = {
   listener: Listener_1_;
   external: boolean;
   once: boolean;
+  rmAbort: () => void;
 };
 /*49-------------------------------------------*/
+
+type onO_ = {
+  external?: boolean;
+  once?: boolean | undefined;
+  signal?: AbortSignal | undefined;
+};
 
 /**
  * Simple event bus for an application. Listeners are attached using the `on`
@@ -534,11 +534,12 @@ export class EventBus {
   on<EN extends EventName>(
     eventName: EN,
     listener: ListenerMap[EN],
-    options?: { once: boolean },
+    options?: { once?: boolean; signal?: AbortSignal },
   ) {
     this._on(eventName, listener, {
       external: true,
       once: options?.once,
+      signal: options?.signal,
     });
   }
 
@@ -546,7 +547,7 @@ export class EventBus {
     this._off(eventName, listener);
   }
 
-  dispatch<EN extends EventName>(eventName: EN, data: EventMap[EN]) {
+  dispatch<EN extends EventName>(eventName: EN, data?: EventMap[EN]) {
     const eventListeners = this.#listeners[eventName];
     if (!eventListeners || eventListeners.length === 0) {
       return;
@@ -562,13 +563,13 @@ export class EventBus {
         (externalListeners ||= []).push(listener);
         continue;
       }
-      listener(data);
+      listener(data!);
     }
     // Dispatch any "external" listeners *after* the internal ones, to give the
     // viewer components time to handle events and update their state first.
     if (externalListeners) {
       for (const listener of externalListeners) {
-        listener(data);
+        listener(data!);
       }
       externalListeners = undefined;
     }
@@ -580,13 +581,27 @@ export class EventBus {
   _on<EN extends EventName>(
     eventName: EN,
     listener: ListenerMap[EN],
-    options?: { external?: boolean; once?: boolean | undefined },
+    options?: onO_,
   ) {
+    let rmAbort: (() => void) | undefined;
+    if (options?.signal instanceof AbortSignal) {
+      const { signal } = options;
+      if (signal.aborted) {
+        console.error("Cannot use an `aborted` signal.");
+        return;
+      }
+      const onAbort = () => this._off(eventName, listener);
+      rmAbort = () => signal.removeEventListener("abort", onAbort);
+
+      signal.addEventListener("abort", onAbort);
+    }
+
     const eventListeners = (this.#listeners[eventName] ||= []);
     eventListeners.push({
       listener,
       external: options?.external === true,
       once: options?.once === true,
+      rmAbort,
     } as Listener_1Ex_);
   }
 
@@ -599,7 +614,9 @@ export class EventBus {
       return;
     }
     for (let i = 0, ii = eventListeners.length; i < ii; i++) {
-      if (eventListeners[i].listener === listener) {
+      const evt = eventListeners[i];
+      if (evt.listener === listener) {
+        evt.rmAbort?.(); // Ensure that the `AbortSignal` listener is removed.
         eventListeners.splice(i, 1);
         return;
       }

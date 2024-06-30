@@ -3,14 +3,20 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { serveDir } from "@std/http/file_server.ts";
-import { resolve } from "@std/path/mod.ts";
+import type { uint } from "@fe-lib/alias.ts";
+import { parseArgs } from "@std/cli";
+import { serveDir } from "@std/http";
+import { resolve } from "@std/path";
 /*80--------------------------------------------------------------------------*/
 
 const AD_fe = resolve(new URL(Deno.mainModule).pathname, "../../..");
 
+const parsedArgs = parseArgs(Deno.args);
+let port: uint;
+port = Number.isInteger(port = parseInt(parsedArgs["port"])) ? port : 9071;
+
 const server = Deno.serve(
-  { port: 9071 },
+  { port },
   (req: Request) =>
     serveDir(req, { fsRoot: AD_fe /* showDirListing: true, */ }),
 );

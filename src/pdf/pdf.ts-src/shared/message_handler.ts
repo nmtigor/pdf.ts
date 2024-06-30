@@ -22,12 +22,12 @@
  */
 
 import { _TRACE, global, PDFJSDev, PDFTS_vv, TESTING } from "@fe-src/global.ts";
-import type { rect_t } from "@fe-lib/alias.ts";
+import type { rect_t, uint } from "@fe-lib/alias.ts";
 import type { HttpStatusCode } from "@fe-lib/HttpStatusCode.ts";
 import { isObjectLike } from "@fe-lib/jslang.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { assert, type ErrorJ, fail } from "@fe-lib/util/trace.ts";
-import type { PageLayout, PageMode } from "@pdf.ts-web/ui_utils.ts";
+import type { PageLayout, PageMode } from "@fe-pdf.ts-web/ui_utils.ts";
 import type {
   Annotation,
   AnnotationData,
@@ -44,7 +44,7 @@ import type { AnnotActions } from "../core/core_utils.ts";
 import type { DatasetReader } from "../core/dataset_reader.ts";
 import type { DocumentInfo, XFAData } from "../core/document.ts";
 import type { ImgData } from "../core/evaluator.ts";
-import type { CmdArgs } from "../core/font_renderer.ts";
+import type { Cmds } from "../core/font_renderer.ts";
 import type { FontExpotDataEx } from "../core/fonts.ts";
 import type { IWorker } from "../core/iworker.ts";
 import type { SerializedMetadata } from "../core/metadata_parser.ts";
@@ -158,6 +158,7 @@ interface PumpOperatorListP_ {
 export interface PageInfo {
   rotate: number;
   ref: RefProxy | undefined;
+  refStr: string | undefined;
   userUnit: number;
   view: rect_t;
 }
@@ -402,7 +403,7 @@ type MActionName = keyof MActionMap;
 /*25-------------------*/
 
 export interface PDFInfo {
-  numPages: number;
+  numPages: uint;
   // fingerprint:string,
   fingerprints: [string, string | undefined];
   // isPureXfa:boolean;
@@ -419,7 +420,7 @@ export interface WActionMap {
   commonobj: {
     Data:
       | [string, "Font", FontExpotDataEx | { error: string }]
-      | [string, "FontPath", CmdArgs[]]
+      | [string, "FontPath", Cmds]
       | [string, "Image", ImgData | undefined]
       | [string, "Pattern", ShadingPatternIR]
       | [string, "CopyLocalImage", { imageRef: string | undefined }];

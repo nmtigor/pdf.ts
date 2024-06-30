@@ -109,7 +109,7 @@ export abstract class BasePdfManager {
     // the worker-thread code.
     args.evaluatorOptions.isOffscreenCanvasSupported &&=
       FeatureTest.isOffscreenCanvasSupported;
-    this.evaluatorOptions = args.evaluatorOptions;
+    this.evaluatorOptions = Object.freeze(args.evaluatorOptions);
   }
 
   /** @fianl */

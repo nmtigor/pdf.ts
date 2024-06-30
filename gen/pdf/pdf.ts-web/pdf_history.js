@@ -51,13 +51,19 @@ export class PDFHistory {
     get initialRotation() {
         return this.#initialized ? this.#initialRotation : undefined;
     }
-    #initialBookmark = null;
+    #initialBookmark;
     get initialBookmark() {
-        return this.#initialized ? this.#initialBookmark : null;
+        return this.#initialized ? this.#initialBookmark : undefined;
     }
-    _boundEvents;
+    //kkkk TOCLEANUP
+    // #boundEvents: {
+    //   updateViewarea(_: { location?: PDFLocation | undefined }): void;
+    //   popState(_: { state: any }): void;
+    //   pageHide(): void;
+    // } | undefined;
     _isPagesLoaded;
     #updateViewareaTimeout;
+    #eventAbortController;
     constructor({ linkService, eventBus }) {
         this.linkService = linkService;
         this.eventBus = eventBus;
@@ -149,7 +155,7 @@ export class PDFHistory {
             clearTimeout(this.#updateViewareaTimeout);
             this.#updateViewareaTimeout = undefined;
         }
-        this.#initialBookmark = null;
+        this.#initialBookmark = undefined;
         this.#initialRotation = undefined;
     }
     /**
@@ -185,9 +191,9 @@ export class PDFHistory {
         if (this.#destination &&
             (isDestHashesEqual(this.#destination.hash, hash) ||
                 isDestArraysEqual(this.#destination.dest, explicitDest))) {
-            // When the new destination is identical to `this.#destination`, and
+            // When the new destination is identical to `this._destination`, and
             // its `page` is undefined, replace the current browser history entry.
-            // NOTE: This can only occur if `this.#destination` was set either:
+            // NOTE: This can only occur if `this._destination` was set either:
             //  - through the document hash being specified on load.
             //  - through the user changing the hash of the document.
             if (this.#destination.page) {
@@ -236,7 +242,7 @@ export class PDFHistory {
             return;
         }
         this.#pushOrReplaceState({
-            // Simulate an internal destination, for `this._tryPushCurrentPosition`:
+            // Simulate an internal destination, for `this.#tryPushCurrentPosition`:
             // dest: null,
             hash: `page=${pageNumber}`,
             page: pageNumber,
@@ -553,30 +559,22 @@ export class PDFHistory {
             this.#tryPushCurrentPosition();
         }
     };
-    #bindEvents = () => {
-        if (this._boundEvents) {
-            // The event listeners were already added.
-            return;
+    #bindEvents() {
+        if (this.#eventAbortController) {
+            return; // The event listeners were already added.
         }
-        this._boundEvents = {
-            updateViewarea: this.#updateViewarea,
-            popState: this.#popState,
-            pageHide: this.#pageHide,
-        };
-        this.eventBus._on("updateviewarea", this._boundEvents.updateViewarea);
-        window.on("popstate", this._boundEvents.popState);
-        window.on("pagehide", this._boundEvents.pageHide);
-    };
-    #unbindEvents = () => {
-        if (!this._boundEvents) {
-            // The event listeners were already removed.
-            return;
-        }
-        this.eventBus._off("updateviewarea", this._boundEvents.updateViewarea);
-        window.off("popstate", this._boundEvents.popState);
-        window.off("pagehide", this._boundEvents.pageHide);
-        this._boundEvents = undefined;
-    };
+        this.#eventAbortController = new AbortController();
+        const { signal } = this.#eventAbortController;
+        this.eventBus._on("updateviewarea", this.#updateViewarea.bind(this), {
+            signal,
+        });
+        window.on("popstate", this.#popState.bind(this), { signal });
+        window.on("pagehide", this.#pageHide.bind(this), { signal });
+    }
+    #unbindEvents() {
+        this.#eventAbortController?.abort();
+        this.#eventAbortController = undefined;
+    }
 }
 export function isDestHashesEqual(destHash, pushHash) {
     if (typeof destHash !== "string" || typeof pushHash !== "string") {
@@ -599,7 +597,7 @@ export function isDestArraysEqual(firstDest, secondDest) {
         if (Array.isArray(first) || Array.isArray(second)) {
             return false;
         }
-        if (isObjectLike(first) && second !== null) {
+        if (isObjectLike(first) && second != undefined) {
             if (Object.keys(first).length !== Object.keys(second).length) {
                 return false;
             }

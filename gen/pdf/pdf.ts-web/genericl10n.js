@@ -19,13 +19,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { D_res_pdf } from "../../alias.js";
 import { FluentBundle, FluentResource, } from "../../3rd/fluent/bundle/esm/index.js";
 import { DOMLocalization } from "../../3rd/fluent/dom/esm/index.js";
 import { Locale } from "../../lib/Locale.js";
 import { PDFJSDev } from "../../global.js";
 import { fetchData } from "../pdf.ts-src/pdf.js";
 import { L10n } from "./l10n.js";
-import { AD_gh, D_res } from "../alias.js";
+import { AD_gh } from "../alias.js";
 /*80--------------------------------------------------------------------------*/
 function createBundle(lang, text) {
     const resource = new FluentResource(text);
@@ -129,7 +130,7 @@ export class GenericL10n extends L10n {
         // /*#static*/ if (TESTING) {
         //   throw new Error("Not implemented: #createBundleFallback");
         // }
-        const text = /*#static*/ await fetchData(new URL(`${AD_gh}/${D_res}/l10n/en-US/viewer.ftl`, window.location.href), 
+        const text = /*#static*/ await fetchData(new URL(`${AD_gh}/${D_res_pdf}/l10n/en-US/viewer.ftl`, window.location.href), 
         /* type = */ "text");
         return createBundle(lang, text);
     }

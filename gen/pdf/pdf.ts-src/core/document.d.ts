@@ -72,7 +72,7 @@ export declare class Page {
     globalImageCache: GlobalImageCache;
     systemFontCache: Map<string, SubstitutionInfo>;
     nonBlendModesSet: RefSet;
-    evaluatorOptions: import("./pdf_manager.js").EvaluatorOptions;
+    evaluatorOptions: Readonly<import("./pdf_manager.js").EvaluatorOptions>;
     xfaFactory: XFAFactory | undefined;
     get _localIdFactory(): LocalIdFactory;
     resourcesPromise?: Promise<Dict>;

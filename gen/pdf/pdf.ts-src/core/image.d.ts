@@ -62,6 +62,7 @@ export declare class PDFImage {
     bpc: number;
     colorSpace?: ColorSpace;
     numComps?: number | undefined;
+    ignoreColorSpace: boolean | undefined;
     decode: number[] | undefined;
     needsDecode: boolean;
     decodeCoefficients: number[] | undefined;

@@ -26,18 +26,15 @@ export declare abstract class DecodeStream extends BaseStream {
     minBufferLength: number;
     str?: BaseStream;
     constructor(maybeMinBufferLength?: number);
-    protected abstract readBlock(): void;
+    protected abstract readBlock(ignoreColorSpace?: boolean): void;
     ensureBuffer(requested: number): Uint8Array | Uint8ClampedArray;
     /**
      * @implement
      * @final
      */
     getByte(): number;
-    /**
-     * @implement
-     * @final
-     */
-    getBytes(length?: number): Uint8Array | Uint8ClampedArray;
+    /** @final @implement */
+    getBytes(length?: number, ignoreColorSpace?: boolean): Uint8Array | Uint8ClampedArray;
     /** @implement */
     reset(): void;
     /** @implement */

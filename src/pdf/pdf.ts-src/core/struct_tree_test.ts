@@ -21,13 +21,13 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import type { TestServer } from "@pdf.ts-test/test_utils.ts";
+import type { TestServer } from "@fe-pdf.ts-test/test_utils.ts";
 import {
   buildGetDocumentParams,
   createTemporaryDenoServer,
-} from "@pdf.ts-test/test_utils.ts";
+} from "@fe-pdf.ts-test/test_utils.ts";
 import { getDocument, type StructTreeNode } from "../display/api.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -55,9 +55,9 @@ describe("struct tree", () => {
     tempServer = createTemporaryDenoServer();
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     const { server } = tempServer;
-    server.shutdown();
+    await server.shutdown();
     tempServer = undefined as any;
   });
 

@@ -6,7 +6,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 import type { AnnotationEditor, TFD_AnnotationEditor, TID_AnnotationEditor } from "../pdf.ts-src/display/editor/editor.js";
-import type { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, ColorPicker, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PDFPageProxy, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
+import type { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, Attachment, ColorPicker, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PDFPageProxy, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
 import type { AnnotationEditorName } from "../pdf.ts-src/shared/util.js";
 import type { AltTextManager } from "./alt_text_manager.js";
 import type { AnnotationEditorParams } from "./annotation_editor_params.js";
@@ -148,9 +148,7 @@ export interface EventMap {
     };
     fileattachmentannotation: {
         source: FileAttachmentAnnotationElement;
-        filename: string;
-        content?: Uint8Array | Uint8ClampedArray | undefined;
-    };
+    } & Attachment;
     fileinputchange: {
         source: HTMLInputElement | HTMLDivElement;
         fileInput: EventTarget | DataTransfer | null;
@@ -183,7 +181,6 @@ export interface EventMap {
     openfile: {
         source: typeof window;
     };
-    openinexternalapp: {};
     optionalcontentconfig: {
         source: PDFLayerViewer;
         promise: Promise<OptionalContentConfig | undefined>;
@@ -334,7 +331,9 @@ export interface EventMap {
         value: string | number | boolean | undefined;
     };
     switchcursortool: {
-        tool: CursorTool;
+        source: SecondaryToolbar;
+        reset: boolean;
+        tool?: CursorTool;
     };
     switchscrollmode: {
         mode: ScrollMode;
@@ -407,6 +406,11 @@ export type EventName = keyof EventMap;
 export type ListenerMap = {
     [EN in EventName]: (evt: EventMap[EN]) => void;
 };
+type onO_ = {
+    external?: boolean;
+    once?: boolean | undefined;
+    signal?: AbortSignal | undefined;
+};
 /**
  * Simple event bus for an application. Listeners are attached using the `on`
  * and `off` methods. To raise an event, the `dispatch` method shall be used.
@@ -414,17 +418,15 @@ export type ListenerMap = {
 export declare class EventBus {
     #private;
     on<EN extends EventName>(eventName: EN, listener: ListenerMap[EN], options?: {
-        once: boolean;
+        once?: boolean;
+        signal?: AbortSignal;
     }): void;
     off<EN extends EventName>(eventName: EN, listener: ListenerMap[EN]): void;
-    dispatch<EN extends EventName>(eventName: EN, data: EventMap[EN]): void;
+    dispatch<EN extends EventName>(eventName: EN, data?: EventMap[EN]): void;
     /**
      * @ignore
      */
-    _on<EN extends EventName>(eventName: EN, listener: ListenerMap[EN], options?: {
-        external?: boolean;
-        once?: boolean | undefined;
-    }): void;
+    _on<EN extends EventName>(eventName: EN, listener: ListenerMap[EN], options?: onO_): void;
     /**
      * @ignore
      */

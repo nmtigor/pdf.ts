@@ -25,6 +25,7 @@ interface AnnotationLayerBuilderOptions {
     fieldObjectsPromise: FieldObjectsPromise | undefined;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
+    annotationEditorUIManager?: unknown;
     onAppend?: (div: HTMLDivElement) => void;
 }
 export declare class AnnotationLayerBuilder {
@@ -40,11 +41,12 @@ export declare class AnnotationLayerBuilder {
     _fieldObjectsPromise: FieldObjectsPromise;
     _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     _accessibilityManager: TextAccessibilityManager | undefined;
+    _annotationEditorUIManager: unknown;
     annotationLayer: AnnotationLayer | undefined;
     div?: HTMLDivElement;
     _cancelled: boolean;
     _eventBus: import("./event_utils.js").EventBus | undefined;
-    constructor({ pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, enableScripting, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, onAppend, }: AnnotationLayerBuilderOptions);
+    constructor({ pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, enableScripting, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, annotationEditorUIManager, onAppend, }: AnnotationLayerBuilderOptions);
     /**
      * @param viewport
      * @param intent (default value is 'display')

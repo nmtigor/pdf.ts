@@ -12,7 +12,7 @@ import { BaseStream } from "./base_stream.js";
 import { bidi } from "./bidi.js";
 import { Catalog } from "./catalog.js";
 import { ColorSpace } from "./colorspace.js";
-import { collectActions, escapeString, getInheritableProperty, getRotationMatrix, isAscii, numberToString, stringToUTF16String, } from "./core_utils.js";
+import { collectActions, escapeString, getInheritableProperty, getRotationMatrix, isAscii, isNumberArray, lookupMatrix, lookupNormalRect, lookupRect, numberToString, stringToUTF16String, } from "./core_utils.js";
 import { createDefaultAppearance, FakeUnicodeFont, getPdfColor, parseAppearanceStream, parseDefaultAppearance, } from "./default_appearance.js";
 import { FileSpec } from "./file_spec.js";
 import { JpegStream } from "./jpeg_stream.js";
@@ -375,7 +375,7 @@ export function getQuadPoints(dict, rect) {
     // The region is described as a number of quadrilaterals.
     // Each quadrilateral must consist of eight coordinates.
     const quadPoints = dict.getArray("QuadPoints");
-    if (!Array.isArray(quadPoints) ||
+    if (!isNumberArray(quadPoints) ||
         quadPoints.length === 0 ||
         quadPoints.length % 8 > 0) {
         return null;
@@ -597,9 +597,7 @@ export class Annotation {
      * @param rectangle The rectangle array with exactly four entries
      */
     setRectangle(rectangle) {
-        this.rectangle = Array.isArray(rectangle) && rectangle.length === 4
-            ? Util.normalizeRect(rectangle)
-            : [0, 0, 0, 0];
+        this.rectangle = lookupNormalRect(rectangle, [0, 0, 0, 0]);
     }
     /* ~ */
     lineEndings;
@@ -885,9 +883,8 @@ export class Annotation {
         }
         const appearanceDict = appearance.dict;
         const resources = await this.loadResources(["ExtGState", "ColorSpace", "Pattern", "Shading", "XObject", "Font"], appearance);
-        const bbox = appearanceDict.getArray("BBox") || [0, 0, 1, 1];
-        const matrix = appearanceDict.getArray("Matrix") ||
-            [1, 0, 0, 1, 0, 0];
+        const bbox = lookupRect(appearanceDict.getArray("BBox"), [0, 0, 1, 1]);
+        const matrix = lookupMatrix(appearanceDict.getArray("Matrix"), IDENTITY_MATRIX);
         const transform = getTransformMatrix(rect, bbox, matrix);
         const opList = new OperatorList();
         let optionalContent;
@@ -967,7 +964,9 @@ export class Annotation {
         }
         if (text.length > 1 || text[0]) {
             const appearanceDict = this.appearance.dict;
-            this.data.textPosition = this._transformPoint(firstPosition, appearanceDict.getArray("BBox"), appearanceDict.getArray("Matrix"));
+            const bbox = lookupRect(appearanceDict.getArray("BBox"), undefined);
+            const matrix = lookupMatrix(appearanceDict.getArray("Matrix"), undefined);
+            this.data.textPosition = this._transformPoint(firstPosition, bbox, matrix);
             this.data.textContent = text;
         }
     }
@@ -1088,7 +1087,7 @@ export class AnnotationBorderStyle {
      */
     setWidth(width, rect = [0, 0, 0, 0]) {
         /*#static*/  {
-            assert(Array.isArray(rect) && rect.length === 4, "A valid `rect` parameter must be provided.");
+            assert(isNumberArray(rect, 4), "A valid `rect` parameter must be provided.");
         }
         // Some corrupt PDF generators may provide the width as a `Name`,
         // rather than as a number (fixes issue 10385).
@@ -1444,8 +1443,7 @@ export class WidgetAnnotation extends Annotation {
         data.alternativeText = stringToPDFString(dict.get("TU") || "");
         this.setDefaultAppearance(params);
         data.hasAppearance ||= this._needAppearances &&
-            data.fieldValue !== undefined &&
-            data.fieldValue !== null;
+            data.fieldValue != undefined;
         const fieldType = getInheritableProperty({ dict, key: "FT" });
         data.fieldType = fieldType instanceof Name ? fieldType.name : undefined;
         const localResources = getInheritableProperty({
@@ -2249,7 +2247,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
             // But we've a default appearance so use it.
             return super.getOperatorList(evaluator, task, intent, renderForms, annotationStorage);
         }
-        if (value === null || value === undefined) {
+        if (value == undefined) {
             // There is no default appearance so use the one derived
             // from the field value.
             value = this.data.checkBox
@@ -2261,8 +2259,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
             : this.uncheckedAppearance;
         if (appearance) {
             const savedAppearance = this.appearance;
-            const savedMatrix = appearance.dict.getArray("Matrix") ||
-                IDENTITY_MATRIX;
+            const savedMatrix = lookupMatrix(appearance.dict.getArray("Matrix"), IDENTITY_MATRIX);
             if (rotation) {
                 appearance.dict.set("Matrix", this.getRotationMatrix(annotationStorage));
             }
@@ -2903,10 +2900,7 @@ export class PopupAnnotation extends Annotation {
             warn("Popup annotation has a missing or invalid parent annotation.");
             return;
         }
-        const parentRect = parentItem.getArray("Rect");
-        this.data.parentRect = Array.isArray(parentRect) && parentRect.length === 4
-            ? Util.normalizeRect(parentRect)
-            : undefined;
+        this.data.parentRect = lookupNormalRect(parentItem.getArray("Rect"), undefined);
         const rt = parentItem.get("RT");
         if (rt instanceof Name && rt.name === AnnotationReplyType.GROUP) {
             // Subordinate annotations in a group should inherit
@@ -3139,7 +3133,7 @@ class LineAnnotation extends MarkupAnnotation {
         this.data.annotationType = AnnotationType.LINE;
         this.data.hasOwnCanvas = this.data.noRotate;
         this.data.noHTML = false;
-        const lineCoordinates = dict.getArray("L");
+        const lineCoordinates = lookupRect(dict.getArray("L"), [0, 0, 0, 0]);
         this.data.lineCoordinates = Util.normalizeRect(lineCoordinates);
         /*#static*/  {
             this.setLineEndings(dict.getArray("LE"));
@@ -3311,7 +3305,7 @@ class PolylineAnnotation extends MarkupAnnotation {
         // horizontal and vertical coordinates, respectively, of each vertex.
         // Convert this to an array of objects with x and y coordinates.
         const rawVertices = dict.getArray("Vertices");
-        if (!Array.isArray(rawVertices)) {
+        if (!isNumberArray(rawVertices)) {
             return;
         }
         for (let i = 0, ii = rawVertices.length; i < ii; i += 2) {
@@ -3387,11 +3381,14 @@ class InkAnnotation extends MarkupAnnotation {
             // of each vertex. Convert this to an array of objects with x and y
             // coordinates.
             this.data.inkLists.push([]);
+            if (!Array.isArray(rawInkLists[i])) {
+                continue;
+            }
             for (let j = 0, jj = rawInkLists[i].length; j < jj; j += 2) {
-                this.data.inkLists[i].push({
-                    x: xref.fetchIfRef(rawInkLists[i][j]),
-                    y: xref.fetchIfRef(rawInkLists[i][j + 1]),
-                });
+                const x = xref.fetchIfRef(rawInkLists[i][j]), y = xref.fetchIfRef(rawInkLists[i][j + 1]);
+                if (typeof x === "number" && typeof y === "number") {
+                    this.data.inkLists[i].push({ x, y });
+                }
             }
         }
         if (!this.appearance) {
@@ -3531,7 +3528,7 @@ class InkAnnotation extends MarkupAnnotation {
         ];
         appearanceBuffer.push(`${numberToString(outline[4])} ${numberToString(outline[5])} m`);
         for (let i = 6, ii = outline.length; i < ii; i += 6) {
-            if (isNaN(outline[i]) || outline[i] === null) {
+            if (isNaN(outline[i]) || outline[i] == undefined) {
                 appearanceBuffer.push(`${numberToString(outline[i + 4])} ${numberToString(outline[i + 5])} l`);
             }
             else {

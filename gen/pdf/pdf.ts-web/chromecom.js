@@ -13,7 +13,7 @@ import { GenericScripting } from "./generic_scripting.js";
 import { GenericL10n } from "./genericl10n.js";
 import { BasePreferences } from "./preferences.js";
 import { CursorTool } from "./ui_utils.js";
-import { D_web } from "../alias.js";
+import { D_rp_web } from "../../alias.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/  {
     throw new Error('Module "pdfjs-web/chromecom" shall not be used outside CHROME build.');
@@ -170,7 +170,7 @@ function requestAccessToLocalFile(fileUrl, overlayManager, callback) {
         // Use Chrome's definition of UI language instead of PDF.js's #lang=...,
         // because the shown string should match the UI at chrome://extensions.
         // These strings are from chrome/app/resources/generated_resources_*.xtb.
-        const jo_ = (await import(`/${D_web}/chrome-i18n-allow-access-to-file-urls.json`, {
+        const jo_ = (await import(`/${D_rp_web}/chrome-i18n-allow-access-to-file-urls.json`, {
             assert: { type: "json" },
         })).default;
         const i18nFileAccessLabel = jo_[chrome.i18n.getUILanguage?.()];

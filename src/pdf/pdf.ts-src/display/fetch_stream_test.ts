@@ -21,14 +21,14 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import type { TestServer } from "@pdf.ts-test/test_utils.ts";
-import { createTemporaryDenoServer } from "@pdf.ts-test/test_utils.ts";
+import type { TestServer } from "@fe-pdf.ts-test/test_utils.ts";
+import { createTemporaryDenoServer } from "@fe-pdf.ts-test/test_utils.ts";
 import { AbortException } from "../shared/util.ts";
 import { DocumentInitP } from "./api.ts";
 import { PDFFetchStream, PDFFetchStreamRangeReader } from "./fetch_stream.ts";
-import { D_test_pdfs } from "../../alias.ts";
+import { D_rp_pdfs } from "@fe-src/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("fetch_stream", () => {
@@ -38,7 +38,7 @@ describe("fetch_stream", () => {
     // return isNodeJS
     //   ? `http://127.0.0.1:${tempServer.port}/tracemonkey.pdf`
     //   : new URL("../pdfs/tracemonkey.pdf", window.location).href;
-    return `http://${tempServer.hostname}:${tempServer.port}/${D_test_pdfs}/tracemonkey.pdf`;
+    return `http://${tempServer.hostname}:${tempServer.port}/${D_rp_pdfs}/tracemonkey.pdf`;
   }
   const pdfLength = 1016315;
 
@@ -48,12 +48,12 @@ describe("fetch_stream", () => {
     // }
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     // if (isNodeJS) {
     /* Close the server from accepting new connections after all test
     finishes. */
     const { server } = tempServer;
-    server.shutdown();
+    await server.shutdown();
     tempServer = undefined as any;
     // }
   });

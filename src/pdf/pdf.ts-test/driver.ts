@@ -22,26 +22,34 @@
  */
 /* globals pdfjsLib, pdfjsViewer */
 
-import { svg as createSVG } from "@fe-lib/dom.ts";
+import { filter_tasks } from "./util.ts";
+import {
+  D_res_pdf,
+  D_rp_web,
+  D_rpe_cmap,
+  D_rpe_sfont,
+  D_sp_test,
+} from "@fe-src/alias.ts";
+import { HttpStatusCode } from "@fe-lib/HttpStatusCode.ts";
 import { Locale } from "@fe-lib/Locale.ts";
 import type { uint } from "@fe-lib/alias.ts";
 import { hexcolr, randomRRGGBB } from "@fe-lib/color/Colr.ts";
 import type { Cssc } from "@fe-lib/color/alias.ts";
 import type { Coo } from "@fe-lib/cv.ts";
 import { HTMLVuu } from "@fe-lib/cv.ts";
-import { html } from "@fe-lib/dom.ts";
+import { html, svg as createSVG } from "@fe-lib/dom.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import type { StatTime } from "@fe-pdf.ts-src/display/display_utils.ts";
+import type {
+  T_browser,
+  T_info,
+  T_task_results,
+} from "@fe-src/test/pdf.ts/alias.ts";
+import wretch from "@wretch";
 import type { FieldObjectsPromise } from "../alias.ts";
-import {
-  D_cmap_url,
-  D_res,
-  D_standard_font_data_url,
-  D_web,
-} from "../alias.ts";
 import type { AnnotationData } from "../pdf.ts-src/core/annotation.ts";
 import type {
   AnnotationLayerP,
-  AnnotStorageValue,
 } from "../pdf.ts-src/display/annotation_layer.ts";
 import type {
   AnnotationStorage,
@@ -63,24 +71,26 @@ import {
   GlobalWorkerOptions,
   Outliner,
   PixelsPerInch,
-  renderTextLayer,
   shadow,
+  TextLayer,
   XfaLayer,
 } from "../pdf.ts-src/pdf.ts";
 import { GenericL10n } from "../pdf.ts-web/genericl10n.ts";
+import type { IPDFLinkService } from "../pdf.ts-web/interfaces.ts";
 import { SimpleLinkService } from "../pdf.ts-web/pdf_link_service.ts";
 import { parseQueryString } from "../pdf.ts-web/ui_utils.ts";
+import type { TestFilter, TestTask } from "./alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 const WAITING_TIME = 100; // ms
 // const CMAP_URL = "/build/generic/web/cmaps/";
-const CMAP_URL = `/${D_cmap_url}/`;
+const CMAP_URL = `/${D_rpe_cmap}/`;
 // const STANDARD_FONT_DATA_URL = "/build/generic/web/standard_fonts/";
-const STANDARD_FONT_DATA_URL = `/${D_standard_font_data_url}/`;
+const STANDARD_FONT_DATA_URL = `/${D_rpe_sfont}/`;
 // const IMAGE_RESOURCES_PATH = "/web/images/";
-const IMAGE_RESOURCES_PATH = `/${D_web}/images/`;
+const IMAGE_RESOURCES_PATH = `/${D_rp_web}/images/`;
 // const VIEWER_CSS = "../build/components/pdf_viewer.css";
-const VIEWER_CSS = `/${D_web}/pdf_viewer.css`;
+const VIEWER_CSS = `/${D_rp_web}/pdf_viewer.css`;
 const VIEWER_LOCALE = Locale.en_US;
 // const WORKER_SRC = "../build/generic/build/pdf.worker.mjs";
 const WORKER_SRC = "/gen/pdf/pdf.ts-src/pdf.worker.js";
@@ -294,7 +304,7 @@ class Rasterize {
       // Rendering annotation layer as HTML.
       const parameters = {
         annotations,
-        linkService: new SimpleLinkService(),
+        linkService: new SimpleLinkService() as IPDFLinkService,
         imageResourcesPath,
         renderForms,
         annotationStorage,
@@ -352,13 +362,13 @@ class Rasterize {
         `:root { --scale-factor: ${viewport.scale} }`;
 
       // Rendering text layer as HTML.
-      const task = renderTextLayer({
+      const textLayer = new TextLayer({
         textContentSource: textContent,
         container: div,
         viewport,
       });
 
-      await task.promise;
+      await textLayer.render();
 
       svg.append(foreignObject);
 
@@ -385,28 +395,25 @@ class Rasterize {
         `:root { --scale-factor: ${viewport.scale} }`;
 
       // Rendering text layer as HTML.
-      const task = renderTextLayer({
+      const textLayer = new TextLayer({
         textContentSource: textContent,
         container: dummyParent,
         viewport,
       });
+      await textLayer.render();
 
-      await task.promise;
-
-      const { _pageWidth, _pageHeight, _textContentSource, _textDivs } = task;
+      const { pageWidth, pageHeight, textDivs } = textLayer;
       const boxes = [];
-      let posRegex;
+      let j = 0,
+        posRegex;
       for (
-        let i = 0, j = 0, ii = (_textContentSource as TextContent).items.length;
-        i < ii;
-        i++
+        const { width, height, type } of textContent
+          .items as (TextItem & { type: unknown })[]
       ) {
-        const { width, height, type } = (_textContentSource as TextContent)
-          .items[i] as TextItem & { type: unknown };
         if (type) {
           continue;
         }
-        const { top, left } = _textDivs[j++].style;
+        const { top, left } = textDivs[j++].style;
         let x = parseFloat(left) / 100;
         let y = parseFloat(top) / 100;
         if (isNaN(x)) {
@@ -415,12 +422,12 @@ class Rasterize {
           // string, e.g. `calc(var(--scale-factor)*66.32px)`.
           let match = left.match(posRegex);
           if (match) {
-            x = parseFloat(match[1]) / _pageWidth;
+            x = parseFloat(match[1]) / pageWidth;
           }
 
           match = top.match(posRegex);
           if (match) {
-            y = parseFloat(match[1]) / _pageHeight;
+            y = parseFloat(match[1]) / pageHeight;
           }
         }
         if (width === 0 || height === 0) {
@@ -429,8 +436,8 @@ class Rasterize {
         boxes.push({
           x,
           y,
-          width: width / _pageWidth,
-          height: height / _pageHeight,
+          width: width / pageWidth,
+          height: height / pageHeight,
         });
       }
       // We set the borderWidth to 0.001 to slighly increase the size of the
@@ -455,7 +462,9 @@ class Rasterize {
 
       drawLayer.destroy();
     } catch (reason) {
-      throw new Error(`Rasterize.textLayer: "${(reason as any)?.message}".`);
+      throw new Error(
+        `Rasterize.highlightLayer: "${(reason as any)?.message}".`,
+      );
     }
   }
 
@@ -494,28 +503,13 @@ class Rasterize {
   }
 }
 
-type SnapshotInfo_ = {
-  browser: string;
-  id: string;
-  numPages: number;
-  lastPageNum: number;
-  failure: string | false;
-  file: string;
-  round: number;
-  page: number;
-  stats: unknown[];
-  viewportWidth: number | undefined;
-  viewportHeight: number | undefined;
-  outputScale: number | undefined;
-};
-
 class Snapshot_ extends HTMLVuu<Coo, HTMLDivElement> {
   static #bg: Cssc = "#fff";
   static nextTaskBg() {
     this.#bg = hexcolr(randomRRGGBB()).setTone(95).cssc;
   }
 
-  constructor(info_x: SnapshotInfo_, snapshot_x: string) {
+  constructor(tr_x: Omit<T_task_results, "snapshot">, snapshot: string) {
     super(undefined as any, html("div"));
 
     this.assignStylo({
@@ -542,11 +536,11 @@ class Snapshot_ extends HTMLVuu<Coo, HTMLDivElement> {
 
       resize: "none",
     });
-    info_el.textContent = JSON.stringify(info_x, undefined, "  ");
+    info_el.textContent = JSON.stringify(tr_x, undefined, "  ");
 
     const snapshop_el = html("object").assignAttro({
       type: "image/png",
-      data: snapshot_x,
+      data: snapshot,
     }).assignStylo({
       objectFit: "contain",
       gridRow: "2 / span 1",
@@ -584,43 +578,12 @@ type DriverOptions_ = {
   end: HTMLDivElement;
 };
 
-interface TaskJson_ {
-  id: string;
-  file: string;
-  md5: string;
-  rounds: number;
-  link?: boolean;
-  firstPage?: number;
-  skipPages?: number[];
-  lastPage?: number;
-  pageColors?: { background: Cssc; foreground: Cssc };
-  enableXfa?: boolean;
-  type: "eq" | "fbf" | "highlight" | "load" | "text" | "other";
-  save?: boolean;
-  print?: boolean;
-  forms?: boolean;
-  annotations?: boolean;
-  loadAnnotations?: boolean;
-  annotationStorage?: Record<
-    string,
-    AnnotStorageValue & { bitmapName: string }
-  >;
-  isOffscreenCanvasSupported?: boolean;
-  renderTaskOnContinue?: boolean;
-  optionalContent?: Record<string, boolean>;
-  enableAutoFetch?: boolean;
-  useSystemFonts?: boolean;
-  useWorkerFetch?: boolean;
-  outputScale?: number;
-  rotation?: 0 | 90 | 180 | 270;
-  password?: string;
-  aboud?: string;
-}
-
-interface TaskData_ extends TaskJson_ {
+interface TaskData_ extends TestTask {
+  /** 0-based */
   round: uint;
-  pageNum: number;
-  stats: { times: unknown[] };
+  /** 1-based */
+  pageNum: uint;
+  stats: { times: StatTime[] };
   fontRules?: string;
   pdfDoc?: PDFDocumentProxy;
   optionalContentConfigPromise?: Promise<OptionalContentConfig>;
@@ -629,11 +592,6 @@ interface TaskData_ extends TaskJson_ {
   viewportHeight?: uint;
   renderPrint?: boolean;
 }
-
-type FilterJson_ = {
-  tasks: string[];
-  limit: uint;
-};
 
 export class Driver {
   _l10n;
@@ -649,8 +607,7 @@ export class Driver {
   filterFile;
   delay;
   inFlightRequests;
-  testFilter!: FilterJson_;
-  xfaOnly;
+  testFilter!: TestFilter;
 
   canvas;
   textLayerCanvas?: HTMLCanvasElement;
@@ -674,24 +631,16 @@ export class Driver {
     this.snapshot = options.snapshot;
     this.end = options.end;
 
-    /* Set parameters from the query string */
-    // const params = parseQueryString(window.location.search.substring(1));
-    const params = parseQueryString([
-      "browser=chrome",
-      `manifestFile=${
-        encodeURIComponent(`/src/pdf/pdf.ts-test/test_manifest.json`)
-      }`,
-      `filterFile=${
-        encodeURIComponent(`/src/pdf/pdf.ts-test/test_filter.json`)
-      }`,
-    ].join("&"));
-    this.browser = params.get("browser")!;
-    this.manifestFile = params.get("manifestfile")!;
-    this.filterFile = params.get("filterfile");
+    // Set parameters from the query string
+    const params = parseQueryString(window.location.search.substring(1));
+    this.browser = params.get("browser") as T_browser ?? "chrome";
+    // this.manifestFile = params.get("manifestfile");
+    this.manifestFile = `/${D_sp_test}/test_manifest.json`;
+    this.filterFile = `/${D_sp_test}/test_filter.json`;
     this.delay = params.get("delay") as any | 0;
     this.inFlightRequests = 0;
     // this.testFilter = JSON.parse(params.get("testfilter") || "[]");
-    this.xfaOnly = params.get("xfaonly") === "true";
+    // this.xfaOnly = params.get("xfaonly") === "true";
 
     // Create a working canvas
     this.canvas = html("canvas");
@@ -700,28 +649,19 @@ export class Driver {
   run() {
     window.onerror = (message, source, line, column, error) => {
       this._info(
-        "Error: " +
-          message +
-          " Script: " +
-          source +
-          " Line: " +
-          line +
-          " Column: " +
-          column +
-          " StackTrace: " +
-          error,
+        `Error: ${message} Script: ${source} Line: ${line} Column: ${column} StackTrace: ${error}`,
       );
     };
-    this._info("User agent: " + navigator.userAgent);
+    this._info(`User agent: ${navigator.userAgent}`);
     this._log(`Harness thinks this browser is ${this.browser}\n`);
 
     if (this.delay > 0) {
-      this._log("\nDelaying for " + this.delay + " ms...\n");
+      this._log(`\nDelaying for ${this.delay} ms...\n`);
     }
     // When gathering the stats the numbers seem to be more reliable
     // if the browser is given more time to start.
     setTimeout(async () => {
-      this._log('Fetching manifest "' + this.manifestFile + '"... ');
+      this._log(`Fetching manifest "${this.manifestFile}"... `);
       let response = await fetch(this.manifestFile);
       if (!response.ok) {
         throw new Error(response.statusText);
@@ -730,7 +670,7 @@ export class Driver {
       this.manifest = await response.json();
 
       if (this.filterFile) {
-        this._log('Fetching filter "' + this.filterFile + '"... ');
+        this._log(`Fetching filter "${this.filterFile}"... `);
         response = await fetch(this.filterFile);
         if (!response.ok) {
           throw new Error(response.statusText);
@@ -738,27 +678,13 @@ export class Driver {
         this._log("done\n");
         this.testFilter = await response.json();
       } else {
-        this.testFilter = { tasks: [], limit: 0 };
+        this.testFilter = { only: [], skip: [], limit: 0 };
       }
 
-      if (this.testFilter.tasks.length || this.xfaOnly) {
-        this.manifest = this.manifest.filter((item) => {
-          if (this.testFilter.tasks.includes(item.id)) {
-            return true;
-          }
-          if (this.xfaOnly && item.enableXfa) {
-            return true;
-          }
-          return false;
-        });
-      }
-      console.log("limit: ", this.testFilter.limit);
-      if (
-        0 < this.testFilter.limit &&
-        this.testFilter.limit < this.manifest.length
-      ) {
-        this.manifest.length = this.testFilter.limit;
-      }
+      this.manifest = filter_tasks(this.manifest, this.testFilter);
+
+      this._send("/setup");
+
       this.currentTask = 0;
       this._nextTask();
     }, this.delay);
@@ -824,7 +750,7 @@ export class Driver {
         return;
       }
 
-      this._log('Loading file "' + task.file + '"\n');
+      this._log(`Loading file "${task.file}"\n`);
 
       try {
         let xfaStyleElement: HTMLStyleElement | undefined;
@@ -841,7 +767,10 @@ export class Driver {
           task.isOffscreenCanvasSupported === false ? false : undefined;
 
         const loadingTask = getDocument({
-          url: new URL(`/${D_res}/test/${task.file}`, window.location as any),
+          url: new URL(
+            `/${D_res_pdf}/test/${task.file}`,
+            window.location as any,
+          ),
           password: task.password,
           cMapUrl: CMAP_URL,
           standardFontDataUrl: STANDARD_FONT_DATA_URL,
@@ -991,7 +920,7 @@ export class Driver {
       ("stack" in e ? " at " + (e.stack as string).split("\n", 1)[0] : "");
   }
 
-  _getLastPageNumber(task: TaskData_) {
+  _getLastPageNumber(task: TaskData_): uint {
     if (!task.pdfDoc) {
       return task.firstPage || 1;
     }
@@ -1005,9 +934,7 @@ export class Driver {
     if (!task.pdfDoc) {
       const dataUrl = this.canvas.toDataURL("image/png");
       this._sendResult(dataUrl, task, failure).then(() => {
-        this._log(
-          "done" + (failure ? " (failed !: " + failure + ")" : "") + "\n",
-        );
+        this._log(`done${failure ? ` (failed !: ${failure})` : ""}\n`);
         this.currentTask++;
         this._nextTask();
       });
@@ -1016,7 +943,7 @@ export class Driver {
 
     if (task.pageNum > this._getLastPageNumber(task)) {
       if (++task.round < task.rounds) {
-        this._log(" Round " + (1 + task.round) + "\n");
+        this._log(` Round ${1 + task.round}\n`);
         task.pageNum = task.firstPage || 1;
       } else {
         this.currentTask++;
@@ -1026,9 +953,7 @@ export class Driver {
     }
 
     if (task.skipPages && task.skipPages.includes(task.pageNum)) {
-      this._log(
-        " Skipping page " + task.pageNum + "/" + task.pdfDoc.numPages + "...\n",
-      );
+      this._log(` Skipping page ${task.pageNum}/${task.pdfDoc.numPages}...\n`);
       task.pageNum++;
       this._nextPage(task);
       return;
@@ -1036,9 +961,7 @@ export class Driver {
 
     if (!failure) {
       try {
-        this._log(
-          " Loading page " + task.pageNum + "/" + task.pdfDoc.numPages + "... ",
-        );
+        this._log(` Loading page ${task.pageNum}/${task.pdfDoc.numPages}... `);
         ctx = this.canvas.getContext("2d", { alpha: false })!;
         task.pdfDoc.getPage(task.pageNum).then(
           (page) => {
@@ -1287,9 +1210,7 @@ export class Driver {
 
     const dataUrl = this.canvas.toDataURL("image/png");
     this._sendResult(dataUrl, task, failure).then(() => {
-      this._log(
-        "done" + (failure ? " (failed !: " + failure + ")" : "") + "\n",
-      );
+      this._log(`done${failure ? ` (failed !: ${failure})` : ""}\n`);
       task.pageNum++;
       this._nextPage(task);
     });
@@ -1299,29 +1220,13 @@ export class Driver {
     this._log("Done !");
     this.end.textContent = "Tests finished. Close this window!";
 
-    // /* Send the quit request */
-    // fetch(`/tellMeToQuit?browser=${escape(this.browser)}`, {
-    //   method: "POST",
-    // });
+    this._send("/tellMeToQuit", { browser: this.browser });
   }
 
   _info(message: string) {
-    // this._send(
-    //   "/info",
-    //   JSON.stringify({
-    //     browser: this.browser,
-    //     message,
-    //   }),
-    // );
-    console.log(
-      JSON.stringify(
-        {
-          browser: this.browser,
-          message,
-        },
-        undefined,
-        "    ",
-      ),
+    this._send(
+      "/info",
+      { browser: this.browser, message },
     );
   }
 
@@ -1355,55 +1260,41 @@ export class Driver {
     task: TaskData_,
     failure: string | false,
   ) {
-    // const result = JSON.stringify({
-    //   browser: this.browser,
-    //   id: task.id,
-    //   numPages: task.pdfDoc ? task.lastPage || task.pdfDoc.numPages : 0,
-    //   lastPageNum: this._getLastPageNumber(task),
-    //   failure,
-    //   file: task.file,
-    //   round: task.round,
-    //   page: task.pageNum,
-    //   snapshot,
-    //   stats: task.stats.times,
-    //   viewportWidth: task.viewportWidth,
-    //   viewportHeight: task.viewportHeight,
-    //   outputScale: task.outputScale,
-    // });
-    // return this._send("/submit_task_results", result);
-    this.snapshot.append(
-      new Snapshot_({
-        browser: this.browser,
-        id: task.id,
-        numPages: task.pdfDoc ? task.lastPage || task.pdfDoc.numPages : 0,
-        lastPageNum: this._getLastPageNumber(task),
-        failure,
-        file: task.file,
-        round: task.round,
-        page: task.pageNum,
-        stats: task.stats.times,
-        viewportWidth: task.viewportWidth,
-        viewportHeight: task.viewportHeight,
-        outputScale: task.outputScale,
-      }, snapshot).el,
-    );
+    const result = {
+      browser: this.browser,
+      id: task.id,
+      numPages: task.pdfDoc ? task.lastPage || task.pdfDoc.numPages : 0,
+      lastPageNum: this._getLastPageNumber(task),
+      failure,
+      file: task.file,
+      round: task.round,
+      page: task.pageNum,
+      stats: task.stats.times,
+      viewportWidth: task.viewportWidth,
+      viewportHeight: task.viewportHeight,
+      outputScale: task.outputScale,
+    } as T_task_results;
+    this.snapshot.append(new Snapshot_(result, snapshot).el);
+    result.snapshot = snapshot;
+    return this._send("/submit_task_results", result);
   }
 
-  _send(url: string, message: string) {
+  _send(
+    url: string,
+    message?: T_info | T_task_results | { browser: T_browser },
+  ) {
     const { promise, resolve } = new PromiseCap();
     this.inflight.textContent = this.inFlightRequests++ as any;
 
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: message,
-    })
-      .then((response) => {
+    wretch(url)
+      .post(message)
+      .res((res) => {
         // Retry until successful.
-        if (!response.ok || response.status !== 200) {
-          throw new Error(response.statusText);
+        if (
+          !(res.status === HttpStatusCode.OK ||
+            res.status === HttpStatusCode.NO_CONTENT)
+        ) {
+          throw new Error(res.statusText);
         }
 
         this.inFlightRequests--;
@@ -1415,7 +1306,7 @@ export class Driver {
         this.inFlightRequests--;
         resolve();
 
-        this._send(url, message);
+        // this._send(url, message);
       });
 
     return promise;

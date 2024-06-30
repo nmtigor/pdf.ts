@@ -20,27 +20,29 @@
  * limitations under the License.
  */
 /* globals pdfjsLib, pdfjsViewer */
-import { svg as createSVG } from "../../lib/dom.js";
+import { filter_tasks } from "./util.js";
+import { D_res_pdf, D_rp_web, D_rpe_cmap, D_rpe_sfont, D_sp_test, } from "../../alias.js";
+import { HttpStatusCode } from "../../lib/HttpStatusCode.js";
 import { Locale } from "../../lib/Locale.js";
 import { hexcolr, randomRRGGBB } from "../../lib/color/Colr.js";
 import { HTMLVuu } from "../../lib/cv.js";
-import { html } from "../../lib/dom.js";
+import { html, svg as createSVG } from "../../lib/dom.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
-import { D_cmap_url, D_res, D_standard_font_data_url, D_web, } from "../alias.js";
-import { AnnotationLayer, AnnotationMode, DrawLayer, getDocument, GlobalWorkerOptions, Outliner, PixelsPerInch, renderTextLayer, shadow, XfaLayer, } from "../pdf.ts-src/pdf.js";
+import wretch from "../../3rd/wretch-2.9.0/dist/index.js";
+import { AnnotationLayer, AnnotationMode, DrawLayer, getDocument, GlobalWorkerOptions, Outliner, PixelsPerInch, shadow, TextLayer, XfaLayer, } from "../pdf.ts-src/pdf.js";
 import { GenericL10n } from "../pdf.ts-web/genericl10n.js";
 import { SimpleLinkService } from "../pdf.ts-web/pdf_link_service.js";
 import { parseQueryString } from "../pdf.ts-web/ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 const WAITING_TIME = 100; // ms
 // const CMAP_URL = "/build/generic/web/cmaps/";
-const CMAP_URL = `/${D_cmap_url}/`;
+const CMAP_URL = `/${D_rpe_cmap}/`;
 // const STANDARD_FONT_DATA_URL = "/build/generic/web/standard_fonts/";
-const STANDARD_FONT_DATA_URL = `/${D_standard_font_data_url}/`;
+const STANDARD_FONT_DATA_URL = `/${D_rpe_sfont}/`;
 // const IMAGE_RESOURCES_PATH = "/web/images/";
-const IMAGE_RESOURCES_PATH = `/${D_web}/images/`;
+const IMAGE_RESOURCES_PATH = `/${D_rp_web}/images/`;
 // const VIEWER_CSS = "../build/components/pdf_viewer.css";
-const VIEWER_CSS = `/${D_web}/pdf_viewer.css`;
+const VIEWER_CSS = `/${D_rp_web}/pdf_viewer.css`;
 const VIEWER_LOCALE = Locale.en_US;
 // const WORKER_SRC = "../build/generic/build/pdf.worker.mjs";
 const WORKER_SRC = "/gen/pdf/pdf.ts-src/pdf.worker.js";
@@ -246,12 +248,12 @@ class Rasterize {
             style.textContent = `${common}\n${overrides}\n` +
                 `:root { --scale-factor: ${viewport.scale} }`;
             // Rendering text layer as HTML.
-            const task = renderTextLayer({
+            const textLayer = new TextLayer({
                 textContentSource: textContent,
                 container: div,
                 viewport,
             });
-            await task.promise;
+            await textLayer.render();
             svg.append(foreignObject);
             await writeSVG(svg, ctx);
         }
@@ -269,22 +271,21 @@ class Rasterize {
             style.textContent = `${common}\n${overrides}` +
                 `:root { --scale-factor: ${viewport.scale} }`;
             // Rendering text layer as HTML.
-            const task = renderTextLayer({
+            const textLayer = new TextLayer({
                 textContentSource: textContent,
                 container: dummyParent,
                 viewport,
             });
-            await task.promise;
-            const { _pageWidth, _pageHeight, _textContentSource, _textDivs } = task;
+            await textLayer.render();
+            const { pageWidth, pageHeight, textDivs } = textLayer;
             const boxes = [];
-            let posRegex;
-            for (let i = 0, j = 0, ii = _textContentSource.items.length; i < ii; i++) {
-                const { width, height, type } = _textContentSource
-                    .items[i];
+            let j = 0, posRegex;
+            for (const { width, height, type } of textContent
+                .items) {
                 if (type) {
                     continue;
                 }
-                const { top, left } = _textDivs[j++].style;
+                const { top, left } = textDivs[j++].style;
                 let x = parseFloat(left) / 100;
                 let y = parseFloat(top) / 100;
                 if (isNaN(x)) {
@@ -293,11 +294,11 @@ class Rasterize {
                     // string, e.g. `calc(var(--scale-factor)*66.32px)`.
                     let match = left.match(posRegex);
                     if (match) {
-                        x = parseFloat(match[1]) / _pageWidth;
+                        x = parseFloat(match[1]) / pageWidth;
                     }
                     match = top.match(posRegex);
                     if (match) {
-                        y = parseFloat(match[1]) / _pageHeight;
+                        y = parseFloat(match[1]) / pageHeight;
                     }
                 }
                 if (width === 0 || height === 0) {
@@ -306,8 +307,8 @@ class Rasterize {
                 boxes.push({
                     x,
                     y,
-                    width: width / _pageWidth,
-                    height: height / _pageHeight,
+                    width: width / pageWidth,
+                    height: height / pageHeight,
                 });
             }
             // We set the borderWidth to 0.001 to slighly increase the size of the
@@ -328,7 +329,7 @@ class Rasterize {
             drawLayer.destroy();
         }
         catch (reason) {
-            throw new Error(`Rasterize.textLayer: "${reason?.message}".`);
+            throw new Error(`Rasterize.highlightLayer: "${reason?.message}".`);
         }
     }
     static async xfaLayer(ctx, viewport, xfaHtml, fontRules, annotationStorage, isPrint) {
@@ -360,7 +361,7 @@ class Snapshot_ extends HTMLVuu {
     static nextTaskBg() {
         this.#bg = hexcolr(randomRRGGBB()).setTone(95).cssc;
     }
-    constructor(info_x, snapshot_x) {
+    constructor(tr_x, snapshot) {
         super(undefined, html("div"));
         this.assignStylo({
             display: "grid",
@@ -381,10 +382,10 @@ class Snapshot_ extends HTMLVuu {
             whiteSpace: "pre",
             resize: "none",
         });
-        info_el.textContent = JSON.stringify(info_x, undefined, "  ");
+        info_el.textContent = JSON.stringify(tr_x, undefined, "  ");
         const snapshop_el = html("object").assignAttro({
             type: "image/png",
-            data: snapshot_x,
+            data: snapshot,
         }).assignStylo({
             objectFit: "contain",
             gridRow: "2 / span 1",
@@ -406,7 +407,6 @@ export class Driver {
     delay;
     inFlightRequests;
     testFilter;
-    xfaOnly;
     canvas;
     textLayerCanvas;
     annotationLayerCanvas;
@@ -424,45 +424,32 @@ export class Driver {
         this.output = options.output;
         this.snapshot = options.snapshot;
         this.end = options.end;
-        /* Set parameters from the query string */
-        // const params = parseQueryString(window.location.search.substring(1));
-        const params = parseQueryString([
-            "browser=chrome",
-            `manifestFile=${encodeURIComponent(`/src/pdf/pdf.ts-test/test_manifest.json`)}`,
-            `filterFile=${encodeURIComponent(`/src/pdf/pdf.ts-test/test_filter.json`)}`,
-        ].join("&"));
-        this.browser = params.get("browser");
-        this.manifestFile = params.get("manifestfile");
-        this.filterFile = params.get("filterfile");
+        // Set parameters from the query string
+        const params = parseQueryString(window.location.search.substring(1));
+        this.browser = params.get("browser") ?? "chrome";
+        // this.manifestFile = params.get("manifestfile");
+        this.manifestFile = `/${D_sp_test}/test_manifest.json`;
+        this.filterFile = `/${D_sp_test}/test_filter.json`;
         this.delay = params.get("delay");
         this.inFlightRequests = 0;
         // this.testFilter = JSON.parse(params.get("testfilter") || "[]");
-        this.xfaOnly = params.get("xfaonly") === "true";
+        // this.xfaOnly = params.get("xfaonly") === "true";
         // Create a working canvas
         this.canvas = html("canvas");
     }
     run() {
         window.onerror = (message, source, line, column, error) => {
-            this._info("Error: " +
-                message +
-                " Script: " +
-                source +
-                " Line: " +
-                line +
-                " Column: " +
-                column +
-                " StackTrace: " +
-                error);
+            this._info(`Error: ${message} Script: ${source} Line: ${line} Column: ${column} StackTrace: ${error}`);
         };
-        this._info("User agent: " + navigator.userAgent);
+        this._info(`User agent: ${navigator.userAgent}`);
         this._log(`Harness thinks this browser is ${this.browser}\n`);
         if (this.delay > 0) {
-            this._log("\nDelaying for " + this.delay + " ms...\n");
+            this._log(`\nDelaying for ${this.delay} ms...\n`);
         }
         // When gathering the stats the numbers seem to be more reliable
         // if the browser is given more time to start.
         setTimeout(async () => {
-            this._log('Fetching manifest "' + this.manifestFile + '"... ');
+            this._log(`Fetching manifest "${this.manifestFile}"... `);
             let response = await fetch(this.manifestFile);
             if (!response.ok) {
                 throw new Error(response.statusText);
@@ -470,7 +457,7 @@ export class Driver {
             this._log("done\n");
             this.manifest = await response.json();
             if (this.filterFile) {
-                this._log('Fetching filter "' + this.filterFile + '"... ');
+                this._log(`Fetching filter "${this.filterFile}"... `);
                 response = await fetch(this.filterFile);
                 if (!response.ok) {
                     throw new Error(response.statusText);
@@ -479,24 +466,10 @@ export class Driver {
                 this.testFilter = await response.json();
             }
             else {
-                this.testFilter = { tasks: [], limit: 0 };
+                this.testFilter = { only: [], skip: [], limit: 0 };
             }
-            if (this.testFilter.tasks.length || this.xfaOnly) {
-                this.manifest = this.manifest.filter((item) => {
-                    if (this.testFilter.tasks.includes(item.id)) {
-                        return true;
-                    }
-                    if (this.xfaOnly && item.enableXfa) {
-                        return true;
-                    }
-                    return false;
-                });
-            }
-            console.log("limit: ", this.testFilter.limit);
-            if (0 < this.testFilter.limit &&
-                this.testFilter.limit < this.manifest.length) {
-                this.manifest.length = this.testFilter.limit;
-            }
+            this.manifest = filter_tasks(this.manifest, this.testFilter);
+            this._send("/setup");
             this.currentTask = 0;
             this._nextTask();
         }, this.delay);
@@ -552,7 +525,7 @@ export class Driver {
                 this._nextTask();
                 return;
             }
-            this._log('Loading file "' + task.file + '"\n');
+            this._log(`Loading file "${task.file}"\n`);
             try {
                 let xfaStyleElement;
                 if (task.enableXfa) {
@@ -566,7 +539,7 @@ export class Driver {
                 }
                 const isOffscreenCanvasSupported = task.isOffscreenCanvasSupported === false ? false : undefined;
                 const loadingTask = getDocument({
-                    url: new URL(`/${D_res}/test/${task.file}`, window.location),
+                    url: new URL(`/${D_res_pdf}/test/${task.file}`, window.location),
                     password: task.password,
                     cMapUrl: CMAP_URL,
                     standardFontDataUrl: STANDARD_FONT_DATA_URL,
@@ -707,7 +680,7 @@ export class Driver {
         if (!task.pdfDoc) {
             const dataUrl = this.canvas.toDataURL("image/png");
             this._sendResult(dataUrl, task, failure).then(() => {
-                this._log("done" + (failure ? " (failed !: " + failure + ")" : "") + "\n");
+                this._log(`done${failure ? ` (failed !: ${failure})` : ""}\n`);
                 this.currentTask++;
                 this._nextTask();
             });
@@ -715,7 +688,7 @@ export class Driver {
         }
         if (task.pageNum > this._getLastPageNumber(task)) {
             if (++task.round < task.rounds) {
-                this._log(" Round " + (1 + task.round) + "\n");
+                this._log(` Round ${1 + task.round}\n`);
                 task.pageNum = task.firstPage || 1;
             }
             else {
@@ -725,14 +698,14 @@ export class Driver {
             }
         }
         if (task.skipPages && task.skipPages.includes(task.pageNum)) {
-            this._log(" Skipping page " + task.pageNum + "/" + task.pdfDoc.numPages + "...\n");
+            this._log(` Skipping page ${task.pageNum}/${task.pdfDoc.numPages}...\n`);
             task.pageNum++;
             this._nextPage(task);
             return;
         }
         if (!failure) {
             try {
-                this._log(" Loading page " + task.pageNum + "/" + task.pdfDoc.numPages + "... ");
+                this._log(` Loading page ${task.pageNum}/${task.pdfDoc.numPages}... `);
                 ctx = this.canvas.getContext("2d", { alpha: false });
                 task.pdfDoc.getPage(task.pageNum).then((page) => {
                     // Default to creating the test images at the devices pixel ratio,
@@ -925,7 +898,7 @@ export class Driver {
         this._log("Snapshotting... ");
         const dataUrl = this.canvas.toDataURL("image/png");
         this._sendResult(dataUrl, task, failure).then(() => {
-            this._log("done" + (failure ? " (failed !: " + failure + ")" : "") + "\n");
+            this._log(`done${failure ? ` (failed !: ${failure})` : ""}\n`);
             task.pageNum++;
             this._nextPage(task);
         });
@@ -933,23 +906,10 @@ export class Driver {
     _quit() {
         this._log("Done !");
         this.end.textContent = "Tests finished. Close this window!";
-        // /* Send the quit request */
-        // fetch(`/tellMeToQuit?browser=${escape(this.browser)}`, {
-        //   method: "POST",
-        // });
+        this._send("/tellMeToQuit", { browser: this.browser });
     }
     _info(message) {
-        // this._send(
-        //   "/info",
-        //   JSON.stringify({
-        //     browser: this.browser,
-        //     message,
-        //   }),
-        // );
-        console.log(JSON.stringify({
-            browser: this.browser,
-            message,
-        }, undefined, "    "));
+        this._send("/info", { browser: this.browser, message });
     }
     _log(message) {
         // Using insertAdjacentHTML yields a large performance gain and
@@ -976,23 +936,7 @@ export class Driver {
         }
     }
     async _sendResult(snapshot, task, failure) {
-        // const result = JSON.stringify({
-        //   browser: this.browser,
-        //   id: task.id,
-        //   numPages: task.pdfDoc ? task.lastPage || task.pdfDoc.numPages : 0,
-        //   lastPageNum: this._getLastPageNumber(task),
-        //   failure,
-        //   file: task.file,
-        //   round: task.round,
-        //   page: task.pageNum,
-        //   snapshot,
-        //   stats: task.stats.times,
-        //   viewportWidth: task.viewportWidth,
-        //   viewportHeight: task.viewportHeight,
-        //   outputScale: task.outputScale,
-        // });
-        // return this._send("/submit_task_results", result);
-        this.snapshot.append(new Snapshot_({
+        const result = {
             browser: this.browser,
             id: task.id,
             numPages: task.pdfDoc ? task.lastPage || task.pdfDoc.numPages : 0,
@@ -1005,22 +949,21 @@ export class Driver {
             viewportWidth: task.viewportWidth,
             viewportHeight: task.viewportHeight,
             outputScale: task.outputScale,
-        }, snapshot).el);
+        };
+        this.snapshot.append(new Snapshot_(result, snapshot).el);
+        result.snapshot = snapshot;
+        return this._send("/submit_task_results", result);
     }
     _send(url, message) {
         const { promise, resolve } = new PromiseCap();
         this.inflight.textContent = this.inFlightRequests++;
-        fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: message,
-        })
-            .then((response) => {
+        wretch(url)
+            .post(message)
+            .res((res) => {
             // Retry until successful.
-            if (!response.ok || response.status !== 200) {
-                throw new Error(response.statusText);
+            if (!(res.status === HttpStatusCode.OK ||
+                res.status === HttpStatusCode.NO_CONTENT)) {
+                throw new Error(res.statusText);
             }
             this.inFlightRequests--;
             resolve();
@@ -1029,7 +972,7 @@ export class Driver {
             console.warn(`Driver._send failed (${url}): ${reason}`);
             this.inFlightRequests--;
             resolve();
-            this._send(url, message);
+            // this._send(url, message);
         });
         return promise;
     }

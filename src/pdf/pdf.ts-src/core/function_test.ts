@@ -21,11 +21,7 @@
  * limitations under the License.
  */
 
-import {
-  assertEquals,
-  assertNotEquals,
-  assertThrows,
-} from "@std/assert/mod.ts";
+import { assertEquals, assertNotEquals, assertThrows } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { PostScriptCompiler, PostScriptEvaluator } from "./function.ts";
 import { PostScriptLexer, PostScriptParser } from "./ps_parser.ts";

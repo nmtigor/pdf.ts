@@ -50,8 +50,7 @@ async function writeStream(stream, buffer, transform) {
     // If the string is too small there is no real benefit in compressing it.
     // The number 256 is arbitrary, but it should be reasonable.
     const MIN_LENGTH_FOR_COMPRESSING = 256;
-    if (typeof globalThis.CompressionStream !== "undefined" &&
-        (bytes.length >= MIN_LENGTH_FOR_COMPRESSING || isFilterZeroFlateDecode)) {
+    if (bytes.length >= MIN_LENGTH_FOR_COMPRESSING || isFilterZeroFlateDecode) {
         try {
             const cs = new globalThis.CompressionStream("deflate");
             const writer = cs.writable.getWriter();
@@ -135,7 +134,7 @@ async function writeValue(value, buffer, transform) {
     else if (value instanceof BaseStream) {
         await writeStream(value, buffer, transform);
     }
-    else if (value === null || value === undefined) {
+    else if (value == undefined) {
         buffer.push("null");
     }
     else {
@@ -251,8 +250,15 @@ async function getXRefTable(xrefInfo, baseOffset, newRefs, newXref, buffer) {
         }
         // The EOL is \r\n to make sure that every entry is exactly 20 bytes long.
         // (see 7.5.4 - Cross-Reference Table).
-        buffer.push(`${baseOffset.toString().padStart(10, "0")} ${Math.min(ref.gen, 0xffff).toString().padStart(5, "0")} n\r\n`);
-        baseOffset += data.length;
+        if (data !== undefined) {
+            buffer.push(`${baseOffset.toString().padStart(10, "0")} ${Math.min(ref.gen, 0xffff).toString().padStart(5, "0")} n\r\n`);
+            baseOffset += data.length;
+        }
+        else {
+            buffer.push(`0000000000 ${Math.min(ref.gen + 1, 0xffff)
+                .toString()
+                .padStart(5, "0")} f\r\n`);
+        }
     }
     computeIDs(baseOffset, xrefInfo, newXref);
     buffer.push("trailer\n");
@@ -276,11 +282,18 @@ async function getXRefStreamTable(xrefInfo, baseOffset, newRefs, newXref, buffer
     let maxOffset = 0;
     let maxGen = 0;
     for (const { ref, data } of newRefs) {
+        let gen;
         maxOffset = Math.max(maxOffset, baseOffset);
-        const gen = Math.min(ref.gen, 0xffff);
+        if (data != undefined) {
+            gen = Math.min(ref.gen, 0xffff);
+            xrefTableData.push([1, baseOffset, gen]);
+            baseOffset += data.length;
+        }
+        else {
+            gen = Math.min(ref.gen + 1, 0xffff);
+            xrefTableData.push([0, 0, gen]);
+        }
         maxGen = Math.max(maxGen, gen);
-        xrefTableData.push([1, baseOffset, gen]);
-        baseOffset += data.length;
     }
     newXref.set("Index", getIndexes(newRefs));
     const offsetSize = getSizeInBytes(maxOffset);
@@ -349,21 +362,20 @@ export async function incrementalUpdate({ originalData, xrefInfo, newRefs, xref,
             xref,
         });
     }
-    let buffer, baseOffset;
+    const buffer = [];
+    let baseOffset = originalData.length;
     const lastByte = originalData.at(-1);
-    if (lastByte === /* \n */ 0x0a || lastByte === /* \r */ 0x0d) {
-        buffer = [];
-        baseOffset = originalData.length;
-    }
-    else {
+    if (lastByte !== /* \n */ 0x0a && lastByte !== /* \r */ 0x0d) {
         // Avoid to concatenate %%EOF with an object definition
-        buffer = ["\n"];
-        baseOffset = originalData.length + 1;
+        buffer.push("\n");
+        baseOffset += 1;
     }
     const newXref = getTrailerDict(xrefInfo, newRefs, useXrefStream);
     newRefs = newRefs.sort((a, b) => /* compare the refs */ a.ref.num - b.ref.num);
     for (const { data } of newRefs) {
-        buffer.push(data);
+        if (data !== undefined) {
+            buffer.push(data);
+        }
     }
     await (useXrefStream
         ? getXRefStreamTable(xrefInfo, baseOffset, newRefs, newXref, buffer)

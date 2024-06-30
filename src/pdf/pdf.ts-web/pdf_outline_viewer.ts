@@ -21,15 +21,16 @@
  * limitations under the License.
  */
 
+import type { int } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
-import { isObjectLike } from "@fe-lib/jslang.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
-import type { OutlineNode, PDFDocumentProxy, Ref } from "../pdf.ts-src/pdf.ts";
+import type { OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import type { BaseTreeViewerCtorP } from "./base_tree_viewer.ts";
 import { BaseTreeViewer } from "./base_tree_viewer.ts";
 import type { IDownloadManager } from "./interfaces.ts";
 import type { PDFLinkService } from "./pdf_link_service.ts";
 import { SidebarView } from "./ui_utils.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface PDFOutlineViewerOptions extends BaseTreeViewerCtorP {
@@ -195,7 +196,10 @@ export class PDFOutlineViewer extends BaseTreeViewer {
     }
   }
 
-  #addToggleButton(div: HTMLDivElement, { count, items }: OutlineNode) {
+  #addToggleButton(
+    div: HTMLDivElement,
+    { count, items }: OutlineNode,
+  ) {
     let hidden = false;
     if (count! < 0) {
       let totalCount = items.length;
@@ -327,13 +331,13 @@ export class PDFOutlineViewer extends BaseTreeViewer {
     this.#pageNumberToDestHashCapability = new PromiseCap();
 
     const pageNumberToDestHash = new Map<number, string>(),
-      pageNumberNesting = new Map();
+      pageNumberNesting = new Map<int, number>();
     const queue = [{ nesting: 0, items: this.#outline }];
     while (queue.length > 0) {
       const levelData = queue.shift()!,
         currentNesting = levelData.nesting;
       for (const { dest, items } of levelData.items!) {
-        let explicitDest, pageNumber;
+        let explicitDest, pageNumber: int | undefined;
         if (typeof dest === "string") {
           explicitDest = await pdfDocument.getDestination(dest);
 
@@ -347,32 +351,21 @@ export class PDFOutlineViewer extends BaseTreeViewer {
           const [destRef] = explicitDest;
 
           if (isObjectLike(destRef)) {
-            pageNumber = this.linkService._cachedPageNumber(destRef);
-
-            if (!pageNumber) {
-              try {
-                pageNumber = (await pdfDocument.getPageIndex(destRef)) + 1;
-
-                if (pdfDocument !== this._pdfDocument) {
-                  return undefined; // The document was closed while the data resolved.
-                }
-                this.linkService.cachePageRef(pageNumber, destRef as Ref);
-              } catch {
-                // Invalid page reference, ignore it and continue parsing.
-              }
-            }
+            // The page reference must be available, since the current method
+            // won't be invoked until all pages have been loaded.
+            pageNumber = pdfDocument.cachedPageNumber(destRef);
           } else if (Number.isInteger(destRef)) {
-            pageNumber = <number> destRef + 1;
+            pageNumber = destRef! + 1;
           }
 
           if (
             Number.isInteger(pageNumber) &&
-            (!pageNumberToDestHash.has(<number> pageNumber) ||
-              currentNesting > pageNumberNesting.get(pageNumber))
+            (!pageNumberToDestHash.has(pageNumber!) ||
+              currentNesting > pageNumberNesting.get(pageNumber!)!)
           ) {
             const destHash = this.linkService.getDestinationHash(dest);
-            pageNumberToDestHash.set(<number> pageNumber, destHash);
-            pageNumberNesting.set(pageNumber, currentNesting);
+            pageNumberToDestHash.set(pageNumber!, destHash);
+            pageNumberNesting.set(pageNumber!, currentNesting);
           }
         }
 

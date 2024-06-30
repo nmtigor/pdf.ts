@@ -198,6 +198,7 @@ export function createDefaultAppearance({ fontSize, fontName, fontColor }) {
     return `/${escapePDFName(fontName)} ${fontSize} Tf ${getPdfColor(fontColor, 
     /* isFill */ true)}`;
 }
+//kkkk try not to mix deno-ts and browser-ts in one module
 let denoCanvas;
 /*#static*/ 
 export class FakeUnicodeFont {

@@ -2,7 +2,7 @@
  * @module lib/alias
  * @license Apache-2.0
  ******************************************************************************/
-import { z } from "../3rd/zod-3.22.2/lib/index.mjs";
+import { z } from "../3rd/zod-3.23.8/lib/index.mjs";
 export const zInt = z.number().int();
 export const zUint = zInt.min(0);
 const zInt64 = zInt;

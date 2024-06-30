@@ -23,6 +23,7 @@
 
 import { FeatureTest, FormatError, info, shadow } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
+import { isNumberArray } from "./core_utils.ts";
 import { LocalFunctionCache } from "./image_utils.ts";
 import type { Obj, ObjNoRef } from "./primitives.ts";
 import { Dict, Ref } from "./primitives.ts";
@@ -126,17 +127,11 @@ function toNumberArray(arr: unknown): number[] | undefined {
   if (!Array.isArray(arr)) {
     return undefined;
   }
-  const length = arr.length;
-  for (let i = 0; i < length; i++) {
-    if (typeof arr[i] !== "number") {
-      // Non-number is found -- convert all items to numbers.
-      const result = new Array(length);
-      for (let j = 0; j < length; j++) {
-        result[j] = +arr[j];
-      }
-      return result;
-    }
+  if (!isNumberArray(arr, undefined)) {
+    // Non-number is found -- convert all items to numbers.
+    return arr.map((x) => +x);
   }
+
   return arr;
 }
 

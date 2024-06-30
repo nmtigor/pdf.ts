@@ -103,7 +103,7 @@ export class Sandbox {
         this._module?.ccall("dumpMemoryUse", null, []);
     }
     nukeSandbox() {
-        if (this._module !== null) {
+        if (this._module != undefined) {
             this.support.destroy();
             this.support = undefined;
             this._module.ccall("nukeSandbox", null, []);

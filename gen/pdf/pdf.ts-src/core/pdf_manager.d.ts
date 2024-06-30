@@ -46,7 +46,7 @@ export declare abstract class BasePdfManager {
     get password(): string | undefined;
     msgHandler: MessageHandler<Thread.worker>;
     enableXfa: boolean | undefined;
-    evaluatorOptions: EvaluatorOptions;
+    evaluatorOptions: Readonly<EvaluatorOptions>;
     pdfDocument: PDFDocument;
     get catalog(): Catalog | undefined;
     constructor(args: BasePdfManagerCtorP_);

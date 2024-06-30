@@ -22,7 +22,7 @@
  */
 
 import { html as createHTML, textnode } from "@fe-lib/dom.ts";
-import type { IPDFLinkService } from "@pdf.ts-web/interfaces.ts";
+import type { IPDFLinkService } from "@fe-pdf.ts-web/interfaces.ts";
 import type { XFAElObj, XFAHTMLObj } from "../core/xfa/alias.ts";
 import type { AnnotationStorage } from "./annotation_storage.ts";
 import type { AnnotIntent, PDFPageProxy } from "./api.ts";
@@ -105,7 +105,7 @@ export abstract class XfaLayer {
             });
           });
         } else {
-          if (storedData.value !== null && storedData.value !== undefined) {
+          if (storedData.value != undefined) {
             html.setAttribute("value", storedData.value as any);
           }
           if (intent === "print") {
@@ -154,7 +154,7 @@ export abstract class XfaLayer {
       attributes!.name = `${attributes!.name}-${intent}`;
     }
     for (const [key, value] of Object.entries(attributes!)) {
-      if (value === null || value === undefined) {
+      if (value == undefined) {
         continue;
       }
 

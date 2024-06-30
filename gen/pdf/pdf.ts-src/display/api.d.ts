@@ -8,7 +8,8 @@
 /**
  * @module pdfjsLib
  */
-import type { C2D, TypedArray } from "../../../lib/alias.js";
+import type { C2D, TypedArray, uint } from "../../../lib/alias.js";
+import type { Locale } from "../../../lib/Locale.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import type { Stepper } from "../../pdf.ts-web/debugger.js";
 import type { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
@@ -19,14 +20,14 @@ import type { DatasetReader } from "../core/dataset_reader.js";
 import type { DocumentInfo } from "../core/document.js";
 import type { ImgData } from "../core/evaluator.js";
 import type { Attachment } from "../core/file_spec.js";
-import type { CmdArgs } from "../core/font_renderer.js";
+import type { Cmds } from "../core/font_renderer.js";
 import type { FontExpotDataEx } from "../core/fonts.js";
 import type { IWorker } from "../core/iworker.js";
 import type { OpListIR } from "../core/operator_list.js";
 import type { ShadingPatternIR } from "../core/pattern.js";
 import type { XFAElObj } from "../core/xfa/alias.js";
 import type { IPDFStream } from "../interfaces.js";
-import type { ActionSinkchunk, GetDocRequestData, PageInfo, PDFInfo, Thread } from "../shared/message_handler.js";
+import type { ActionSinkchunk, PageInfo, PDFInfo, Thread } from "../shared/message_handler.js";
 import { MessageHandler } from "../shared/message_handler.js";
 import type { matrix_t } from "../shared/util.js";
 import { AnnotationMode, PasswordResponses, RenderingIntentFlag, VerbosityLevel } from "../shared/util.js";
@@ -180,8 +181,8 @@ export interface DocumentInitP {
     maxImageSize?: number;
     /**
      * Determines if we can evaluate strings
-     * as JavaScript. Primarily used to improve performance of font rendering, and
-     * when parsing PDF functions. The default value is `true`.
+     * as JavaScript. Primarily used to improve performance of PDF functions.
+     * The default value is `true`.
      */
     isEvalSupported?: boolean;
     /**
@@ -268,15 +269,15 @@ export interface DocumentInitP {
 }
 type GetDocumentP_ = string | URL | TypedArray | ArrayBuffer | PDFDataRangeTransport | DocumentInitP;
 type TransportParams_ = {
-    ignoreErrors: boolean;
-    isEvalSupported: boolean;
+    ownerDocument: Document;
+    styleElement: HTMLStyleElement | undefined;
+    loadingParams: {
+        enableXfa: boolean;
+        disableAutoFetch: boolean;
+    };
     disableFontFace: boolean;
     fontExtraProperties: boolean;
-    enableXfa: boolean;
-    ownerDocument: Document;
-    disableAutoFetch: boolean;
     pdfBug: boolean;
-    styleElement: HTMLStyleElement | undefined;
 };
 type TransportFactory_ = {
     canvasFactory: DefaultCanvasFactory;
@@ -420,7 +421,7 @@ export declare class PDFDocumentProxy {
     /**
      * @return Total number of pages in the PDF file.
      */
-    get numPages(): number;
+    get numPages(): uint;
     /**
      * A (not guaranteed to be) unique ID to
      * identify the PDF document.
@@ -573,12 +574,17 @@ export declare class PDFDocumentProxy {
      */
     destroy(): Promise<void>;
     /**
+     * @param ref The page reference.
+     * @return The page number, if it's cached.
+     */
+    cachedPageNumber(ref: RefProxy): number | undefined;
+    /**
      * A subset of the current
      * {DocumentInitParameters}, which are needed in the viewer.
      */
     get loadingParams(): {
-        disableAutoFetch: boolean;
         enableXfa: boolean;
+        disableAutoFetch: boolean;
     };
     /**
      * The loadingTask for the current document.
@@ -641,7 +647,7 @@ interface _GetViewportP {
 /**
  * Page getTextContent parameters.
  */
-interface GetTextContentP_ {
+export interface GetTextContentP {
     /**
      * When true include marked
      * content items in the items array of TextContent. The default is `false`.
@@ -668,6 +674,10 @@ export type TextContent = {
      * indexed by font name.
      */
     styles: Record<string, TextStyle>;
+    /**
+     * The document /Lang attribute.
+     */
+    lang?: Locale | undefined;
 };
 /**
  * Page text content part.
@@ -1000,16 +1010,16 @@ export declare class PDFPageProxy {
      * @param params getTextContent parameters.
      * @return Stream for reading text content chunks.
      */
-    streamTextContent({ includeMarkedContent, disableNormalization, }?: GetTextContentP_): ReadableStream<TextContent>;
+    streamTextContent({ includeMarkedContent, disableNormalization, }?: GetTextContentP): ReadableStream<TextContent>;
     /**
      * NOTE: All occurrences of whitespace will be replaced by
      * standard spaces (0x20).
      *
-     * @param params - getTextContent parameters.
+     * @param params getTextContent parameters.
      * @return A promise that is resolved with a
      *   {@link TextContent} object that represents the page's text content.
      */
-    getTextContent(params?: GetTextContentP_): Promise<TextContent>;
+    getTextContent(params?: GetTextContentP): Promise<TextContent>;
     /**
      * @return A promise that is resolved with a
      *   {@link StructTreeNode} object that represents the page's structure tree,
@@ -1024,7 +1034,7 @@ export declare class PDFPageProxy {
     /**
      * Cleans up resources allocated by the page.
      *
-     * @param resetStats - Reset page stats, if enabled.
+     * @param resetStats Reset page stats, if enabled.
      *   The default value is `false`.
      * @return Indicates if clean-up was successfully run.
      */
@@ -1099,13 +1109,13 @@ export declare class PDFWorker {
     static get workerSrc(): string;
     static get _setupFakeWorkerGlobal(): Promise<{
         setup(handler: MessageHandler<Thread.worker, Thread.main>, port: IWorker): void;
-        createDocumentHandler(docParams: GetDocRequestData, port: IWorker): string;
+        createDocumentHandler(docParams: import("../shared/message_handler.js").GetDocRequestData, port: IWorker): string;
         initializeFromPort(port: IWorker): void;
     }>;
 }
 export type PDFCommonObjs = string | FontFaceObject | FontExpotDataEx | {
     error: string;
-} | CmdArgs[] | ImgData;
+} | Cmds | ImgData;
 /**
  * For internal use only.
  * @ignore
@@ -1117,6 +1127,10 @@ declare class WorkerTransport {
     loadingTask: PDFDocumentLoadingTask;
     commonObjs: PDFObjects<PDFCommonObjs>;
     fontLoader: FontLoader;
+    loadingParams: {
+        enableXfa: boolean;
+        disableAutoFetch: boolean;
+    };
     _params: TransportParams_;
     canvasFactory: DOMCanvasFactory;
     filterFactory: DOMFilterFactory;
@@ -1158,10 +1172,7 @@ declare class WorkerTransport {
     getMetadata(): Promise<MetadataEx>;
     getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | undefined>;
     startCleanup(keepLoadedFonts?: boolean): Promise<void>;
-    get loadingParams(): {
-        disableAutoFetch: boolean;
-        enableXfa: boolean;
-    };
+    cachedPageNumber(ref: RefProxy): number | undefined;
     getNetworkStreamName: () => string | undefined;
     getXFADatasets: () => Promise<DatasetReader | undefined>;
     getXRefPrevValue: () => Promise<number | undefined>;

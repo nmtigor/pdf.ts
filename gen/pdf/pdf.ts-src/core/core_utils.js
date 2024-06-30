@@ -7,7 +7,7 @@
  ******************************************************************************/
 import { assert } from "../../../lib/util/trace.js";
 import { PDFJSDev, TESTING } from "../../../global.js";
-import { AnnotationEditorPrefix, BaseException, objectSize, stringToPDFString, warn, } from "../shared/util.js";
+import { AnnotationEditorPrefix, BaseException, objectSize, stringToPDFString, Util, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { Dict, isName, Ref, RefSet } from "./primitives.js";
 /*80--------------------------------------------------------------------------*/
@@ -170,6 +170,42 @@ export function readUint32(data, offset) {
  */
 export function isWhiteSpace(ch) {
     return ch === 0x20 || ch === 0x09 || ch === 0x0d || ch === 0x0a;
+}
+/**
+ * Checks if something is an Array containing only boolean values,
+ * and (optionally) checks its length.
+ */
+export function isBooleanArray(arr, len) {
+    return (Array.isArray(arr) &&
+        (len === undefined || arr.length === len) &&
+        arr.every((x) => typeof x === "boolean"));
+}
+/**
+ * Checks if something is an Array containing only numbers,
+ * and (optionally) checks its length.
+ */
+export function isNumberArray(arr, len) {
+    return (Array.isArray(arr) &&
+        (len === undefined || arr.length === len) &&
+        arr.every((x) => typeof x === "number"));
+}
+/**
+ * Returns the matrix, or the fallback value if it's invalid.
+ */
+export function lookupMatrix(arr, fallback) {
+    return isNumberArray(arr, 6) ? arr : fallback;
+}
+/**
+ * Returns the rectangle, or the fallback value if it's invalid.
+ */
+export function lookupRect(arr, fallback) {
+    return isNumberArray(arr, 4) ? arr : fallback;
+}
+/**
+ * Returns the normalized rectangle, or the fallback value if it's invalid.
+ */
+export function lookupNormalRect(arr, fallback) {
+    return isNumberArray(arr, 4) ? Util.normalizeRect(arr) : fallback;
 }
 /**
  * AcroForm field names use an array like notation to refer to

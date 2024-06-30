@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assert, assertEquals, assertThrows } from "@std/assert/mod.ts";
+import { assert, assertEquals, assertThrows } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { FormatError } from "../shared/util.ts";
 import { Lexer, Linearization, Parser } from "./parser.ts";

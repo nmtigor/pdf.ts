@@ -21,10 +21,12 @@ export declare const isWhitespace: (_x: string) => boolean;
 export declare const noContextMenu: (evt_x: MouseEvent) => void;
 export declare const onWheel: (el_x: Element) => (evt_x: WheelEvent) => void;
 export declare const space: (n_: uint) => string;
+export declare const encodeStr: (input?: string | undefined) => Uint8Array;
+export declare const decodeABV: (input?: AllowSharedBufferSource | undefined, options?: TextDecodeOptions | undefined) => string;
 /**
- * @param ms time in milliseconds
- *
  * Ref. [What is the JavaScript version of sleep()?](https://stackoverflow.com/a/39914235)
+ *
+ * @param ms time in milliseconds
  */
 export declare const wait: (ms?: number) => Promise<void>;
 //# sourceMappingURL=general.d.ts.map

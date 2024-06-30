@@ -571,7 +571,7 @@ export class RadioButtonField extends Field {
         if (!this._hasBeenInitialized) {
             return;
         }
-        if (value === null || value === undefined) {
+        if (value == undefined) {
             this._value = "";
         }
         const i = this.exportValues.indexOf(value);

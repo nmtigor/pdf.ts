@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assert, assertEquals, fail } from "@std/assert/mod.ts";
+import { assert, assertEquals, fail } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import {
   PasswordException,

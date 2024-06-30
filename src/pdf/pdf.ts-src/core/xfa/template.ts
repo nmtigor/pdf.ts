@@ -6689,10 +6689,7 @@ export class Value extends XFAObject {
     }
 
     const valueName = value[$nodeName];
-    if (
-      (this as any)[valueName] !== null &&
-      (this as any)[valueName] !== undefined
-    ) {
+    if ((this as any)[valueName] != undefined) {
       (this as any)[valueName][$content] = value[$content];
       return;
     }

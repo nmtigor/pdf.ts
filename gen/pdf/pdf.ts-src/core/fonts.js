@@ -443,9 +443,7 @@ function adjustMapping(charCodeToGlyphId, hasGlyph, newGlyphZeroId, toUnicode) {
     let privateUseOffetEnd = PRIVATE_USE_AREAS[privateUseAreaIndex][1];
     const isInPrivateArea = (code) => (PRIVATE_USE_AREAS[0][0] <= code && code <= PRIVATE_USE_AREAS[0][1]) ||
         (PRIVATE_USE_AREAS[1][0] <= code && code <= PRIVATE_USE_AREAS[1][1]);
-    let originalCharCode;
-    for (const originalCharCode_s in charCodeToGlyphId) {
-        originalCharCode = +originalCharCode_s | 0;
+    for (const originalCharCode in charCodeToGlyphId) {
         let glyphId = charCodeToGlyphId[originalCharCode];
         // For missing glyphs don't create the mappings so the glyph isn't drawn.
         if (!hasGlyph(glyphId)) {
@@ -2493,7 +2491,7 @@ export class Font extends FontExpotDataEx {
             tag: "post",
             data: createPostTable(properties),
         };
-        const charCodeToGlyphId = [];
+        const charCodeToGlyphId = Object.create(null);
         // Helper function to try to skip mapping of empty glyphs.
         function hasGlyph(glyphId) {
             return !missingGlyphs[glyphId];
@@ -2866,42 +2864,43 @@ export class Font extends FontExpotDataEx {
         builder.addTable("post", createPostTable(properties));
         return builder.toArray();
     }
-    get spaceWidth() {
-        // trying to estimate space character width
-        const possibleSpaceReplacements = ["space", "minus", "one", "i", "I"];
-        let width;
-        for (const glyphName of possibleSpaceReplacements) {
-            // if possible, getting width by glyph name
-            if (glyphName in this.widths) {
-                width = this.widths[glyphName];
-                break;
-            }
-            const glyphsUnicodeMap = getGlyphsUnicode();
-            const glyphUnicode = glyphsUnicodeMap[glyphName];
-            // finding the charcode via unicodeToCID map
-            let charcode = 0;
-            if (this.composite && this.cMap.contains(glyphUnicode)) {
-                charcode = +this.cMap.lookup(glyphUnicode);
-                if (typeof charcode === "string") {
-                    charcode = convertCidString(glyphUnicode, charcode);
-                }
-            }
-            // ... via toUnicode map
-            if (!charcode && this.toUnicode) {
-                charcode = this.toUnicode.charCodeOf(glyphUnicode);
-            }
-            // setting it to unicode if negative or undefined
-            if (charcode <= 0) {
-                charcode = glyphUnicode;
-            }
-            // trying to get width via charcode
-            width = this.widths[charcode];
-            if (width) {
-                break; // the non-zero width found
-            }
-        }
-        return shadow(this, "spaceWidth", width || this.defaultWidth);
-    }
+    //kkkk TOCLEANUP
+    // get spaceWidth() {
+    //   // trying to estimate space character width
+    //   const possibleSpaceReplacements = ["space", "minus", "one", "i", "I"];
+    //   let width;
+    //   for (const glyphName of possibleSpaceReplacements) {
+    //     // if possible, getting width by glyph name
+    //     if (glyphName in this.widths!) {
+    //       width = this.widths![glyphName];
+    //       break;
+    //     }
+    //     const glyphsUnicodeMap = getGlyphsUnicode();
+    //     const glyphUnicode = glyphsUnicodeMap[glyphName];
+    //     // finding the charcode via unicodeToCID map
+    //     let charcode: number | string = 0;
+    //     if (this.composite && this.cMap!.contains(glyphUnicode)) {
+    //       charcode = +this.cMap!.lookup(glyphUnicode)!;
+    //       if (typeof charcode === "string") {
+    //         charcode = convertCidString(glyphUnicode, charcode);
+    //       }
+    //     }
+    //     // ... via toUnicode map
+    //     if (!charcode && this.toUnicode) {
+    //       charcode = this.toUnicode.charCodeOf(glyphUnicode);
+    //     }
+    //     // setting it to unicode if negative or undefined
+    //     if ((charcode as number) <= 0) {
+    //       charcode = glyphUnicode;
+    //     }
+    //     // trying to get width via charcode
+    //     width = this.widths![charcode];
+    //     if (width) {
+    //       break; // the non-zero width found
+    //     }
+    //   }
+    //   return shadow(this, "spaceWidth", width || this.defaultWidth);
+    // }
     #charToGlyph(charcode, isSpace = false) {
         let glyph = this._glyphCache[charcode];
         // All `Glyph`-properties, except `isSpace` in multi-byte strings,

@@ -5,7 +5,7 @@
  * @module pdf/pdf.ts-web/text_highlighter.ts
  * @license Apache-2.0
  ******************************************************************************/
-import type { EventBus, EventMap } from "./event_utils.js";
+import type { EventBus } from "./event_utils.js";
 import type { PDFFindController } from "./pdf_find_controller.js";
 interface TextHighlighterOptions {
     findController: PDFFindController | undefined;
@@ -36,7 +36,6 @@ export declare class TextHighlighter {
     matches: Match[];
     eventBus: EventBus;
     pageIdx: number;
-    _onUpdateTextLayerMatches: ((evt: EventMap["updatetextlayermatches"]) => void) | undefined;
     textDivs: (HTMLSpanElement | Text)[] | undefined;
     textContentItemsStr: string[] | undefined;
     enabled: boolean;

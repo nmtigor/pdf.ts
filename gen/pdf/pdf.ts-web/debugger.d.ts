@@ -5,7 +5,7 @@
  * @module pdf/pdf.ts-web/debugger.ts
  * @license Apache-2.0
  ******************************************************************************/
-import type { FontFaceObject, OpListIR } from "../pdf.ts-src/pdf.js";
+import type { FontFaceObject, OpListIR, StatTimer } from "../pdf.ts-src/pdf.js";
 type Tool_ = typeof FontInspector_ | typeof StepperManager_ | typeof Stats_;
 declare namespace FontInspector_ {
     const id = "FontInspector";
@@ -55,27 +55,22 @@ export declare class Stepper {
     goTo(idx: number): void;
 }
 declare namespace Stats_ {
-    interface _Stat {
-        pageNumber: number;
-        div: HTMLDivElement;
-    }
-    export const id = "Stats";
-    export const name = "Stats";
-    export let panel: HTMLDivElement;
-    export let manager: typeof PDFBug;
-    export function init(): void;
-    export let enabled: boolean;
-    export let active: boolean;
-    export function add(pageNumber: number, stat: _Stat): void;
-    export function cleanup(): void;
-    export {};
+    const id = "Stats";
+    const name = "Stats";
+    let panel: HTMLDivElement;
+    let manager: typeof PDFBug;
+    function init(): void;
+    let enabled: boolean;
+    let active: boolean;
+    function add(pageNumber: number, stat?: StatTimer): void;
+    function cleanup(): void;
 }
 /**
  * Manages all the debugging tools.
  */
 export declare class PDFBug {
     #private;
-    static readonly tools: (typeof StepperManager_ | typeof FontInspector_ | typeof Stats_)[];
+    static readonly tools: (typeof FontInspector_ | typeof StepperManager_ | typeof Stats_)[];
     static enable(ids: string[]): void;
     static init(container: HTMLDivElement, ids: string[]): void;
     static loadCSS(): void;

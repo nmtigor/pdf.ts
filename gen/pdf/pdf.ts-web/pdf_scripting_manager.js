@@ -41,8 +41,9 @@ export class PDFScriptingManager {
         return this.#ready;
     }
     #eventBus;
-    #externalServices;
     #docProperties;
+    #externalServices;
+    #eventAbortController;
     constructor({ eventBus, externalServices, docProperties }) {
         this.#eventBus = eventBus;
         this.#externalServices = externalServices;
@@ -78,22 +79,25 @@ export class PDFScriptingManager {
             await this.#destroyScripting();
             return;
         }
-        this.#internalEvents.set("updatefromsandbox", (event) => {
+        const eventBus = this.#eventBus;
+        this.#eventAbortController = new AbortController();
+        const { signal } = this.#eventAbortController;
+        eventBus._on("updatefromsandbox", (event) => {
             if (event?.source === window) {
                 this.#updateFromSandbox(event.detail);
             }
-        });
-        this.#internalEvents.set("dispatcheventinsandbox", (event) => {
+        }, { signal });
+        eventBus._on("dispatcheventinsandbox", (event) => {
             this.#scripting?.dispatchEventInSandbox(event.detail);
-        });
-        this.#internalEvents.set("pagechanging", ({ pageNumber, previous }) => {
+        }, { signal });
+        eventBus._on("pagechanging", ({ pageNumber, previous }) => {
             if (pageNumber === previous) {
                 return; // The current page didn't change.
             }
             this.#dispatchPageClose(previous);
             this.#dispatchPageOpen(pageNumber);
-        });
-        this.#internalEvents.set("pagerendered", ({ pageNumber }) => {
+        }, { signal });
+        eventBus._on("pagerendered", ({ pageNumber }) => {
             if (!this.#pageOpenPending.has(pageNumber)) {
                 return; // No pending "PageOpen" event for the newly rendered page.
             }
@@ -101,18 +105,15 @@ export class PDFScriptingManager {
                 return; // The newly rendered page is no longer the current one.
             }
             this.#dispatchPageOpen(pageNumber);
-        });
-        this.#internalEvents.set("pagesdestroy", async (event) => {
+        }, { signal });
+        eventBus._on("pagesdestroy", async () => {
             await this.#dispatchPageClose(this.#pdfViewer.currentPageNumber);
             await this.#scripting?.dispatchEventInSandbox({
                 id: "doc",
                 name: "WillClose",
             });
             this.#closeCapability?.resolve();
-        });
-        for (const [name, listener] of this.#internalEvents) {
-            this.#eventBus._on(name, listener);
-        }
+        }, { signal });
         try {
             const docProperties = await this.#docProperties(pdfDocument);
             if (pdfDocument !== this.#pdfDocument) {
@@ -130,7 +131,7 @@ export class PDFScriptingManager {
                     actions: docActions,
                 },
             });
-            this.#eventBus.dispatch("sandboxcreated", { source: this });
+            eventBus.dispatch("sandboxcreated", { source: this });
         }
         catch (error) {
             console.error(`setDocument: "${error.message}".`);
@@ -187,9 +188,14 @@ export class PDFScriptingManager {
             name: "DidPrint",
         });
     }
-    get #internalEvents() {
-        return shadow(this, "#internalEvents", new Map());
-    }
+    //kkkk TOCLEANUP
+    // get #internalEvents() {
+    //   return shadow(
+    //     this,
+    //     "#internalEvents",
+    //     new Map<InternalEventName, InternalListenerMap[InternalEventName]>(),
+    //   );
+    // }
     get #pageOpenPending() {
         return shadow(this, "#pageOpenPending", new Set());
     }
@@ -368,10 +374,8 @@ export class PDFScriptingManager {
         catch (ex) { }
         this.#willPrintCapability?.reject(new Error("Scripting destroyed."));
         this.#willPrintCapability = undefined;
-        for (const [name, listener] of this.#internalEvents) {
-            this.#eventBus._off(name, listener);
-        }
-        this.#internalEvents.clear();
+        this.#eventAbortController?.abort();
+        this.#eventAbortController = undefined;
         this.#pageOpenPending.clear();
         this.#visitedPages.clear();
         this.#scripting = undefined;

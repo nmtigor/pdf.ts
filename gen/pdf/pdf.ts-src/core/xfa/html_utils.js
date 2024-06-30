@@ -328,7 +328,7 @@ export function toStyle(node, ...names) {
     const style = Object.create(null);
     for (const name of names) {
         const value = node[name];
-        if (value === null || value === undefined) {
+        if (value == undefined) {
             continue;
         }
         if (Object.hasOwn(converters, name)) {

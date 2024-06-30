@@ -21,8 +21,8 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "@fe-lib/alias.ts";
-import { PageLayout, PageMode } from "@pdf.ts-web/ui_utils.ts";
+import type { int, rect_t } from "@fe-lib/alias.ts";
+import { PageLayout, PageMode } from "@fe-pdf.ts-web/ui_utils.ts";
 import type { ResetForm } from "../display/annotation_layer.ts";
 import type { Intent, OutlineNode } from "../display/api.ts";
 import type { CMapData } from "../display/base_factory.ts";
@@ -45,6 +45,7 @@ import { clearGlobalCaches } from "./cleanup_helper.ts";
 import { ColorSpace } from "./colorspace.ts";
 import {
   collectActions,
+  isNumberArray,
   MissingDataException,
   PDF_VERSION_REGEXP,
   recoverJsURL,
@@ -73,28 +74,78 @@ import { StructTreeRoot } from "./struct_tree.ts";
 import { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
-type DestPage = Ref | number | null;
+type DestPage = Ref | int | null;
 export type ExplicitDest =
   | [
-    DestPage,
-    { name: "XYZ" },
+    page: DestPage,
+    zoom: { name: "XYZ" },
     number | null,
     number | null,
-    number | string | null,
+    number | null,
   ]
-  | [DestPage, { name: "Fit" | "FitB" }]
-  | [DestPage, { name: "FitH" | "FitBH" | "FitV" | "FitBV" }, number | null]
-  | [DestPage, { name: "FitR" }, ...rect_t];
+  | [page: DestPage, zoom: { name: "Fit" | "FitB" }]
+  | [
+    page: DestPage,
+    zoom: { name: "FitH" | "FitBH" | "FitV" | "FitBV" },
+    number | null,
+  ]
+  | [page: DestPage, zoom: { name: "FitR" }, ...rect_t];
 export type Destination =
   | ExplicitDest
   | Name
   | string;
 
-function fetchDestination(dest?: Obj) {
+function isValidExplicitDest(dest: Obj | undefined): dest is ExplicitDest {
+  if (!Array.isArray(dest) || dest.length < 2) {
+    return false;
+  }
+  const [page, zoom, ...args] = dest;
+  if (!(page instanceof Ref) && !Number.isInteger(page)) {
+    return false;
+  }
+  if (!(zoom instanceof Name)) {
+    return false;
+  }
+  let allowNull = true;
+  switch (zoom.name) {
+    case "XYZ":
+      if (args.length !== 3) {
+        return false;
+      }
+      break;
+    case "Fit":
+    case "FitB":
+      return args.length === 0;
+    case "FitH":
+    case "FitBH":
+    case "FitV":
+    case "FitBV":
+      if (args.length !== 1) {
+        return false;
+      }
+      break;
+    case "FitR":
+      if (args.length !== 4) {
+        return false;
+      }
+      allowNull = false;
+      break;
+    default:
+      return false;
+  }
+  for (const arg of args) {
+    if (!(typeof arg === "number" || (allowNull && arg == undefined))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function fetchDest(dest: Obj | undefined) {
   if (dest instanceof Dict) {
     dest = dest.get("D");
   }
-  return Array.isArray(dest) ? dest as ExplicitDest : undefined;
+  return isValidExplicitDest(dest) ? dest : undefined;
 }
 
 function fetchRemoteDest(action: Dict) {
@@ -105,7 +156,7 @@ function fetchRemoteDest(action: Dict) {
     }
     if (typeof dest === "string") {
       return stringToPDFString(dest);
-    } else if (Array.isArray(dest)) {
+    } else if (isValidExplicitDest(dest)) {
       return JSON.stringify(dest);
     }
   }
@@ -258,7 +309,7 @@ export class Catalog {
     return shadow(
       this,
       "lang",
-      typeof lang === "string" ? stringToPDFString(lang) : undefined,
+      lang && typeof lang === "string" ? stringToPDFString(lang) : undefined,
     );
   }
 
@@ -454,7 +505,7 @@ export class Catalog {
     while (queue.length > 0) {
       const i = queue.shift()!;
       const outlineDict = xref.fetchIfRef(i.obj) as Dict;
-      if (outlineDict === null || outlineDict === undefined) {
+      if (outlineDict == undefined) {
         continue;
       }
       if (!outlineDict.has("Title")) {
@@ -476,8 +527,7 @@ export class Catalog {
 
       // We only need to parse the color when it's valid, and non-default.
       if (
-        Array.isArray(color) &&
-        color.length === 3 &&
+        isNumberArray(color, 3) &&
         (color[0] !== 0 || color[1] !== 0 || color[2] !== 0)
       ) {
         rgbColor = ColorSpace.singletons.rgb.getRgb(color, 0);
@@ -770,14 +820,14 @@ export class Catalog {
     const dests = Object.create(null) as Record<string, ExplicitDest>;
     if (obj instanceof NameTree) {
       for (const [key, value] of obj.getAll()) {
-        const dest = fetchDestination(value);
+        const dest = fetchDest(value);
         if (dest) {
           dests[stringToPDFString(key)] = dest as ExplicitDest;
         }
       }
     } else if (obj instanceof Dict) {
       obj.forEach((key, value) => {
-        const dest = fetchDestination(value);
+        const dest = fetchDest(value);
         if (dest) {
           dests[key] = dest as ExplicitDest;
         }
@@ -789,7 +839,7 @@ export class Catalog {
   getDestination(id: string) {
     const obj = this.#readDests();
     if (obj instanceof NameTree) {
-      const dest = fetchDestination(obj.get(id));
+      const dest = fetchDest(obj.get(id));
       if (dest) {
         return dest;
       }
@@ -801,7 +851,7 @@ export class Catalog {
         return allDest;
       }
     } else if (obj instanceof Dict) {
-      const dest = fetchDestination(obj.get(id));
+      const dest = fetchDest(obj.get(id));
       if (dest) {
         return dest;
       }
@@ -1517,9 +1567,9 @@ export class Catalog {
   }
 
   getPageIndex(pageRef: Ref) {
-    const cachedPageIndex = <number | undefined> this.pageIndexCache.get(
-      pageRef,
-    );
+    const cachedPageIndex = this.pageIndexCache.get(pageRef) as
+      | number
+      | undefined;
     if (cachedPageIndex !== undefined) {
       return Promise.resolve(cachedPageIndex);
     }
@@ -1719,8 +1769,8 @@ export class Catalog {
               /* xref = */ undefined,
               /* skipContent = */ true,
             );
-            const { filename } = fs.serializable;
-            url = filename;
+            const { rawFilename } = fs.serializable;
+            url = rawFilename;
           } else if (typeof urlDict === "string") {
             url = urlDict;
           }
@@ -1849,7 +1899,7 @@ export class Catalog {
       }
       if (typeof dest === "string") {
         resultObj.dest = stringToPDFString(dest);
-      } else if (Array.isArray(dest)) {
+      } else if (isValidExplicitDest(dest)) {
         resultObj.dest = dest;
       }
     }

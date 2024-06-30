@@ -13,7 +13,7 @@ import type { ViewerConfiguration } from "./viewer.js";
 export declare class AltTextManager {
     #private;
     constructor({ dialog, optionDescription, optionDecorative, textarea, cancelButton, saveButton, }: ViewerConfiguration["altTextDialog"], container: HTMLDivElement, overlayManager: OverlayManager, eventBus: EventBus);
-    get _elements(): (HTMLInputElement | HTMLButtonElement | HTMLTextAreaElement)[];
+    get _elements(): (HTMLButtonElement | HTMLInputElement | HTMLTextAreaElement)[];
     editAltText(uiManager: AnnotationEditorUIManager, editor?: AnnotationEditor): Promise<void>;
     destroy(): void;
 }

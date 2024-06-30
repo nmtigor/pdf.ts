@@ -32,6 +32,7 @@ const SWIPE_MIN_DISTANCE_THRESHOLD = 50;
 // Swipe angle deviation from the x or y axis before it is not
 // considered a swipe in that direction any more.
 const SWIPE_ANGLE_THRESHOLD = Math.PI / 6;
+/** @final */
 export class PDFPresentationMode {
     #state = PresentationModeState.UNKNOWN;
     get active() {
@@ -48,6 +49,8 @@ export class PDFPresentationMode {
     touchSwipeState;
     switchInProgress;
     controlsTimeout;
+    #fullscreenChangeAbortController;
+    #windowAbortController;
     constructor({ container, pdfViewer, eventBus, }) {
         this.container = container;
         this.pdfViewer = pdfViewer;
@@ -286,54 +289,43 @@ export class PDFPresentationMode {
                 break;
         }
     };
-    #addWindowListeners = () => {
-        // this.showControlsBind = this.#showControls.bind(this);
-        // this.mouseDownBind = this.#mouseDown.bind(this);
-        // this.mouseWheelBind = this.#mouseWheel.bind(this);
-        // this.resetMouseScrollStateBind = this.#resetMouseScrollState.bind(this);
-        // this.contextMenuBind = this.#contextMenu.bind(this);
-        // this.touchSwipeBind = this.#touchSwipe.bind(this);
-        window.on("mousemove", this.#showControls);
-        window.on("mousedown", this.#mouseDown);
-        window.on("wheel", this.#mouseWheel, { passive: false });
-        window.on("keydown", this.#resetMouseScrollState);
-        window.on("contextmenu", this.#contextMenu);
-        window.on("touchstart", this.#touchSwipe);
-        window.on("touchmove", this.#touchSwipe);
-        window.on("touchend", this.#touchSwipe);
-    };
-    #removeWindowListeners = () => {
-        window.off("mousemove", this.#showControls);
-        window.off("mousedown", this.#mouseDown);
-        window.off("wheel", this.#mouseWheel);
-        window.off("keydown", this.#resetMouseScrollState);
-        window.off("contextmenu", this.#contextMenu);
-        window.off("touchstart", this.#touchSwipe);
-        window.off("touchmove", this.#touchSwipe);
-        window.off("touchend", this.#touchSwipe);
-        delete this.showControlsBind;
-        delete this.mouseDownBind;
-        delete this.mouseWheelBind;
-        delete this.resetMouseScrollStateBind;
-        delete this.contextMenuBind;
-        delete this.touchSwipeBind;
-    };
-    #fullscreenChange = () => {
-        if ( /* isFullscreen = */document.fullscreenElement) {
-            this.#enter();
+    #addWindowListeners() {
+        if (this.#windowAbortController) {
+            return;
         }
-        else {
-            this.#exit();
-        }
-    };
-    #addFullscreenChangeListeners() {
-        // this.fullscreenChangeBind = this._fullscreenChange.bind(this);
-        window.on("fullscreenchange", this.#fullscreenChange);
+        this.#windowAbortController = new AbortController();
+        const { signal } = this.#windowAbortController;
+        window.on("mousemove", this.#showControls, { signal });
+        window.on("mousedown", this.#mouseDown, { signal });
+        window.on("wheel", this.#mouseWheel, { passive: false, signal });
+        window.on("keydown", this.#resetMouseScrollState, { signal });
+        window.on("contextmenu", this.#contextMenu, { signal });
+        window.on("touchstart", this.#touchSwipe, { signal });
+        window.on("touchmove", this.#touchSwipe, { signal });
+        window.on("touchend", this.#touchSwipe, { signal });
     }
-    #removeFullscreenChangeListeners = () => {
-        window.off("fullscreenchange", this.#fullscreenChange);
-        // delete (this as any).fullscreenChangeBind;
-    };
+    #removeWindowListeners() {
+        this.#windowAbortController?.abort();
+        this.#windowAbortController = undefined;
+    }
+    #addFullscreenChangeListeners() {
+        if (this.#fullscreenChangeAbortController) {
+            return;
+        }
+        this.#fullscreenChangeAbortController = new AbortController();
+        window.on("fullscreenchange", () => {
+            if ( /* isFullscreen = */document.fullscreenElement) {
+                this.#enter();
+            }
+            else {
+                this.#exit();
+            }
+        }, { signal: this.#fullscreenChangeAbortController.signal });
+    }
+    #removeFullscreenChangeListeners() {
+        this.#fullscreenChangeAbortController?.abort();
+        this.#fullscreenChangeAbortController = undefined;
+    }
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_presentation_mode.js.map

@@ -5,6 +5,7 @@
  * @module pdf/pdf.ts-src/core/image_utils.ts
  * @license Apache-2.0
  ******************************************************************************/
+var _a;
 /* Copyright 2019 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +20,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert, fail } from "../../../lib/util/trace.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { MAX_IMAGE_SIZE_TO_CACHE, warn } from "../shared/util.js";
-import { RefSetCache } from "./primitives.js";
+import { RefSet, RefSetCache } from "./primitives.js";
 /*80--------------------------------------------------------------------------*/
 class BaseLocalCache {
     #onlyRefs;
@@ -168,23 +169,30 @@ export class GlobalImageCache {
     static MAX_BYTE_SIZE = 5 * MAX_IMAGE_SIZE_TO_CACHE;
     #refCache = new RefSetCache();
     #imageCache = new RefSetCache();
+    #decodeFailedSet = new RefSet();
+    addDecodeFailed(ref) {
+        this.#decodeFailedSet.put(ref);
+    }
+    hasDecodeFailed(ref) {
+        return this.#decodeFailedSet.has(ref);
+    }
     constructor() {
         /*#static*/  {
-            assert(GlobalImageCache.NUM_PAGES_THRESHOLD > 1, "GlobalImageCache - invalid NUM_PAGES_THRESHOLD constant.");
+            assert(_a.NUM_PAGES_THRESHOLD > 1, "GlobalImageCache - invalid NUM_PAGES_THRESHOLD constant.");
         }
     }
-    get _byteSize() {
+    get #byteSize() {
         let byteSize = 0;
         for (const imageData of this.#imageCache) {
             byteSize += imageData.byteSize;
         }
         return byteSize;
     }
-    get _cacheLimitReached() {
-        if (this.#imageCache.size < GlobalImageCache.MIN_IMAGES_TO_CACHE) {
+    get #cacheLimitReached() {
+        if (this.#imageCache.size < _a.MIN_IMAGES_TO_CACHE) {
             return false;
         }
-        if (this._byteSize < GlobalImageCache.MAX_BYTE_SIZE) {
+        if (this.#byteSize < _a.MAX_BYTE_SIZE) {
             return false;
         }
         return true;
@@ -197,10 +205,10 @@ export class GlobalImageCache {
             this.#refCache.put(ref, pageIndexSet);
         }
         pageIndexSet.add(pageIndex);
-        if (pageIndexSet.size < GlobalImageCache.NUM_PAGES_THRESHOLD) {
+        if (pageIndexSet.size < _a.NUM_PAGES_THRESHOLD) {
             return false;
         }
-        if (!this.#imageCache.has(ref) && this._cacheLimitReached) {
+        if (!this.#imageCache.has(ref) && this.#cacheLimitReached) {
             return false;
         }
         return true;
@@ -225,7 +233,7 @@ export class GlobalImageCache {
         if (!pageIndexSet) {
             return undefined;
         }
-        if (pageIndexSet.size < GlobalImageCache.NUM_PAGES_THRESHOLD) {
+        if (pageIndexSet.size < _a.NUM_PAGES_THRESHOLD) {
             return undefined;
         }
         const imageData = this.#imageCache.get(ref);
@@ -244,7 +252,7 @@ export class GlobalImageCache {
         if (this.#imageCache.has(ref)) {
             return;
         }
-        if (this._cacheLimitReached) {
+        if (this.#cacheLimitReached) {
             warn("GlobalImageCache.setData - cache limit reached.");
             return;
         }
@@ -253,10 +261,12 @@ export class GlobalImageCache {
     /** @fianl */
     clear(onlyData = false) {
         if (!onlyData) {
+            this.#decodeFailedSet.clear();
             this.#refCache.clear();
         }
         this.#imageCache.clear();
     }
 }
+_a = GlobalImageCache;
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=image_utils.js.map

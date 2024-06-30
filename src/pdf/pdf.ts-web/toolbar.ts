@@ -209,7 +209,7 @@ export class Toolbar {
     // The buttons within the toolbar.
     for (const { element, eventName, eventDetails } of buttons) {
       element.on("click", (evt) => {
-        if (eventName !== null) {
+        if (eventName != undefined) {
           eventBus.dispatch(eventName, {
             source: this,
             ...eventDetails,

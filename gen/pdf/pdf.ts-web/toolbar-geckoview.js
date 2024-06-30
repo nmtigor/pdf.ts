@@ -53,7 +53,7 @@ export class Toolbar {
         // The buttons within the toolbar.
         for (const { element, eventName, eventDetails } of this.#buttons) {
             element.on("click", (evt) => {
-                if (eventName !== null) {
+                if (eventName != undefined) {
                     this.#eventBus.dispatch(eventName, { source: this, ...eventDetails });
                     this.#eventBus.dispatch("reporttelemetry", {
                         source: this,

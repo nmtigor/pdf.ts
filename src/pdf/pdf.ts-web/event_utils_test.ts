@@ -21,10 +21,10 @@
  * limitations under the License.
  */
 
-import { assertEquals, assertInstanceOf, fail } from "@std/assert/mod.ts";
+import { see_ui_testing } from "@fe-pdf.ts-test/alias.ts";
+import { assertEquals, assertInstanceOf, fail } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import { EventBus, waitOnEventOrTimeout, WaitOnType } from "./event_utils.ts";
-import { html } from "../../lib/dom.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("event_utils", () => {
@@ -150,29 +150,61 @@ describe("event_utils", () => {
       assertEquals(onceCount, 1);
     });
 
-    //kkkk "ReferenceError: document is not defined"
-    it.ignore("should not re-dispatch to DOM", async () => {
-      // if (isNodeJS) {
-      //   pending("Document is not supported in Node.js.");
-      // }
+    it("dispatch event to handlers with/without 'signal' option, aborted *before* dispatch", () => {
       const eventBus = new EventBus();
-      let count = 0;
-      eventBus.on("test", (evt) => {
-        assertEquals(evt, undefined);
-        count++;
+      const ac = new AbortController();
+      let multipleCount = 0,
+        noneCount = 0;
+
+      eventBus.on("test", function () {
+        multipleCount++;
       });
-      function domEventListener() {
-        fail("Shouldn't get here.");
-      }
-      document.addEventListener("test", domEventListener);
+      eventBus.on(
+        "test",
+        function () {
+          noneCount++;
+        },
+        { signal: ac.signal },
+      );
 
-      (eventBus as any).dispatch("test");
+      ac.abort();
 
-      await Promise.resolve();
-      assertEquals(count, 1);
+      eventBus.dispatch("test");
+      eventBus.dispatch("test");
+      eventBus.dispatch("test");
 
-      document.removeEventListener("test", domEventListener);
+      assertEquals(multipleCount, 3);
+      assertEquals(noneCount, 0);
     });
+
+    it("dispatch event to handlers with/without 'signal' option, aborted *after* dispatch", () => {
+      const eventBus = new EventBus();
+      const ac = new AbortController();
+      let multipleCount = 0,
+        onceCount = 0;
+
+      eventBus.on("test", function () {
+        multipleCount++;
+      });
+      eventBus.on(
+        "test",
+        function () {
+          onceCount++;
+        },
+        { signal: ac.signal },
+      );
+
+      eventBus.dispatch("test");
+      ac.abort();
+
+      eventBus.dispatch("test");
+      eventBus.dispatch("test");
+
+      assertEquals(multipleCount, 3);
+      assertEquals(onceCount, 1);
+    });
+
+    it("should not re-dispatch to DOM", see_ui_testing);
   });
 
   describe("waitOnEventOrTimeout", () => {
@@ -227,42 +259,9 @@ describe("event_utils", () => {
       await Promise.all([invalidTarget, invalidName, invalidDelay]);
     });
 
-    //kkkk "ReferenceError: document is not defined"
-    it.ignore("should resolve on event, using the DOM", async () => {
-      // if (isNodeJS) {
-      //   pending("Document is not supported in Node.js.");
-      // }
-      const button = html("button");
+    it("should resolve on event, using the DOM", see_ui_testing);
 
-      const buttonClicked = waitOnEventOrTimeout({
-        target: button,
-        name: "click",
-        delay: 10000,
-      } as any);
-      // Immediately dispatch the expected event.
-      button.click();
-
-      const type = await buttonClicked;
-      assertEquals(type, WaitOnType.EVENT);
-    });
-
-    //kkkk "ReferenceError: document is not defined"
-    it.ignore("should resolve on timeout, using the DOM", async () => {
-      // if (isNodeJS) {
-      //   pending("Document is not supported in Node.js.");
-      // }
-      const button = html("button");
-
-      const buttonClicked = waitOnEventOrTimeout({
-        target: button,
-        name: "click",
-        delay: 10,
-      } as any);
-      // Do *not* dispatch the event, and wait for the timeout.
-
-      const type = await buttonClicked;
-      assertEquals(type, WaitOnType.TIMEOUT);
-    });
+    it("should resolve on timeout, using the DOM", see_ui_testing);
 
     it("should resolve on event, using the EventBus", async () => {
       const pageRendered = waitOnEventOrTimeout({

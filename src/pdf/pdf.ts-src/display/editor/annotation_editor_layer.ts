@@ -23,9 +23,9 @@
 
 import type { Constructor } from "@fe-lib/alias.ts";
 import type { HSElement } from "@fe-lib/dom.ts";
-import type { IL10n } from "@pdf.ts-web/interfaces.ts";
-import type { TextAccessibilityManager } from "@pdf.ts-web/text_accessibility.ts";
-import type { TextLayerBuilder } from "@pdf.ts-web/text_layer_builder.ts";
+import type { IL10n } from "@fe-pdf.ts-web/interfaces.ts";
+import type { TextAccessibilityManager } from "@fe-pdf.ts-web/text_accessibility.ts";
+import type { TextLayerBuilder } from "@fe-pdf.ts-web/text_layer_builder.ts";
 import { AnnotationEditorType, FeatureTest } from "../../shared/util.ts";
 import type {
   AnnotationLayer,
@@ -256,7 +256,9 @@ export class AnnotationEditorLayer {
     const annotationElementIds = new Set<string>();
     for (const editor of this.#editors.values()) {
       editor.enableEditing();
+      editor.show(true);
       if (editor.annotationElementId) {
+        this.#uiManager.removeChangedExistingAnnotation(editor);
         annotationElementIds.add(editor.annotationElementId);
       }
     }
@@ -291,12 +293,18 @@ export class AnnotationEditorLayer {
     this.#isDisabling = true;
     this.div!.tabIndex = -1;
     this.togglePointerEvents(false);
-    const hiddenAnnotationIds = new Set();
+    const changedAnnotations = new Map<string, AnnotationEditor>();
+    const resetAnnotations = new Map<string, AnnotationEditor>();
     for (const editor of this.#editors.values()) {
       editor.disableEditing();
-      if (!editor.annotationElementId || editor.serialize() !== undefined) {
-        hiddenAnnotationIds.add(editor.annotationElementId);
+      if (!editor.annotationElementId) {
         continue;
+      }
+      if (editor.serialize() !== undefined) {
+        changedAnnotations.set(editor.annotationElementId, editor);
+        continue;
+      } else {
+        resetAnnotations.set(editor.annotationElementId, editor);
       }
       this.getEditableAnnotation(editor.annotationElementId)?.show();
       editor.remove();
@@ -307,11 +315,22 @@ export class AnnotationEditorLayer {
       const editables = this.#annotationLayer.getEditableAnnotations();
       for (const editable of editables) {
         const { id } = editable.data;
-        if (
-          hiddenAnnotationIds.has(id) ||
-          this.#uiManager.isDeletedAnnotationElement(id)
-        ) {
+        if (this.#uiManager.isDeletedAnnotationElement(id)) {
           continue;
+        }
+        let editor = resetAnnotations.get(id);
+        if (editor) {
+          editor.resetAnnotationElement(editable);
+          editor.show(false);
+          editable.show();
+          continue;
+        }
+
+        editor = changedAnnotations.get(id);
+        if (editor) {
+          this.#uiManager.addChangedExistingAnnotation(editor);
+          editor.renderAnnotationElement(editable);
+          editor.show(false);
         }
         editable.show();
       }
@@ -466,7 +485,7 @@ export class AnnotationEditorLayer {
       return;
     }
 
-    if (editor.annotationElementId) {
+    if (editor.parent && editor.annotationElementId) {
       // this.#uiManager.addDeletedAnnotationElement(editor.annotationElementId); //kkkk bug?
       this.#uiManager.addDeletedAnnotationElement(editor);
       AnnotationEditor.deleteAnnotationElement(editor);

@@ -316,11 +316,14 @@ export class FreeTextEditor extends AnnotationEditor {
             // we just insert it in the DOM, get its bounding box and then remove it.
             const { currentLayer, div } = this;
             const savedDisplay = div.style.display;
+            const savedVisibility = div.classList.contains("hidden");
+            div.classList.remove("hidden");
             div.style.display = "hidden";
             currentLayer.div.append(this.div);
             rect = div.getBoundingClientRect();
             div.remove();
             div.style.display = savedDisplay;
+            div.classList.toggle("hidden", savedVisibility);
         }
         // The dimensions are relative to the rotation of the page, hence we need to
         // take that into account (see issue #16636).
@@ -616,7 +619,7 @@ export class FreeTextEditor extends AnnotationEditor {
                 value: textContent.join("\n"),
                 position: textPosition,
                 pageIndex: pageNumber - 1,
-                rect,
+                rect: rect.slice(0),
                 rotation,
                 id,
                 deleted: false,
@@ -677,6 +680,31 @@ export class FreeTextEditor extends AnnotationEditor {
             serialized.fontSize !== fontSize ||
             serialized.color.some((c, i) => c !== color[i]) ||
             serialized.pageIndex !== pageIndex);
+    }
+    renderAnnotationElement(annotation) {
+        const content = super.renderAnnotationElement(annotation);
+        if (this.deleted) {
+            return content;
+        }
+        const { style } = content;
+        style.fontSize = `calc(${this.#fontSize}px * var(--scale-factor))`;
+        style.color = this.#color;
+        content.replaceChildren();
+        for (const line of this.#content.split("\n")) {
+            const div = document.createElement("div");
+            div.append(line ? document.createTextNode(line) : document.createElement("br"));
+            content.append(div);
+        }
+        const padding = _a._internalPadding * this.parentScale;
+        annotation.updateEdited({
+            rect: this.getRect(padding, padding),
+            popupContent: this.#content,
+        });
+        return content;
+    }
+    resetAnnotationElement(annotation) {
+        super.resetAnnotationElement(annotation);
+        annotation.resetEdited();
     }
 }
 _a = FreeTextEditor;

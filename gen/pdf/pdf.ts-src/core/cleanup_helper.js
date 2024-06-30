@@ -22,11 +22,15 @@
 import { clearPatternCaches } from "./pattern.js";
 import { clearPrimitiveCaches } from "./primitives.js";
 import { clearUnicodeCaches } from "./unicode.js";
+import { JpxImage } from "./jpx.js";
 /*80--------------------------------------------------------------------------*/
 export function clearGlobalCaches() {
     clearPatternCaches();
     clearPrimitiveCaches();
     clearUnicodeCaches();
+    // Remove the global `JpxImage` instance, since it may hold a reference to
+    // the WebAssembly module.
+    JpxImage.cleanup();
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=cleanup_helper.js.map

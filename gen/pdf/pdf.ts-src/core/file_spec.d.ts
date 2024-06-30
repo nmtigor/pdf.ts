@@ -7,10 +7,12 @@
  ******************************************************************************/
 import { Dict } from "./primitives.js";
 import { XRef } from "./xref.js";
-export interface Attachment {
+export type Attachment = {
+    rawFilename: string;
     filename: string;
     content?: Uint8Array | Uint8ClampedArray | undefined;
-}
+    description: string;
+};
 /**
  * "A PDF file can refer to the contents of another file by using a File
  * Specification (PDF 1.1)", see the spec (7.11) for more details.
@@ -23,11 +25,11 @@ export declare class FileSpec {
     xref: XRef | undefined;
     root: Dict | undefined;
     fs: import("./primitives.js").Obj | undefined;
-    description: string | undefined;
-    get filename(): string;
-    contentRef?: string | undefined;
+    _contentRef?: string | undefined;
     constructor(root: Dict, xref?: XRef, skipContent?: boolean);
+    get filename(): string;
     get content(): Uint8Array | Uint8ClampedArray | undefined;
+    get description(): string;
     get serializable(): Attachment;
 }
 //# sourceMappingURL=file_spec.d.ts.map

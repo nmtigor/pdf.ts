@@ -37,8 +37,9 @@ export type SubstitutionInfo = {
  * @param baseFontName The font name to be substituted.
  * @param standardFontName The standard font name to use
  *   if the base font is not available.
+ * @param type The font type.
  * @return an Object with the CSS, the loaded name, the src and the style.
  */
-export declare function getFontSubstitution(systemFontCache: Map<string, SubstitutionInfo>, idFactory: GlobalIdFactory, localFontPath: string | undefined, baseFontName: string, standardFontName: string | undefined): SubstitutionInfo | undefined;
+export declare function getFontSubstitution(systemFontCache: Map<string, SubstitutionInfo | undefined>, idFactory: GlobalIdFactory, localFontPath: string | undefined, baseFontName: string, standardFontName: string | undefined, type: string): SubstitutionInfo | undefined;
 export {};
 //# sourceMappingURL=font_substitutions.d.ts.map

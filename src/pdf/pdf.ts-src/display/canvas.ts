@@ -24,14 +24,14 @@
 import type { C2D, dot2d_t, Func, rect_t } from "@fe-lib/alias.ts";
 import { fail } from "@fe-lib/util/trace.ts";
 import { MOZCENTRAL } from "@fe-src/global.ts";
-import type { Stepper } from "@pdf.ts-web/debugger.ts";
-import type { PageColors } from "@pdf.ts-web/pdf_viewer.ts";
+import type { Stepper } from "@fe-pdf.ts-web/debugger.ts";
+import type { PageColors } from "@fe-pdf.ts-web/pdf_viewer.ts";
 import type {
   ImgData,
   MarkedContentProps,
   SmaskOptions,
 } from "../core/evaluator.ts";
-import type { CmdArgs } from "../core/font_renderer.ts";
+import type { Cmds } from "../core/font_renderer.ts";
 import type { Glyph } from "../core/fonts.ts";
 import type { OpListIR } from "../core/operator_list.ts";
 import type {
@@ -123,7 +123,6 @@ declare global {
 const MIN_FONT_SIZE = 16;
 // Maximum font size that would be used during canvas fillText operations.
 const MAX_FONT_SIZE = 100;
-const MAX_GROUP_SIZE = 4096;
 
 // Defines the time the `executeOperatorList`-method is going to be executing
 // before it stops and schedules a continue of execution.
@@ -571,8 +570,9 @@ interface SMask {
   context: C2D;
   offsetX: number;
   offsetY: number;
-  scaleX: number;
-  scaleY: number;
+  //kkkk TOCLEANUP
+  // scaleX: number;
+  // scaleY: number;
   subtype: string;
   backdrop?: number[] | Uint8ClampedArray | undefined;
   transferMap?: Uint8Array | undefined;
@@ -954,140 +954,69 @@ function resetCtxToDefault(ctx: C2D) {
   }
 }
 
-function composeSMaskBackdrop(
-  bytes: Uint8ClampedArray,
-  r0: number,
-  g0: number,
-  b0: number,
-) {
-  const length = bytes.length;
-  for (let i = 3; i < length; i += 4) {
-    const alpha = bytes[i];
-    if (alpha === 0) {
-      bytes[i - 3] = r0;
-      bytes[i - 2] = g0;
-      bytes[i - 1] = b0;
-    } else if (alpha < 255) {
-      const alpha_ = 255 - alpha;
-      bytes[i - 3] = (bytes[i - 3] * alpha + r0 * alpha_) >> 8;
-      bytes[i - 2] = (bytes[i - 2] * alpha + g0 * alpha_) >> 8;
-      bytes[i - 1] = (bytes[i - 1] * alpha + b0 * alpha_) >> 8;
-    }
-  }
-}
+//kkkk TOCLEANUP
+// function composeSMaskBackdrop(
+//   bytes: Uint8ClampedArray,
+//   r0: number,
+//   g0: number,
+//   b0: number,
+// ) {
+//   const length = bytes.length;
+//   for (let i = 3; i < length; i += 4) {
+//     const alpha = bytes[i];
+//     if (alpha === 0) {
+//       bytes[i - 3] = r0;
+//       bytes[i - 2] = g0;
+//       bytes[i - 1] = b0;
+//     } else if (alpha < 255) {
+//       const alpha_ = 255 - alpha;
+//       bytes[i - 3] = (bytes[i - 3] * alpha + r0 * alpha_) >> 8;
+//       bytes[i - 2] = (bytes[i - 2] * alpha + g0 * alpha_) >> 8;
+//       bytes[i - 1] = (bytes[i - 1] * alpha + b0 * alpha_) >> 8;
+//     }
+//   }
+// }
 
-function composeSMaskAlpha(
-  maskData: Uint8ClampedArray,
-  layerData: Uint8ClampedArray,
-  transferMap?: Uint8Array,
-) {
-  const length = maskData.length;
-  const scale = 1 / 255;
-  for (let i = 3; i < length; i += 4) {
-    const alpha = transferMap ? transferMap[maskData[i]] : maskData[i];
-    layerData[i] = (layerData[i] * alpha * scale) | 0;
-  }
-}
+//kkkk TOCLEANUP
+// function composeSMaskAlpha(
+//   maskData: Uint8ClampedArray,
+//   layerData: Uint8ClampedArray,
+//   transferMap?: Uint8Array,
+// ) {
+//   const length = maskData.length;
+//   const scale = 1 / 255;
+//   for (let i = 3; i < length; i += 4) {
+//     const alpha = transferMap ? transferMap[maskData[i]] : maskData[i];
+//     layerData[i] = (layerData[i] * alpha * scale) | 0;
+//   }
+// }
 
-function composeSMaskLuminosity(
-  maskData: Uint8ClampedArray,
-  layerData: Uint8ClampedArray,
-  transferMap?: Uint8Array,
-) {
-  const length = maskData.length;
-  for (let i = 3; i < length; i += 4) {
-    const y = maskData[i - 3] * 77 + // * 0.3 / 255 * 0x10000
-      maskData[i - 2] * 152 + // * 0.59 ....
-      maskData[i - 1] * 28; // * 0.11 ....
-    layerData[i] = transferMap
-      ? (layerData[i] * transferMap[y >> 8]) >> 8
-      : (layerData[i] * y) >> 16;
-  }
-}
-
-function genericComposeSMask(
-  maskCtx: C2D,
-  layerCtx: C2D,
-  width: number,
-  height: number,
-  subtype: string,
-  backdrop: number[] | Uint8ClampedArray | undefined,
-  transferMap: Uint8Array | undefined,
-  layerOffsetX: number,
-  layerOffsetY: number,
-  maskOffsetX: number,
-  maskOffsetY: number,
-) {
-  const hasBackdrop = !!backdrop;
-  const r0 = hasBackdrop ? backdrop[0] : 0;
-  const g0 = hasBackdrop ? backdrop[1] : 0;
-  const b0 = hasBackdrop ? backdrop[2] : 0;
-
-  const composeFn = subtype === "Luminosity"
-    ? composeSMaskLuminosity
-    : composeSMaskAlpha;
-
-  // processing image in chunks to save memory
-  const PIXELS_TO_PROCESS = 1048576;
-  const chunkSize = Math.min(height, Math.ceil(PIXELS_TO_PROCESS / width));
-  for (let row = 0; row < height; row += chunkSize) {
-    const chunkHeight = Math.min(chunkSize, height - row);
-    const maskData = maskCtx.getImageData(
-      layerOffsetX - maskOffsetX,
-      row + (layerOffsetY - maskOffsetY),
-      width,
-      chunkHeight,
-    );
-    const layerData = layerCtx.getImageData(
-      layerOffsetX,
-      row + layerOffsetY,
-      width,
-      chunkHeight,
-    );
-
-    if (hasBackdrop) {
-      composeSMaskBackdrop(maskData.data, r0, g0, b0);
-    }
-    composeFn(maskData.data, layerData.data, transferMap);
-
-    layerCtx.putImageData(layerData, layerOffsetX, row + layerOffsetY);
-  }
-}
-
-function composeSMask(
-  ctx: C2D,
-  smask: SMask,
-  layerCtx: C2D,
-  layerBox: rect_t,
-) {
-  const layerOffsetX = layerBox[0];
-  const layerOffsetY = layerBox[1];
-  const layerWidth = layerBox[2] - layerOffsetX;
-  const layerHeight = layerBox[3] - layerOffsetY;
-  if (layerWidth === 0 || layerHeight === 0) return;
-
-  genericComposeSMask(
-    smask.context,
-    layerCtx,
-    layerWidth,
-    layerHeight,
-    smask.subtype,
-    smask.backdrop,
-    smask.transferMap,
-    layerOffsetX,
-    layerOffsetY,
-    smask.offsetX,
-    smask.offsetY,
-  );
-  ctx!.save();
-  ctx!.globalAlpha = 1;
-  ctx!.globalCompositeOperation = "source-over";
-  ctx!.setTransform(1, 0, 0, 1, 0, 0);
-  ctx!.drawImage(layerCtx.canvas, 0, 0);
-  ctx!.restore();
-}
+//kkkk TOCLEANUP
+// function composeSMaskLuminosity(
+//   maskData: Uint8ClampedArray,
+//   layerData: Uint8ClampedArray,
+//   transferMap?: Uint8Array,
+// ) {
+//   const length = maskData.length;
+//   for (let i = 3; i < length; i += 4) {
+//     const y = maskData[i - 3] * 77 + // * 0.3 / 255 * 0x10000
+//       maskData[i - 2] * 152 + // * 0.59 ....
+//       maskData[i - 1] * 28; // * 0.11 ....
+//     layerData[i] = transferMap
+//       ? (layerData[i] * transferMap[y >> 8]) >> 8
+//       : (layerData[i] * y) >> 16;
+//   }
+// }
 
 function getImageSmoothingEnabled(transform: matrix_t, interpolate?: boolean) {
+  // In section 8.9.5.3 of the PDF spec, it's mentioned that the interpolate
+  // flag should be used when the image is upscaled.
+  // In Firefox, smoothing is always used when downscaling images (bug 1360415).
+
+  if (interpolate) {
+    return true;
+  }
+
   const scale = Util.singularValueDecompose2dScale(transform);
   // Round to a 32bit float so that `<=` check below will pass for numbers that
   // are very close, but not exactly the same 64bit floats.
@@ -1096,15 +1025,7 @@ function getImageSmoothingEnabled(transform: matrix_t, interpolate?: boolean) {
   const actualScale = Math.fround(
     (globalThis.devicePixelRatio || 1) * PixelsPerInch.PDF_TO_CSS_UNITS,
   );
-  if (interpolate !== undefined) {
-    // If the value is explicitly set use it.
-    return interpolate;
-  } else if (scale[0] <= actualScale || scale[1] <= actualScale) {
-    // Smooth when downscaling.
-    return true;
-  }
-  // Don't smooth when upscaling.
-  return false;
+  return scale[0] <= actualScale && scale[1] <= actualScale;
 }
 
 const LINE_CAP_STYLES = ["butt", "round", "square"] as const;
@@ -1656,28 +1577,28 @@ export class CanvasGraphics {
     for (const [key, value] of states) {
       switch (key) {
         case "LW":
-          this[OPS.setLineWidth](<number> value);
+          this[OPS.setLineWidth](value as number);
           break;
         case "LC":
-          this[OPS.setLineCap](<0 | 1 | 2> value);
+          this[OPS.setLineCap](value as 0 | 1 | 2);
           break;
         case "LJ":
-          this[OPS.setLineJoin](<0 | 1 | 2> value);
+          this[OPS.setLineJoin](value as 0 | 1 | 2);
           break;
         case "ML":
-          this[OPS.setMiterLimit](<number> value);
+          this[OPS.setMiterLimit](value as number);
           break;
         case "D":
           this[OPS.setDash](
-            (<[number[], number]> value)[0],
-            (<[number[], number]> value)[1],
+            (value as [number[], number])[0],
+            (value as [number[], number])[1],
           );
           break;
         case "RI":
           this[OPS.setRenderingIntent](value);
           break;
         case "FL":
-          this[OPS.setFlatness](<number> value);
+          this[OPS.setFlatness](value as number);
           break;
         case "Font":
           this[OPS.setFont](
@@ -1693,7 +1614,7 @@ export class CanvasGraphics {
           this.ctx.globalAlpha = value as number;
           break;
         case "BM":
-          this.ctx.globalCompositeOperation = <GlobalCompositeOperation> value;
+          this.ctx.globalCompositeOperation = value as GlobalCompositeOperation;
           break;
         case "SMask":
           this.current.activeSMask = value ? this.tempSMask : undefined;
@@ -1768,7 +1689,9 @@ export class CanvasGraphics {
   }
 
   compose(dirtyBox?: rect_t) {
-    if (!this.current.activeSMask) return;
+    if (!this.current.activeSMask) {
+      return;
+    }
 
     if (!dirtyBox) {
       dirtyBox = [0, 0, this.ctx.canvas.width, this.ctx.canvas.height];
@@ -1781,13 +1704,134 @@ export class CanvasGraphics {
     const smask = this.current.activeSMask;
     const suspendedCtx = this.suspendedCtx!;
 
-    composeSMask(suspendedCtx, smask, this.ctx, dirtyBox);
+    this.composeSMask(suspendedCtx, smask, this.ctx, dirtyBox);
     // Whatever was drawn has been moved to the suspended canvas, now clear it
     // out of the current canvas.
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     this.ctx.restore();
+  }
+
+  composeSMask(ctx: C2D, smask: SMask, layerCtx: C2D, layerBox: rect_t) {
+    const layerOffsetX = layerBox[0];
+    const layerOffsetY = layerBox[1];
+    const layerWidth = layerBox[2] - layerOffsetX;
+    const layerHeight = layerBox[3] - layerOffsetY;
+    if (layerWidth === 0 || layerHeight === 0) {
+      return;
+    }
+    this.genericComposeSMask(
+      smask.context,
+      layerCtx,
+      layerWidth,
+      layerHeight,
+      smask.subtype,
+      smask.backdrop,
+      smask.transferMap,
+      layerOffsetX,
+      layerOffsetY,
+      smask.offsetX,
+      smask.offsetY,
+    );
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(layerCtx.canvas, 0, 0);
+    ctx.restore();
+  }
+
+  genericComposeSMask(
+    maskCtx: C2D,
+    layerCtx: C2D,
+    width: number,
+    height: number,
+    subtype: string,
+    backdrop: number[] | Uint8ClampedArray | undefined,
+    transferMap: Uint8Array | undefined,
+    layerOffsetX: number,
+    layerOffsetY: number,
+    maskOffsetX: number,
+    maskOffsetY: number,
+  ) {
+    let maskCanvas = maskCtx.canvas;
+    let maskX = layerOffsetX - maskOffsetX;
+    let maskY = layerOffsetY - maskOffsetY;
+
+    if (backdrop) {
+      if (
+        maskX < 0 ||
+        maskY < 0 ||
+        maskX + width > maskCanvas.width ||
+        maskY + height > maskCanvas.height
+      ) {
+        const canvas = this.cachedCanvases.getCanvas(
+          "maskExtension",
+          width,
+          height,
+        );
+        const ctx = canvas.context;
+        ctx.drawImage(maskCanvas, -maskX, -maskY);
+        if (backdrop.some((c) => c !== 0)) {
+          ctx.globalCompositeOperation = "destination-atop";
+          // ctx.fillStyle = Util.makeHexColor(...backdrop);
+          ctx.fillStyle = Util.makeHexColor(
+            backdrop[0],
+            backdrop[1],
+            backdrop[2],
+          );
+          ctx.fillRect(0, 0, width, height);
+          ctx.globalCompositeOperation = "source-over";
+        }
+
+        maskCanvas = canvas.canvas;
+        maskX = maskY = 0;
+      } else if (backdrop.some((c) => c !== 0)) {
+        maskCtx.save();
+        maskCtx.globalAlpha = 1;
+        maskCtx.setTransform(1, 0, 0, 1, 0, 0);
+        const clip = new Path2D();
+        clip.rect(maskX, maskY, width, height);
+        maskCtx.clip(clip);
+        maskCtx.globalCompositeOperation = "destination-atop";
+        // maskCtx.fillStyle = Util.makeHexColor(...backdrop);
+        maskCtx.fillStyle = Util.makeHexColor(
+          backdrop[0],
+          backdrop[1],
+          backdrop[2],
+        );
+        maskCtx.fillRect(maskX, maskY, width, height);
+        maskCtx.restore();
+      }
+    }
+
+    layerCtx.save();
+    layerCtx.globalAlpha = 1;
+    layerCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+    if (subtype === "Alpha" && transferMap) {
+      layerCtx.filter = this.filterFactory.addAlphaFilter(transferMap);
+    } else if (subtype === "Luminosity") {
+      layerCtx.filter = this.filterFactory.addLuminosityFilter(transferMap);
+    }
+
+    const clip = new Path2D();
+    clip.rect(layerOffsetX, layerOffsetY, width, height);
+    layerCtx.clip(clip);
+    layerCtx.globalCompositeOperation = "destination-in";
+    layerCtx.drawImage(
+      maskCanvas,
+      maskX,
+      maskY,
+      width,
+      height,
+      layerOffsetX,
+      layerOffsetY,
+      width,
+      height,
+    );
+    layerCtx.restore();
   }
 
   [OPS.save]() {
@@ -2244,7 +2288,7 @@ export class CanvasGraphics {
     let addToPath: AddToPath;
     if (font.disableFontFace || isAddToPathSet || patternFill) {
       addToPath = font.getPathGenerator(
-        this.commonObjs as PDFObjects<CmdArgs[] | FontFaceObject>,
+        this.commonObjs as PDFObjects<Cmds | FontFaceObject>,
         character,
       );
     }
@@ -2699,20 +2743,16 @@ export class CanvasGraphics {
     fail("Should not call beginImageData");
   }
 
-  [OPS.paintFormXObjectBegin](
-    matrix: matrix_t,
-    bbox?: rect_t,
-  ) {
+  [OPS.paintFormXObjectBegin](matrix?: matrix_t, bbox?: rect_t) {
     if (!this.contentVisible) {
       return;
     }
     this[OPS.save]();
     this.baseTransformStack.push(this.baseTransform);
 
-    if (Array.isArray(matrix) && matrix.length === 6) {
+    if (matrix) {
       this[OPS.transform](...matrix);
     }
-
     this.baseTransform = getCurrentTransform(this.ctx);
 
     if (bbox) {
@@ -2793,18 +2833,8 @@ export class CanvasGraphics {
     // too small and make the canvas at least 1x1 pixels.
     const offsetX = Math.floor(bounds[0]);
     const offsetY = Math.floor(bounds[1]);
-    let drawnWidth = Math.max(Math.ceil(bounds[2]) - offsetX, 1);
-    let drawnHeight = Math.max(Math.ceil(bounds[3]) - offsetY, 1);
-    let scaleX = 1,
-      scaleY = 1;
-    if (drawnWidth > MAX_GROUP_SIZE) {
-      scaleX = drawnWidth / MAX_GROUP_SIZE;
-      drawnWidth = MAX_GROUP_SIZE;
-    }
-    if (drawnHeight > MAX_GROUP_SIZE) {
-      scaleY = drawnHeight / MAX_GROUP_SIZE;
-      drawnHeight = MAX_GROUP_SIZE;
-    }
+    const drawnWidth = Math.max(Math.ceil(bounds[2]) - offsetX, 1);
+    const drawnHeight = Math.max(Math.ceil(bounds[3]) - offsetY, 1);
 
     this.current.startNewPathAndClipBox([0, 0, drawnWidth, drawnHeight]);
 
@@ -2822,7 +2852,6 @@ export class CanvasGraphics {
 
     // Since we created a new canvas that is just the size of the bounding box
     // we have to translate the group ctx.
-    groupCtx.scale(1 / scaleX, 1 / scaleY);
     groupCtx.translate(-offsetX, -offsetY);
     groupCtx.transform(...currentTransform);
 
@@ -2833,8 +2862,6 @@ export class CanvasGraphics {
         context: groupCtx,
         offsetX,
         offsetY,
-        scaleX,
-        scaleY,
         subtype: group.smask.subtype,
         backdrop: group.smask.backdrop,
         transferMap: group.smask.transferMap,
@@ -2845,7 +2872,6 @@ export class CanvasGraphics {
       // right location.
       currentCtx.setTransform(1, 0, 0, 1, 0, 0);
       currentCtx.translate(offsetX, offsetY);
-      currentCtx.scale(scaleX, scaleY);
       currentCtx.save();
     }
     // The transparency group inherits all off the current graphics state
@@ -2862,8 +2888,9 @@ export class CanvasGraphics {
   }
 
   [OPS.endGroup](group: GroupOptions) {
-    if (!this.contentVisible) return;
-
+    if (!this.contentVisible) {
+      return;
+    }
     this.groupLevel--;
     const groupCtx = this.ctx;
     const ctx = this.groupStack.pop()!;
@@ -2893,7 +2920,7 @@ export class CanvasGraphics {
 
   [OPS.beginAnnotation](
     id: string,
-    rect: rect_t,
+    rect: rect_t | undefined,
     transform: matrix_t,
     matrix: matrix_t,
     hasOwnCanvas: boolean,
@@ -2912,7 +2939,7 @@ export class CanvasGraphics {
       this.ctx.setTransform(...this.baseTransform);
     }
 
-    if (Array.isArray(rect) && rect.length === 4) {
+    if (rect) {
       const width = rect[2] - rect[0];
       const height = rect[3] - rect[1];
 

@@ -9,7 +9,7 @@ import type { dim2d_t, dot2d_t, rect_t, uint } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import type { AnnotationEditorName, AnnotationEditorType } from "../../shared/util.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
-import type { AnnotStorageValue } from "../annotation_layer.js";
+import type { AnnotationElement, AnnotStorageValue } from "../annotation_layer.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import { EditorToolbar } from "./toolbar.js";
 import type { AddCommandsP } from "./tools.js";
@@ -310,6 +310,11 @@ export declare abstract class AnnotationEditor {
      */
     static deserialize(data: AnnotStorageValue, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): AnnotationEditor | undefined;
     /**
+     * Check if an existing annotation associated with this editor has been
+     * modified.
+     */
+    get hasBeenModified(): boolean;
+    /**
      * Remove this editor.
      * It's used on ctrl+backspace action.
      */
@@ -393,6 +398,11 @@ export declare abstract class AnnotationEditor {
     show(visible?: boolean): void;
     enable(): void;
     disable(): void;
+    /**
+     * Render an annotation in the annotation layer.
+     */
+    renderAnnotationElement(annotation: AnnotationElement): HTMLElement;
+    resetAnnotationElement(annotation: AnnotationElement): void;
 }
 export {};
 //# sourceMappingURL=editor.d.ts.map

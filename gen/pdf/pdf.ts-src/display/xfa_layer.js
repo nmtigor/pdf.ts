@@ -66,7 +66,7 @@ export class XfaLayer {
                     });
                 }
                 else {
-                    if (storedData.value !== null && storedData.value !== undefined) {
+                    if (storedData.value != undefined) {
                         html.setAttribute("value", storedData.value);
                     }
                     if (intent === "print") {
@@ -110,7 +110,7 @@ export class XfaLayer {
             attributes.name = `${attributes.name}-${intent}`;
         }
         for (const [key, value] of Object.entries(attributes)) {
-            if (value === null || value === undefined) {
+            if (value == undefined) {
                 continue;
             }
             switch (key) {
