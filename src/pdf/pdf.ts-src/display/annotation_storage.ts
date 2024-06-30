@@ -29,7 +29,6 @@ import { objectFromMap } from "../shared/util.ts";
 import type {
   AnnotStorageRecord,
   AnnotStorageValue,
-  ASVKey,
 } from "./annotation_layer.ts";
 import type { TFD_AnnotationEditor } from "./editor/editor.ts";
 import { AnnotationEditor } from "./editor/editor.ts";
@@ -51,7 +50,7 @@ export const SerializableEmpty: Serializable = Object.freeze({
 export class AnnotationStorage {
   #modified = false;
 
-  #storage: AnnotStorageRecord = new Map();
+  #storage: Map<string, AnnotStorageValue | AnnotationEditor> = new Map();
   get size() {
     return this.#storage.size;
   }
@@ -81,7 +80,7 @@ export class AnnotationStorage {
   /**
    * Get the value for a given key.
    */
-  getRawValue(key: string) {
+  getRawValue(key: string): AnnotStorageValue | AnnotationEditor | undefined {
     return this.#storage.get(key);
   }
 
@@ -108,12 +107,13 @@ export class AnnotationStorage {
   /**
    * Set the value for a given key
    */
-  setValue(key: string, value: AnnotStorageValue) {
+  setValue(key: string, value: AnnotStorageValue | AnnotationEditor) {
     const obj = this.#storage.get(key);
     let modified = false;
     if (obj !== undefined) {
+      type K_ = keyof (AnnotStorageValue | AnnotationEditor);
       for (const [entry, val] of Object.entries(value)) {
-        if (obj[entry as ASVKey] !== val) {
+        if (obj[entry as K_] !== val) {
           modified = true;
           (obj as any)[entry] = val;
         }

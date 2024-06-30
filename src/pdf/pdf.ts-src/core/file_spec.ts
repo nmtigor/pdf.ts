@@ -21,27 +21,36 @@
  * limitations under the License.
  */
 
-import { stringToPDFString, warn } from "../shared/util.ts";
+import { shadow, stringToPDFString, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { Dict } from "./primitives.ts";
 import { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
-function pickPlatformItem(dict: Dict) {
+function pickPlatformItem(dict: unknown): string | undefined {
+  if (!(dict instanceof Dict)) {
+    return undefined;
+  }
   // Look for the filename in this order:
   // UF, F, Unix, Mac, DOS
-  if (dict.has("UF")) return <string> dict.get("UF");
-  else if (dict.has("F")) return <string> dict.get("F");
-  else if (dict.has("Unix")) return <string> dict.get("Unix");
-  else if (dict.has("Mac")) return <string> dict.get("Mac");
-  else if (dict.has("DOS")) return <string> dict.get("DOS");
+  if (dict.has("UF")) return dict.get("UF") as string;
+  else if (dict.has("F")) return dict.get("F") as string;
+  else if (dict.has("Unix")) return dict.get("Unix") as string;
+  else if (dict.has("Mac")) return dict.get("Mac") as string;
+  else if (dict.has("DOS")) return dict.get("DOS") as string;
   return undefined;
 }
 
-export interface Attachment {
+function stripPath(str: string): string {
+  return str.substring(str.lastIndexOf("/") + 1);
+}
+
+export type Attachment = {
+  rawFilename: string;
   filename: string;
   content?: Uint8Array | Uint8ClampedArray | undefined;
-}
+  description: string;
+};
 
 /**
  * "A PDF file can refer to the contents of another file by using a File
@@ -54,22 +63,9 @@ export class FileSpec {
   xref;
   root;
   fs;
-  description;
   #contentAvailable = false;
 
-  #filename?: string;
-  get filename() {
-    if (!this.#filename && this.root) {
-      const filename = pickPlatformItem(this.root) || "unnamed";
-      this.#filename = stringToPDFString(filename)
-        .replaceAll("\\\\", "\\")
-        .replaceAll("\\/", "/")
-        .replaceAll("\\", "/");
-    }
-    return this.#filename!;
-  }
-
-  contentRef?: string | undefined;
+  _contentRef?: string | undefined;
 
   constructor(root: Dict, xref?: XRef, skipContent = false) {
     if (!(root instanceof Dict)) {
@@ -80,9 +76,6 @@ export class FileSpec {
     if (root.has("FS")) {
       this.fs = root.get("FS");
     }
-    this.description = root.has("Desc")
-      ? stringToPDFString(<string> root.get("Desc"))
-      : "";
     if (root.has("RF")) {
       warn("Related file specifications are not supported");
     }
@@ -95,16 +88,28 @@ export class FileSpec {
     }
   }
 
+  get filename() {
+    let filename = "";
+
+    const item = pickPlatformItem(this.root);
+    if (item && typeof item === "string") {
+      filename = stringToPDFString(item)
+        .replaceAll("\\\\", "\\")
+        .replaceAll("\\/", "/")
+        .replaceAll("\\", "/");
+    }
+    return shadow(this, "filename", filename || "unnamed");
+  }
+
   get content() {
     if (!this.#contentAvailable) {
       return undefined;
     }
-    if (!this.contentRef && this.root) {
-      this.contentRef = pickPlatformItem(<Dict> this.root.get("EF"));
-    }
+    this._contentRef ||= pickPlatformItem(this.root?.get("EF"));
+
     let content = undefined;
-    if (this.contentRef) {
-      const fileObj = this.xref!.fetchIfRef(this.contentRef);
+    if (this._contentRef) {
+      const fileObj = this.xref!.fetchIfRef(this._contentRef);
       if (fileObj instanceof BaseStream) {
         content = fileObj.getBytes();
       } else {
@@ -114,15 +119,27 @@ export class FileSpec {
         );
       }
     } else {
-      warn("Embedded file specification does not have a content");
+      warn("Embedded file specification does not have any content");
     }
     return content;
   }
 
-  get serializable() {
-    return <Attachment> {
-      filename: this.filename,
+  get description() {
+    let description = "";
+
+    const desc = this.root?.get("Desc");
+    if (desc && typeof desc === "string") {
+      description = stringToPDFString(desc);
+    }
+    return shadow(this, "description", description);
+  }
+
+  get serializable(): Attachment {
+    return {
+      rawFilename: this.filename,
+      filename: stripPath(this.filename),
       content: this.content,
+      description: this.description,
     };
   }
 }

@@ -54,6 +54,8 @@
 !issue17056.pdf
 !issue17679.pdf
 !issue17679_2.pdf
+!issue18030.pdf
+!issue18042.pdf
 !issue14953.pdf
 !issue15367.pdf
 !issue15372.pdf
@@ -240,6 +242,7 @@
 !ContentStreamNoCycleType3insideType3.pdf
 !ContentStreamCycleType3insideType3.pdf
 !issue2074.pdf
+!issue18117.pdf
 !scan-bad.pdf
 !issue13561_reduced.pdf
 !bug847420.pdf
@@ -641,3 +644,8 @@
 !issue17871_bottom_right.pdf
 !issue17871_top_right.pdf
 !bug1889122.pdf
+!issue17929.pdf
+!issue12213.pdf
+!tracemonkey_freetext.pdf
+!issue17998.pdf
+!pdfjs_wikipedia.pdf

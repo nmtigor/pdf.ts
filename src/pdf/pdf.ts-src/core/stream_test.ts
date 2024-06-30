@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/testing/asserts.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { PredictorStream } from "./predictor_stream.ts";
 import { Dict } from "./primitives.ts";

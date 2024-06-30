@@ -21,14 +21,15 @@
  * limitations under the License.
  */
 
+import { see_ui_testing } from "@fe-pdf.ts-test/alias.ts";
 import {
   assert,
   assertEquals,
   assertInstanceOf,
   assertThrows,
-} from "@std/assert/mod.ts";
+} from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { C2D } from "../../../lib/alias.ts";
+import { C2D } from "@fe-lib/alias.ts";
 import { bytesToString } from "../shared/util.ts";
 import {
   DOMCanvasFactory,
@@ -39,6 +40,7 @@ import {
   PDFDateString,
 } from "./display_utils.ts";
 import type { CanvasEntry } from "./base_factory.ts";
+import { svg as createSVG } from "@fe-lib/dom.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("display_utils", () => {
@@ -73,18 +75,10 @@ describe("display_utils", () => {
       );
     });
 
-    //kkkk "ReferenceError: document is not defined"
-    it.ignore("`create` should return a canvas if the dimensions are valid", () => {
-      // if (isNodeJS) {
-      //   pending("Document is not supported in Node.js.");
-      // }
-
-      const { canvas, context } = canvasFactory.create(20, 40);
-      assertInstanceOf(canvas, HTMLCanvasElement);
-      assertInstanceOf(context, C2D);
-      assertEquals(canvas.width, 20);
-      assertEquals(canvas.height, 40);
-    });
+    it(
+      "`create` should return a canvas if the dimensions are valid",
+      see_ui_testing,
+    );
 
     it("`reset` should throw an error if no canvas is provided", () => {
       const canvasAndContext = {} as CanvasEntry;
@@ -118,21 +112,10 @@ describe("display_utils", () => {
       );
     });
 
-    //kkkk "ReferenceError: document is not defined"
-    it.ignore("`reset` should alter the canvas/context if the dimensions are valid", () => {
-      // if (isNodeJS) {
-      //   pending("Document is not supported in Node.js.");
-      // }
-
-      const canvasAndContext = canvasFactory.create(20, 40);
-      canvasFactory.reset(canvasAndContext, 60, 80);
-
-      const { canvas, context } = canvasAndContext;
-      assertInstanceOf(canvas, HTMLCanvasElement);
-      assertInstanceOf(context, C2D);
-      assertEquals(canvas.width, 60);
-      assertEquals(canvas.height, 80);
-    });
+    it(
+      "`reset` should alter the canvas/context if the dimensions are valid",
+      see_ui_testing,
+    );
 
     it("`destroy` should throw an error if no canvas is provided", () => {
       assertThrows(
@@ -144,19 +127,7 @@ describe("display_utils", () => {
       );
     });
 
-    //kkkk "ReferenceError: document is not defined"
-    it.ignore("`destroy` should clear the canvas/context", () => {
-      // if (isNodeJS) {
-      //   pending("Document is not supported in Node.js.");
-      // }
-
-      const canvasAndContext = canvasFactory.create(20, 40);
-      canvasFactory.destroy(canvasAndContext);
-
-      const { canvas, context } = canvasAndContext;
-      assertEquals(canvas, undefined);
-      assertEquals(context, undefined);
-    });
+    it("`destroy` should clear the canvas/context", see_ui_testing);
   });
 
   describe("DOMSVGFactory", () => {
@@ -190,40 +161,30 @@ describe("display_utils", () => {
       );
     });
 
-    //kkkk "ReferenceError: document is not defined"
-    it.ignore("`create` should return an SVG element if the dimensions are valid", () => {
-      // if (isNodeJS) {
-      //   pending("Document is not supported in Node.js.");
-      // }
+    it(
+      "`create` should return an SVG element if the dimensions are valid",
+      see_ui_testing,
+    );
 
-      const svg = svgFactory.create(20, 40);
-      assertInstanceOf(svg, SVGSVGElement);
-      assertEquals(svg.getAttribute("version"), "1.1");
-      assertEquals(svg.getAttribute("width"), "20px");
-      assertEquals(svg.getAttribute("height"), "40px");
-      assertEquals(svg.getAttribute("preserveAspectRatio"), "none");
-      assertEquals(svg.getAttribute("viewBox"), "0 0 20 40");
-    });
+    // it("`createElement` should throw an error if the type is not a string", () => {
+    //   assertThrows(
+    //     () => {
+    //       return svgFactory.createElement(true as any);
+    //     },
+    //     Error,
+    //     "Invalid SVG element type",
+    //   );
+    // });
 
-    it("`createElement` should throw an error if the type is not a string", () => {
-      assertThrows(
-        () => {
-          return svgFactory.createElement(true as any);
-        },
-        Error,
-        "Invalid SVG element type",
-      );
-    });
+    // it("`createElement` should return an SVG element if the type is valid", () => {
+    //   // if (isNodeJS) {
+    //   //   pending("Document is not supported in Node.js.");
+    //   // }
 
-    //kkkk "ReferenceError: document is not defined"
-    it.ignore("`createElement` should return an SVG element if the type is valid", () => {
-      // if (isNodeJS) {
-      //   pending("Document is not supported in Node.js.");
-      // }
-
-      const svg = svgFactory.createElement("svg:rect");
-      assertInstanceOf(svg, SVGRectElement);
-    });
+    //   // const svg = svgFactory.createElement("svg:rect");
+    //   const svg = createSVG("rect");
+    //   assertInstanceOf(svg, SVGRectElement);
+    // });
   });
 
   describe("getFilenameFromUrl", () => {
@@ -245,14 +206,6 @@ describe("display_utils", () => {
     it("should get the filename from a URL with query parameters", () => {
       const url = "https://server.org/filename.pdf?foo=bar";
       assertEquals(getFilenameFromUrl(url), "filename.pdf");
-    });
-
-    it("should get the filename from a relative URL, keeping the anchor", () => {
-      const url = "../../part1#part2.pdf";
-      assertEquals(
-        getFilenameFromUrl(url, /* onlyStripPath = */ true),
-        "part1#part2.pdf",
-      );
     });
   });
 

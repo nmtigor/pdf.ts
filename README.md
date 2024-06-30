@@ -3,7 +3,7 @@ tools.
 
 It is
 
-- based on [pdf.js-4.1.392](https://github.com/mozilla/pdf.js/tree/v4.1.392),
+- based on [pdf.js-4.3.136](https://github.com/mozilla/pdf.js/tree/v4.3.136),
 
 - **transpiled using
   TypeScript-5.2.2[@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
@@ -21,20 +21,18 @@ It is
   - In vscode, in the workspace setting, add
     `"typescript.tsdk": "/path_to/TypeScript/lib"`.
 
-### deno test
+### unittest
 
 - ```bash
   cd /path_to/pdf.ts/src/test
-  deno run --allow-read --allow-run test.ts --tsc "/path_to/TypeScript/bin/tsc"
-  # Deno-1.43.6: 54 passed (1086 steps)
+  deno run --allow-read --allow-run unittest.ts --tsc "/path_to/TypeScript/bin/tsc"
   ```
 
 ### viewer.html
 
 - ```bash
   cd /path_to/pdf.ts/src/test
-  # Start a local file server
-  deno run --allow-net --allow-read --allow-write=../baseurl.mjs test_server.ts
+  deno task server
   ```
 - ```bash
   cd /path_to/pdf.ts
@@ -47,5 +45,5 @@ It is
 
 ### Current States
 
-- `GENERIC` build
-- On browsers
+- `GENERIC` on browsers
+- unittest: 1058 / 1116

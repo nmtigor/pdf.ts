@@ -31,7 +31,7 @@ import type {
 import { html } from "@fe-lib/dom.ts";
 import { noContextMenu } from "@fe-lib/util/general.ts";
 import { fail } from "@fe-lib/util/trace.ts";
-import type { IL10n } from "@pdf.ts-web/interfaces.ts";
+import type { IL10n } from "@fe-pdf.ts-web/interfaces.ts";
 import type {
   AnnotationEditorName,
   AnnotationEditorType,
@@ -41,7 +41,10 @@ import {
   FeatureTest,
   shadow,
 } from "../../shared/util.ts";
-import type { AnnotStorageValue } from "../annotation_layer.ts";
+import type {
+  AnnotationElement,
+  AnnotStorageValue,
+} from "../annotation_layer.ts";
 import { AltText } from "./alt_text.ts";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
 import { EditorToolbar } from "./toolbar.ts";
@@ -835,6 +838,7 @@ export abstract class AnnotationEditor {
     const pointerMoveOptions = { passive: true, capture: true };
     this.parent!.togglePointerEvents(false);
     window.on("pointermove", boundResizerPointermove, pointerMoveOptions);
+    window.on("contextmenu", noContextMenu);
     const savedX = this.x;
     const savedY = this.y;
     const savedWidth = this.width!;
@@ -852,6 +856,7 @@ export abstract class AnnotationEditor {
       window.off("pointerup", pointerUpCallback);
       window.off("blur", pointerUpCallback);
       window.off("pointermove", boundResizerPointermove, pointerMoveOptions);
+      window.off("contextmenu", noContextMenu);
       this.parent!.div!.style.cursor = savedParentCursor;
       this.div!.style.cursor = savedCursor;
 
@@ -1385,6 +1390,17 @@ export abstract class AnnotationEditor {
   }
 
   /**
+   * Check if an existing annotation associated with this editor has been
+   * modified.
+   */
+  get hasBeenModified(): boolean {
+    return (
+      !!this.annotationElementId &&
+      (this.deleted || this.serialize() !== undefined)
+    );
+  }
+
+  /**
    * Remove this editor.
    * It's used on ctrl+backspace action.
    */
@@ -1760,6 +1776,35 @@ export abstract class AnnotationEditor {
       this.div.tabIndex = -1;
     }
     this.#disabled = true;
+  }
+
+  /**
+   * Render an annotation in the annotation layer.
+   */
+  renderAnnotationElement(annotation: AnnotationElement): HTMLElement {
+    let content = annotation.container.querySelector(".annotationContent");
+    if (!content) {
+      content = html("div");
+      content.classList.add("annotationContent", this.editorType);
+      annotation.container.prepend(content);
+    } else if (content.nodeName === "CANVAS") {
+      const canvas = content;
+      content = html("div");
+      content.classList.add("annotationContent", this.editorType);
+      canvas.before(content);
+    }
+
+    return content as HTMLElement;
+  }
+
+  resetAnnotationElement(annotation: AnnotationElement) {
+    const { firstChild } = annotation.container;
+    if (
+      firstChild!.nodeName === "DIV" &&
+      (firstChild as Element).classList.contains("annotationContent")
+    ) {
+      firstChild!.remove();
+    }
   }
 }
 

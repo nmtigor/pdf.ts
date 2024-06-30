@@ -21,9 +21,9 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { XRefMock } from "@pdf.ts-test/test_utils.ts";
+import { XRefMock } from "@fe-pdf.ts-test/test_utils.ts";
 import {
   createDefaultAppearance,
   parseAppearanceStream,

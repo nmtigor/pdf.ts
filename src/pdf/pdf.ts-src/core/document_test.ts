@@ -21,9 +21,9 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/testing/asserts.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory, XRefMock } from "@pdf.ts-test/test_utils.ts";
+import { createIdFactory, XRefMock } from "@fe-pdf.ts-test/test_utils.ts";
 import { FieldObject } from "./annotation.ts";
 import { Catalog } from "./catalog.ts";
 import { PDFDocument } from "./document.ts";

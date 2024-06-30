@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import type { uint } from "@fe-lib/alias.ts";
+import type { rect_t, uint } from "@fe-lib/alias.ts";
 import { assert } from "@fe-lib/util/trace.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type {
@@ -38,6 +38,7 @@ import {
   BaseException,
   objectSize,
   stringToPDFString,
+  Util,
   warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
@@ -264,6 +265,60 @@ export function readUint32(
  */
 export function isWhiteSpace(ch: number) {
   return ch === 0x20 || ch === 0x09 || ch === 0x0d || ch === 0x0a;
+}
+
+/**
+ * Checks if something is an Array containing only boolean values,
+ * and (optionally) checks its length.
+ */
+export function isBooleanArray(arr: unknown, len?: uint): arr is boolean[] {
+  return (
+    Array.isArray(arr) &&
+    (len === undefined || arr.length === len) &&
+    arr.every((x) => typeof x === "boolean")
+  );
+}
+
+/**
+ * Checks if something is an Array containing only numbers,
+ * and (optionally) checks its length.
+ */
+export function isNumberArray(arr: unknown, len?: uint): arr is number[] {
+  return (
+    Array.isArray(arr) &&
+    (len === undefined || arr.length === len) &&
+    arr.every((x) => typeof x === "number")
+  );
+}
+
+/**
+ * Returns the matrix, or the fallback value if it's invalid.
+ */
+export function lookupMatrix<R extends matrix_t | undefined>(
+  arr: unknown,
+  fallback: R,
+): matrix_t | R {
+  return isNumberArray(arr, 6) ? arr as matrix_t : fallback;
+}
+
+/**
+ * Returns the rectangle, or the fallback value if it's invalid.
+ */
+export function lookupRect<R extends rect_t | undefined>(
+  arr: unknown,
+  fallback: R,
+): rect_t | R {
+  return isNumberArray(arr, 4) ? arr as rect_t : fallback;
+}
+
+/**
+ * Returns the normalized rectangle, or the fallback value if it's invalid.
+ */
+export function lookupNormalRect<R extends rect_t | undefined>(
+  arr: unknown,
+  fallback: R,
+): rect_t | R {
+  return isNumberArray(arr, 4) ? Util.normalizeRect(arr as rect_t) : fallback;
 }
 
 interface XFAPathCom {

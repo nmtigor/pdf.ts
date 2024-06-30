@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-export {};
+import { AD_gh } from "@fe-src/pdf/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class GlobalWorkerOptions {
@@ -63,5 +63,5 @@ export class GlobalWorkerOptions {
   }
 }
 
-GlobalWorkerOptions.workerSrc = "/gen/pdf/pdf.ts-src/pdf.worker.js";
+GlobalWorkerOptions.workerSrc = `${AD_gh}/gen/pdf/pdf.ts-src/pdf.worker.js`;
 /*80--------------------------------------------------------------------------*/

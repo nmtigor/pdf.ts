@@ -34,8 +34,8 @@ import { binarySearchFirstItem } from "./ui_utils.ts";
 export class TextAccessibilityManager {
   #enabled = false;
 
-  #textChildren: HTMLDivElement[] | undefined;
-  setTextMapping(textDivs: HTMLDivElement[]) {
+  #textChildren: (HTMLDivElement | HTMLSpanElement)[] | undefined;
+  setTextMapping(textDivs: (HTMLDivElement | HTMLSpanElement)[]) {
     this.#textChildren = textDivs;
   }
 
@@ -168,7 +168,7 @@ export class TextAccessibilityManager {
     }
   }
 
-  #addIdToAriaOwns(id: string, node: HTMLDivElement) {
+  #addIdToAriaOwns(id: string, node: HTMLDivElement | HTMLSpanElement) {
     const owns = node.getAttribute("aria-owns");
     if (!owns?.includes(id)) {
       node.setAttribute("aria-owns", owns ? `${owns} ${id}` : id);

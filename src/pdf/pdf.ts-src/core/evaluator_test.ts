@@ -21,9 +21,9 @@
  * limitations under the License.
  */
 
-import { assert, assertEquals, fail } from "@std/assert/mod.ts";
+import { assert, assertEquals, fail } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory, XRefMock } from "@pdf.ts-test/test_utils.ts";
+import { createIdFactory, XRefMock } from "@fe-pdf.ts-test/test_utils.ts";
 import { FormatError, OPS } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { PartialEvaluator } from "./evaluator.ts";
@@ -95,7 +95,7 @@ describe("evaluator", () => {
       assert(!!result.fnArray && !!result.argsArray);
       assertEquals(result.fnArray.length, 1);
       assertEquals(result.fnArray[0], OPS.fill);
-      assertEquals(result.argsArray[0], null);
+      assertEquals(result.argsArray[0], undefined);
     });
 
     it("should handle one operation", async () => {
@@ -138,7 +138,7 @@ describe("evaluator", () => {
       assertEquals(result.argsArray.length, 3);
       assertEquals(result.argsArray[0], ["img_p0_1"]);
       assertEquals(result.argsArray[1], ["img_p0_1", 1, 1]);
-      assertEquals(result.argsArray[2], null);
+      assertEquals(result.argsArray[2], undefined);
     });
 
     it("should handle three glued operations", async () => {
@@ -184,8 +184,6 @@ describe("evaluator", () => {
       assertEquals(result.fnArray[1], OPS.setTextRise);
       assertEquals(result.argsArray.length, 2);
       assertEquals(result.argsArray[1], [5]);
-      // assertEquals( (<any>result.argsArray[1]).length === 1 );
-      // assertEquals( (<any>result.argsArray[1])[0] === 5 );
     });
 
     it("should handle glued operations and literals", async () => {
@@ -202,12 +200,8 @@ describe("evaluator", () => {
       assertEquals(result.fnArray[2], OPS.endPath);
       assertEquals(result.argsArray.length, 3);
       assertEquals(result.argsArray[0], [true]);
-      // assertEquals( result.argsArray[0].length).toEqual(1);
-      // assertEquals( result.argsArray[0][0]).toEqual(true);
       assertEquals(result.argsArray[1], [false]);
-      // assertEquals( result.argsArray[1].length).toEqual(1);
-      // assertEquals( result.argsArray[1][0]).toEqual(false);
-      assertEquals(result.argsArray[2], null);
+      assertEquals(result.argsArray[2], undefined);
     });
   });
 
@@ -419,8 +413,8 @@ describe("evaluator", () => {
         undefined,
         new StreamSinkMock() as any,
       );
-      operatorList.addOp(OPS.save, null);
-      operatorList.addOp(OPS.restore, null);
+      operatorList.addOp(OPS.save);
+      operatorList.addOp(OPS.restore);
 
       assertEquals(operatorList.totalLength, 2);
       assertEquals(operatorList.length, 2);

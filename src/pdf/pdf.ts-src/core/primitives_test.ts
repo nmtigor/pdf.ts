@@ -21,6 +21,23 @@
  * limitations under the License.
  */
 
+import { XRefMock } from "@fe-pdf.ts-test/test_utils.ts";
+import {
+  assert,
+  assertEquals,
+  assertNotStrictEquals,
+  assertStrictEquals,
+  assertThrows,
+} from "@std/assert";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  it,
+} from "@std/testing/bdd.ts";
+import { assertSpyCall, assertSpyCalls, spy } from "@std/testing/mock.ts";
 import {
   Cmd,
   Dict,
@@ -34,23 +51,6 @@ import {
   RefSetCache,
 } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
-import { XRefMock } from "@pdf.ts-test/test_utils.ts";
-import {
-  assert,
-  assertEquals,
-  assertNotStrictEquals,
-  assertStrictEquals,
-  assertThrows,
-} from "@std/testing/asserts.ts";
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  it,
-} from "@std/testing/bdd.ts";
-import { assertSpyCall, assertSpyCalls, spy } from "@std/testing/mock.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("primitives", () => {
@@ -556,6 +556,12 @@ describe("primitives", () => {
       cache.put(ref1, obj1);
       cache.put(ref2, obj2);
       assertEquals([...cache], [obj1, obj2]);
+    });
+
+    it("should support iteration over key-value pairs", () => {
+      cache.put(ref1, obj1);
+      cache.put(ref2, obj2);
+      assertEquals([...cache.items()], [[ref1, obj1], [ref2, obj2]]);
     });
   });
 

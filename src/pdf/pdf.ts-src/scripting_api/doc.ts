@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import type { ScriptingDocProperties } from "@pdf.ts-web/app.ts";
+import type { ScriptingDocProperties } from "@fe-pdf.ts-web/app.ts";
 import type { AnnotActions } from "../core/core_utils.ts";
 import type { Name } from "../core/primitives.ts";
 import type { FieldWrapped } from "./app.ts";
@@ -33,6 +33,7 @@ import type { ScriptingData, SendData } from "./pdf_object.ts";
 import { PDFObject } from "./pdf_object.ts";
 import { PrintParams } from "./print_params.ts";
 import { serializeError } from "./app_utils.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface Info_ {
@@ -945,7 +946,7 @@ export class Doc extends PDFObject<SendDocData_> {
   }
 
   _getField(cName: string | { cName: string }) {
-    if (cName && typeof cName === "object") {
+    if (isObjectLike(cName)) {
       cName = cName.cName;
     }
     if (typeof cName !== "string") {
@@ -1039,7 +1040,7 @@ export class Doc extends PDFObject<SendDocData_> {
   }
 
   getNthFieldName(nIndex: number | { nIndex: number }) {
-    if (nIndex && typeof nIndex === "object") {
+    if (isObjectLike(nIndex)) {
       nIndex = nIndex.nIndex;
     }
     if (typeof nIndex !== "number") {
@@ -1175,7 +1176,7 @@ export class Doc extends PDFObject<SendDocData_> {
     }
     this._userActivation = false;
 
-    if (bUI && typeof bUI === "object") {
+    if (isObjectLike(bUI)) {
       nStart = bUI.nStart;
       nEnd = bUI.nEnd;
       bSilent = bUI.bSilent;
@@ -1244,7 +1245,7 @@ export class Doc extends PDFObject<SendDocData_> {
 
   resetForm(aFields?: string | string[] | { aFields?: string | string[] }) {
     // Handle the case resetForm({ aFields: ... })
-    if (aFields && typeof aFields === "object" && !Array.isArray(aFields)) {
+    if (isObjectLike(aFields) && !Array.isArray(aFields)) {
       aFields = aFields.aFields;
     }
 

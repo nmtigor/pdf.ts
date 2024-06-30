@@ -35,6 +35,14 @@ export abstract class BaseFilterFactory {
     return "none";
   }
 
+  addAlphaFilter(map: Uint8Array) {
+    return "none";
+  }
+
+  addLuminosityFilter(map: Uint8Array | undefined) {
+    return "none";
+  }
+
   addHighlightHCMFilter(
     filterName: string,
     fgColor: string,
@@ -203,17 +211,19 @@ export abstract class BaseSVGFactory {
     return svg;
   }
 
-  /** @final */
-  createElement(type: string) {
-    if (typeof type !== "string") {
-      throw new Error("Invalid SVG element type");
-    }
-    return this._createSVG(type);
-  }
+  //kkkk TOCLEANUP
+  // /** @final */
+  // createElement(type: string) {
+  //   if (typeof type !== "string") {
+  //     throw new Error("Invalid SVG element type");
+  //   }
+  //   return this._createSVG(type);
+  // }
 
-  /**
-   * @ignore
-   */
-  protected abstract _createSVG(type: string): SVGElement;
+  //kkkk TOCLEANUP
+  // /**
+  //  * @ignore
+  //  */
+  // protected abstract _createSVG(type: string): SVGElement;
 }
 /*80--------------------------------------------------------------------------*/

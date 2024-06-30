@@ -21,11 +21,7 @@
  * limitations under the License.
  */
 
-import {
-  assertEquals,
-  assertInstanceOf,
-  assertNotEquals,
-} from "@std/testing/asserts.ts";
+import { assertEquals, assertInstanceOf, assertNotEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { MurmurHash3_64 } from "./murmurhash3.ts";
 /*80--------------------------------------------------------------------------*/

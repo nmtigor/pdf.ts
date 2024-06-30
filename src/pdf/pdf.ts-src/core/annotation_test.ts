@@ -22,7 +22,7 @@
  */
 
 import type { rect_t } from "@fe-lib/alias.ts";
-import { assertEquals, assertFalse, assertLess } from "@std/assert/mod.ts";
+import { assertEquals, assertFalse, assertLess } from "@std/assert";
 import {
   afterAll,
   afterEach,
@@ -31,14 +31,14 @@ import {
   describe,
   it,
 } from "@std/testing/bdd.ts";
-import type { TestServer } from "@pdf.ts-test/test_utils.ts";
+import type { TestServer } from "@fe-pdf.ts-test/test_utils.ts";
 import {
   CMAP_URL,
   createIdFactory,
   createTemporaryDenoServer,
   STANDARD_FONT_DATA_URL,
   XRefMock,
-} from "@pdf.ts-test/test_utils.ts";
+} from "@fe-pdf.ts-test/test_utils.ts";
 import { AnnotStorageRecord } from "../display/annotation_layer.ts";
 import {
   DefaultCMapReaderFactory,
@@ -179,14 +179,14 @@ describe("annotation", () => {
     });
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     annotationGlobalsMock = undefined as any;
     pdfManagerMock = undefined;
     idFactoryMock = undefined as any;
     partialEvaluator = undefined as any;
 
     const { server } = tempServer;
-    server.shutdown();
+    await server.shutdown();
     tempServer = undefined as any;
   });
 
@@ -2281,7 +2281,7 @@ describe("annotation", () => {
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(newData!.ref, Ref.get(2, 0));
 
-      oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
+      oldData.data = oldData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         oldData.data,
         "123 0 obj\n" +
@@ -2329,7 +2329,7 @@ describe("annotation", () => {
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(newData!.ref, Ref.get(2, 0));
 
-      oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
+      oldData.data = oldData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         oldData.data,
         "123 0 obj\n" +
@@ -2375,7 +2375,7 @@ describe("annotation", () => {
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(newData!.ref, Ref.get(2, 0));
 
-      oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
+      oldData.data = oldData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         oldData.data,
         "123 0 obj\n" +
@@ -2384,9 +2384,9 @@ describe("annotation", () => {
           `/V (${value}) /AP << /N 2 0 R>> /M (date)>>\nendobj\n`,
       );
 
-      const compressedStream = newData!.data.substring(
-        newData!.data.indexOf("stream\n") + "stream\n".length,
-        newData!.data.indexOf("\nendstream"),
+      const compressedStream = newData!.data!.substring(
+        newData!.data!.indexOf("stream\n") + "stream\n".length,
+        newData!.data!.indexOf("\nendstream"),
       );
       // Ensure that the data was in fact (significantly) compressed.
       assertLess(compressedStream.length, value.length / 3);
@@ -2529,7 +2529,7 @@ describe("annotation", () => {
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(newData!.ref, Ref.get(2, 0));
 
-      oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
+      oldData.data = oldData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         oldData.data,
         "123 0 obj\n" +
@@ -2702,7 +2702,7 @@ describe("annotation", () => {
         [1, 0, 0, 1, 0, 0],
         false,
       ]);
-      assertEquals(opList.argsArray[3]![0][0].unicode, "4");
+      assertEquals((opList.argsArray as any)[3][0][0].unicode, "4");
     });
 
     it("should render checkboxes for printing", async () => {
@@ -2942,7 +2942,7 @@ describe("annotation", () => {
         task,
         annotationStorage,
       ) as AnnotSaveReturn;
-      oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
+      oldData.data = oldData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(
         oldData.data,
@@ -2994,7 +2994,7 @@ describe("annotation", () => {
         task,
         annotationStorage,
       ) as AnnotSaveReturn;
-      oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
+      oldData.data = oldData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(
         oldData.data,
@@ -3295,7 +3295,7 @@ describe("annotation", () => {
       ) as AnnotSaveReturn;
       assertEquals(data.length, 2);
       const [radioData, parentData] = data;
-      radioData.data = radioData.data.replace(/\(D:\d+\)/, "(date)");
+      radioData.data = radioData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(radioData.ref, Ref.get(123, 0));
       assertEquals(
         radioData.data,
@@ -3364,7 +3364,7 @@ describe("annotation", () => {
       ) as AnnotSaveReturn;
       assertEquals(data.length, 2);
       const [radioData, parentData] = data;
-      radioData.data = radioData.data.replace(/\(D:\d+\)/, "(date)");
+      radioData.data = radioData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(radioData.ref, Ref.get(123, 0));
       assertEquals(
         radioData.data,
@@ -3927,7 +3927,7 @@ describe("annotation", () => {
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(newData!.ref, Ref.get(2, 0));
 
-      oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
+      oldData.data = oldData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         oldData.data,
         "123 0 obj\n" +
@@ -3990,7 +3990,7 @@ describe("annotation", () => {
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(newData!.ref, Ref.get(2, 0));
 
-      oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
+      oldData.data = oldData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         oldData.data,
         "123 0 obj\n" +
@@ -4058,7 +4058,7 @@ describe("annotation", () => {
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(newData!.ref, Ref.get(2, 0));
 
-      oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
+      oldData.data = oldData.data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         oldData.data,
         "123 0 obj\n" +
@@ -4161,7 +4161,7 @@ describe("annotation", () => {
       const fileSpecRef = Ref.get(19, 0);
       const fileSpecDict = new Dict();
       fileSpecDict.set("Type", Name.get("Filespec"));
-      fileSpecDict.set("Desc", "");
+      fileSpecDict.set("Desc", "abc");
       fileSpecDict.set("EF", embeddedFileDict);
       fileSpecDict.set("UF", "Test.txt");
 
@@ -4189,8 +4189,12 @@ describe("annotation", () => {
         idFactoryMock,
       ))!;
       assertEquals(data.annotationType, AnnotationType.FILEATTACHMENT);
-      assertEquals(data.file!.filename, "Test.txt");
-      assertEquals(data.file!.content, stringToBytes("Test attachment"));
+      assertEquals(data.file, {
+        rawFilename: "Test.txt",
+        filename: "Test.txt",
+        content: stringToBytes("Test attachment"),
+        description: "abc",
+      });
     });
   });
 
@@ -4362,7 +4366,7 @@ describe("annotation", () => {
         undefined,
       );
 
-      const base = data.annotations[0].data.replace(/\(D:\d+\)/, "(date)");
+      const base = data.annotations[0].data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         base,
         "2 0 obj\n" +
@@ -4580,7 +4584,7 @@ describe("annotation", () => {
         undefined,
       );
 
-      const base = data.annotations[0].data.replace(/\(D:\d+\)/, "(date)");
+      const base = data.annotations[0].data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         base,
         "1 0 obj\n" +
@@ -4646,7 +4650,7 @@ describe("annotation", () => {
         undefined,
       );
 
-      const base = data.annotations[0].data.replace(/\(D:\d+\)/, "(date)");
+      const base = data.annotations[0].data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         base,
         "1 0 obj\n" +
@@ -4839,7 +4843,7 @@ describe("annotation", () => {
         ],
       );
 
-      const base = data.annotations[0].data.replace(/\(D:\d+\)/, "(date)");
+      const base = data.annotations[0].data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         base,
         "1 0 obj\n" +
@@ -4934,7 +4938,7 @@ describe("annotation", () => {
         ],
       );
 
-      const base = data.annotations[0].data.replace(/\(D:\d+\)/, "(date)");
+      const base = data.annotations[0].data!.replace(/\(D:\d+\)/, "(date)");
       assertEquals(
         base,
         "1 0 obj\n" +

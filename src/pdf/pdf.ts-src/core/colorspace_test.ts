@@ -25,9 +25,9 @@ import {
   assertEquals,
   assertNotStrictEquals,
   assertStrictEquals,
-} from "@std/testing/asserts.ts";
+} from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { XRefMock } from "@pdf.ts-test/test_utils.ts";
+import { XRefMock } from "@fe-pdf.ts-test/test_utils.ts";
 import { ColorSpace } from "./colorspace.ts";
 import { PDFFunctionFactory } from "./function.ts";
 import { LocalColorSpaceCache } from "./image_utils.ts";

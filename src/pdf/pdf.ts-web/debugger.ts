@@ -22,9 +22,15 @@
  */
 
 import { html } from "@fe-lib/dom.ts";
-import type { FontFaceObject, OpListIR, OPSName } from "../pdf.ts-src/pdf.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
+import type {
+  FontFaceObject,
+  OpListIR,
+  OPSName,
+  StatTimer,
+} from "../pdf.ts-src/pdf.ts";
 import { OPS } from "../pdf.ts-src/pdf.ts";
-import { SubstitutionInfo } from "../pdf.ts-src/core/font_substitutions.ts";
+import type { Glyph } from "../pdf.ts-src/core/fonts.ts";
 /*80--------------------------------------------------------------------------*/
 
 // const { OPS } = (globalThis as any).pdfjsLib || (await import("../pdf.ts-src/pdf.ts"));
@@ -391,13 +397,13 @@ export class Stepper {
       const fn = opMap[operatorList.fnArray[i]];
       let decArgs: any[] | Uint8ClampedArray | HTMLElement = args;
       if (fn === "showText") {
-        const glyphs = args[0];
+        const glyphs = args[0] as Glyph[];
         const charCodeRow = this.#c("tr");
         const fontCharRow = this.#c("tr");
         const unicodeRow = this.#c("tr");
         for (const glyph of glyphs) {
-          if (typeof glyph === "object" && glyph !== null) {
-            charCodeRow.append(this.#c("td", glyph.originalCharCode));
+          if (isObjectLike(glyph)) {
+            charCodeRow.append(this.#c("td", glyph.originalCharCode as any));
             fontCharRow.append(this.#c("td", glyph.fontChar));
             unicodeRow.append(this.#c("td", glyph.unicode));
           } else {
@@ -517,7 +523,7 @@ namespace Stats_ {
   export let enabled = false;
   export let active = false;
   // Stats specific functions.
-  export function add(pageNumber: number, stat: _Stat) {
+  export function add(pageNumber: number, stat?: StatTimer) {
     if (!stat) {
       return;
     }

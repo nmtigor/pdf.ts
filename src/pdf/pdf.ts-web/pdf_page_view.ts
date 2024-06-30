@@ -24,12 +24,11 @@
 import type { dot2d_t, uint } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import { COMPONENTS, GENERIC, PDFJSDev, TESTING } from "@fe-src/global.ts";
-import type { MetadataEx, RenderTask } from "../pdf.ts-src/display/api.ts";
+import type { FieldObjectsPromise } from "../alias.ts";
+import type { RenderTask } from "../pdf.ts-src/display/api.ts";
 import type {
-  AnnotActions,
   AnnotationEditorUIManager,
   AnnotationStorage,
-  FieldObject,
   matrix_t,
   OptionalContentConfig,
   PageViewport,
@@ -76,8 +75,6 @@ import {
   TextLayerMode,
 } from "./ui_utils.ts";
 import { XfaLayerBuilder } from "./xfa_layer_builder.ts";
-import type { OptionalContentConfigData } from "../pdf.ts-src/core/catalog.ts";
-import type { FieldObjectsPromise } from "../alias.ts";
 
 //kkkk TOCLEANUP
 // /* Ref. gulpfile.mjs of pdf.js */
@@ -539,6 +536,21 @@ export class PDFPageView implements IVisibleView {
     );
   }
 
+  #dispatchLayerRendered(
+    name:
+      | "annotationlayerrendered"
+      | "annotationeditorlayerrendered"
+      | "xfalayerrendered"
+      | "textlayerrendered",
+    error: unknown,
+  ) {
+    this.eventBus.dispatch(name, {
+      source: this,
+      pageNumber: this.id,
+      error,
+    });
+  }
+
   async #renderAnnotationLayer() {
     let error: unknown;
     try {
@@ -547,11 +559,7 @@ export class PDFPageView implements IVisibleView {
       console.error(`#renderAnnotationLayer: "${ex}".`);
       error = ex;
     } finally {
-      this.eventBus.dispatch("annotationlayerrendered", {
-        source: this,
-        pageNumber: this.id,
-        error,
-      });
+      this.#dispatchLayerRendered("annotationlayerrendered", error);
     }
   }
 
@@ -563,11 +571,7 @@ export class PDFPageView implements IVisibleView {
       console.error(`#renderAnnotationEditorLayer: "${ex}".`);
       error = ex;
     } finally {
-      this.eventBus.dispatch("annotationeditorlayerrendered", {
-        source: this,
-        pageNumber: this.id,
-        error,
-      });
+      this.#dispatchLayerRendered("annotationeditorlayerrendered", error);
     }
   }
 
@@ -601,30 +605,18 @@ export class PDFPageView implements IVisibleView {
         this.l10n!.resume();
       }
 
-      this.eventBus.dispatch("xfalayerrendered", {
-        source: this,
-        pageNumber: this.id,
-        error,
-      });
+      this.#dispatchLayerRendered("xfalayerrendered", error);
     }
   }
 
   async #renderTextLayer() {
-    const { pdfPage, textLayer, viewport } = this;
-    if (!textLayer) {
+    if (!this.textLayer) {
       return;
     }
 
     let error: unknown;
     try {
-      if (!textLayer.renderingDone) {
-        const readableStream = pdfPage!.streamTextContent({
-          includeMarkedContent: true,
-          disableNormalization: true,
-        });
-        textLayer.setTextContentSource(readableStream);
-      }
-      await textLayer.render(viewport);
+      await this.textLayer.render(this.viewport);
     } catch (ex) {
       if (ex instanceof AbortException) {
         return;
@@ -633,12 +625,7 @@ export class PDFPageView implements IVisibleView {
       error = ex;
     }
 
-    this.eventBus.dispatch("textlayerrendered", {
-      source: this,
-      pageNumber: this.id,
-      numTextDivs: textLayer.numTextDivs,
-      error,
-    });
+    this.#dispatchLayerRendered("textlayerrendered", error);
 
     this.#renderStructTreeLayer();
   }
@@ -830,12 +817,12 @@ export class PDFPageView implements IVisibleView {
               this.maxCanvasPixels;
         }
       }
-      const postponeDrawing = !onlyCssZoom &&
-        drawingDelay >= 0 && drawingDelay < 1000;
+      const postponeDrawing = drawingDelay >= 0 && drawingDelay < 1000;
 
       if (postponeDrawing || onlyCssZoom) {
         if (
           postponeDrawing &&
+          !onlyCssZoom &&
           this.renderingState !== RenderingStates.FINISHED
         ) {
           this.cancelRendering({
@@ -1066,7 +1053,6 @@ export class PDFPageView implements IVisibleView {
     // overflow will be hidden in Firefox.
     const canvasWrapper = html("div");
     canvasWrapper.classList.add("canvasWrapper");
-    canvasWrapper.setAttribute("aria-hidden", true as any);
     this.#addLayer(canvasWrapper, "canvasWrapper");
 
     if (
@@ -1077,6 +1063,7 @@ export class PDFPageView implements IVisibleView {
       this._accessibilityManager ||= new TextAccessibilityManager();
 
       this.textLayer = new TextLayerBuilder({
+        pdfPage,
         highlighter: this._textHighlighter,
         accessibilityManager: this._accessibilityManager,
         enablePermissions:
@@ -1096,6 +1083,7 @@ export class PDFPageView implements IVisibleView {
     ) {
       const {
         annotationStorage,
+        annotationEditorUIManager,
         downloadManager,
         enableScripting,
         fieldObjectsPromise,
@@ -1116,6 +1104,7 @@ export class PDFPageView implements IVisibleView {
         fieldObjectsPromise,
         annotationCanvasMap: this._annotationCanvasMap,
         accessibilityManager: this._accessibilityManager,
+        annotationEditorUIManager,
         onAppend: (annotationLayerDiv) => {
           this.#addLayer(annotationLayerDiv, "annotationLayer");
         },
@@ -1204,7 +1193,7 @@ export class PDFPageView implements IVisibleView {
       annotationCanvasMap: this._annotationCanvasMap,
       pageColors,
     };
-    const renderTask = (this.renderTask = this.pdfPage!.render(renderContext));
+    const renderTask = (this.renderTask = pdfPage.render(renderContext));
     renderTask.onContinue = renderContinueCallback;
 
     const resultPromise = renderTask.promise.then(

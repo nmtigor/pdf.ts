@@ -21,15 +21,18 @@
  * limitations under the License.
  */
 
+import type { id_t, int, uint } from "@fe-lib/alias.ts";
+import type { matrix_t } from "../shared/util.ts";
 import {
   bytesToString,
   FONT_IDENTITY_MATRIX,
+  FontRenderOps,
   FormatError,
-  type matrix_t,
   warn,
 } from "../shared/util.ts";
 import type { CFFFDSelect, CFFTopDict } from "./cff_parser.ts";
 import { CFFParser } from "./cff_parser.ts";
+import { isNumberArray } from "./core_utils.ts";
 import { StandardEncoding } from "./encodings.ts";
 import type { FontProps } from "./evaluator.ts";
 import type { Font } from "./fonts.ts";
@@ -39,7 +42,7 @@ import { Stream } from "./stream.ts";
 
 // TODO: use DataView and its methods.
 
-function getUint32(data: Uint8Array, offset: number) {
+function getUint32(data: Uint8Array, offset: uint): uint {
   return (
     ((data[offset] << 24) |
       (data[offset + 1] << 16) |
@@ -51,29 +54,29 @@ function getUint32(data: Uint8Array, offset: number) {
 
 function getUint16(
   data: Uint8Array | Uint8ClampedArray | number[],
-  offset: number,
-) {
+  offset: uint,
+): uint {
   return (data[offset] << 8) | data[offset + 1];
 }
 
 function getInt16(
   data: Uint8Array | Uint8ClampedArray | number[],
-  offset: number,
-) {
+  offset: uint,
+): int {
   return ((data[offset] << 24) | (data[offset + 1] << 16)) >> 16;
 }
 
 function getInt8(
   data: Uint8Array | Uint8ClampedArray | number[],
-  offset: number,
-) {
+  offset: uint,
+): int {
   return (data[offset] << 24) >> 24;
 }
 
 function getFloat214(
   data: Uint8Array | Uint8ClampedArray | number[],
-  offset: number,
-) {
+  offset: uint,
+): number {
   return getInt16(data, offset) / 16384;
 }
 
@@ -93,7 +96,7 @@ function getSubroutineBias(
 interface Range {
   start: number;
   end: number;
-  idDelta: number;
+  idDelta: uint;
   ids?: number[];
 }
 
@@ -212,7 +215,7 @@ function parseGlyfTable(
 
 function lookupCmap(ranges: Range[], unicode: string) {
   const code = unicode.codePointAt(0)!;
-  let gid = 0;
+  let gid: id_t = 0;
   let l = 0,
     r = ranges.length - 1;
   while (l < r) {
@@ -236,17 +239,17 @@ function lookupCmap(ranges: Range[], unicode: string) {
 
 function compileGlyf(
   code: Uint8Array | Uint8ClampedArray | number[],
-  cmds: CmdArgs[],
+  cmds: Commands,
   font: TrueTypeCompiled,
 ) {
   function moveTo(x: number, y: number) {
-    cmds.push({ cmd: "moveTo", args: [x, y] });
+    cmds.add(FontRenderOps.MOVE_TO, [x, y]);
   }
   function lineTo(x: number, y: number) {
-    cmds.push({ cmd: "lineTo", args: [x, y] });
+    cmds.add(FontRenderOps.LINE_TO, [x, y]);
   }
   function quadraticCurveTo(xa: number, ya: number, x: number, y: number) {
-    cmds.push({ cmd: "quadraticCurveTo", args: [xa, ya, x, y] });
+    cmds.add(FontRenderOps.QUADRATIC_CURVE_TO, [xa, ya, x, y]);
   }
 
   let i = 0;
@@ -307,20 +310,22 @@ function compileGlyf(
       if (subglyph) {
         // TODO: the transform should be applied only if there is a scale:
         // https://github.com/freetype/freetype/blob/edd4fedc5427cf1cf1f4b045e53ff91eb282e9d4/src/truetype/ttgload.c#L1205
-        cmds.push(
-          { cmd: "save" },
-          {
-            cmd: "transform",
-            args: [scaleX, scale01, scale10, scaleY, x, y],
-          },
-        );
+        cmds.add(FontRenderOps.SAVE);
+        cmds.add(FontRenderOps.TRANSFORM, [
+          scaleX,
+          scale01,
+          scale10,
+          scaleY,
+          x,
+          y,
+        ]);
 
         if (!(flags & 0x02)) {
           // TODO: we must use arg1 and arg2 to make something similar to:
           // https://github.com/freetype/freetype/blob/edd4fedc5427cf1cf1f4b045e53ff91eb282e9d4/src/truetype/ttgload.c#L1209
         }
         compileGlyf(subglyph, cmds, font);
-        cmds.push({ cmd: "restore" });
+        cmds.add(FontRenderOps.RESTORE);
       }
     } while (flags & 0x20);
   } else {
@@ -425,15 +430,15 @@ function compileGlyf(
 
 function compileCharString(
   charStringCode: Uint8Array | Uint8ClampedArray | number[],
-  cmds: CmdArgs[],
+  cmds: Commands,
   font: Type2Compiled,
   glyphId: number,
 ) {
   function moveTo(x: number, y: number) {
-    cmds.push({ cmd: "moveTo", args: [x, y] });
+    cmds.add(FontRenderOps.MOVE_TO, [x, y]);
   }
   function lineTo(x: number, y: number) {
-    cmds.push({ cmd: "lineTo", args: [x, y] });
+    cmds.add(FontRenderOps.LINE_TO, [x, y]);
   }
   function bezierCurveTo(
     x1: number,
@@ -443,7 +448,7 @@ function compileCharString(
     x: number,
     y: number,
   ) {
-    cmds.push({ cmd: "bezierCurveTo", args: [x1, y1, x2, y2, x, y] });
+    cmds.add(FontRenderOps.BEZIER_CURVE_TO, [x1, y1, x2, y2, x, y]);
   }
 
   const stack: number[] = [];
@@ -616,7 +621,8 @@ function compileCharString(
             const bchar = stack.pop()!;
             y = stack.pop()!;
             x = stack.pop()!;
-            cmds.push({ cmd: "save" }, { cmd: "translate", args: [x, y] });
+            cmds.add(FontRenderOps.SAVE);
+            cmds.add(FontRenderOps.TRANSLATE, [x, y]);
             let cmap = lookupCmap(
               font.cmap!,
               String.fromCharCode(
@@ -629,7 +635,7 @@ function compileCharString(
               font,
               cmap.glyphId,
             );
-            cmds.push({ cmd: "restore" });
+            cmds.add(FontRenderOps.RESTORE);
 
             cmap = lookupCmap(
               font.cmap!,
@@ -815,9 +821,30 @@ function compileCharString(
   parse(charStringCode);
 }
 
-const NOOP: CmdArgs[] = [];
+export type Cmds = (FontRenderOps | number)[];
 
-type FontMatrix = [number, number, number, number, number, number];
+const NOOP: Cmds = [];
+
+class Commands {
+  cmds: Cmds = [];
+
+  add(cmd: FontRenderOps, args?: unknown[]) {
+    if (args) {
+      if (!isNumberArray(args, undefined)) {
+        warn(
+          `Commands.add - "${cmd}" has at least one non-number arg: "${args}".`,
+        );
+        // "Fix" the wrong args by replacing them with 0.
+        const newArgs = args.map((arg) => (typeof arg === "number" ? arg : 0));
+        this.cmds.push(cmd, ...newArgs);
+      } else {
+        this.cmds.push(cmd, ...args);
+      }
+    } else {
+      this.cmds.push(cmd);
+    }
+  }
+}
 
 type C2DCmd =
   | "moveTo"
@@ -830,15 +857,10 @@ type C2DCmd =
   | "save"
   | "restore";
 
-export interface CmdArgs {
-  cmd: C2DCmd;
-  args?: (number | string)[];
-}
-
 abstract class CompiledFont {
   fontMatrix;
 
-  compiledGlyphs: CmdArgs[][] = Object.create(null);
+  compiledGlyphs: Record<id_t, Cmds> = Object.create(null);
   compiledCharCodeToGlyphId: number[] = Object.create(null);
 
   glyphs!: (Uint8Array | Uint8ClampedArray | number[])[];
@@ -848,29 +870,28 @@ abstract class CompiledFont {
   fdSelect?: CFFFDSelect | undefined;
   fdArray?: CFFTopDict[];
 
-  constructor(fontMatrix: FontMatrix) {
+  constructor(fontMatrix: matrix_t) {
     this.fontMatrix = fontMatrix;
   }
 
   getPathJs(unicode: string) {
     const { charCode, glyphId } = lookupCmap(this.cmap!, unicode);
-    let fn = this.compiledGlyphs[glyphId];
+    let fn = this.compiledGlyphs[glyphId],
+      compileEx;
     if (!fn) {
       try {
         fn = this.compileGlyph(this.glyphs[glyphId], glyphId);
-        this.compiledGlyphs[glyphId] = fn;
       } catch (ex) {
-        // Avoid attempting to re-compile a corrupt glyph.
-        this.compiledGlyphs[glyphId] = NOOP;
+        fn = NOOP; // Avoid attempting to re-compile a corrupt glyph.
 
-        if (this.compiledCharCodeToGlyphId[charCode] === undefined) {
-          this.compiledCharCodeToGlyphId[charCode] = glyphId;
-        }
-        throw ex;
+        compileEx = ex;
       }
+      this.compiledGlyphs[glyphId] = fn;
     }
-    if (this.compiledCharCodeToGlyphId[charCode] === undefined) {
-      this.compiledCharCodeToGlyphId[charCode] = glyphId;
+    this.compiledCharCodeToGlyphId[charCode] ??= glyphId;
+
+    if (compileEx) {
+      throw compileEx;
     }
     return fn;
   }
@@ -878,7 +899,7 @@ abstract class CompiledFont {
   compileGlyph(
     code: Uint8Array | Uint8ClampedArray | number[],
     glyphId: number,
-  ) {
+  ): Cmds {
     if (!code || code.length === 0 || code[0] === 14) {
       return NOOP;
     }
@@ -890,28 +911,26 @@ abstract class CompiledFont {
       const fdIndex = this.fdSelect!.getFDIndex(glyphId);
       if (fdIndex >= 0 && fdIndex < this.fdArray!.length) {
         const fontDict = this.fdArray![fdIndex];
-        fontMatrix = <matrix_t> fontDict.getByName("FontMatrix") ||
+        fontMatrix = fontDict.getByName("FontMatrix") as matrix_t ||
           FONT_IDENTITY_MATRIX;
       } else {
         warn("Invalid fd index for glyph index.");
       }
     }
 
-    const cmds: CmdArgs[] = [
-      { cmd: "save" },
-      { cmd: "transform", args: fontMatrix.slice() },
-      { cmd: "scale", args: ["size", "-size"] },
-    ];
+    const cmds = new Commands();
+    cmds.add(FontRenderOps.SAVE);
+    cmds.add(FontRenderOps.TRANSFORM, fontMatrix.slice());
+    cmds.add(FontRenderOps.SCALE);
     this.compileGlyphImpl(code, cmds, glyphId);
+    cmds.add(FontRenderOps.RESTORE);
 
-    cmds.push({ cmd: "restore" });
-
-    return cmds;
+    return cmds.cmds;
   }
 
   abstract compileGlyphImpl(
     code: Uint8Array | Uint8ClampedArray | number[],
-    cmds: CmdArgs[],
+    cmds: Commands,
     glyphId: number,
   ): void;
 
@@ -926,7 +945,7 @@ abstract class CompiledFont {
 }
 
 export class TrueTypeCompiled extends CompiledFont {
-  constructor(glyphs: Uint8Array[], cmap?: Range[], fontMatrix?: FontMatrix) {
+  constructor(glyphs: Uint8Array[], cmap?: Range[], fontMatrix?: matrix_t) {
     super(fontMatrix || [0.000488, 0, 0, 0.000488, 0, 0]);
 
     this.glyphs = glyphs;
@@ -934,7 +953,7 @@ export class TrueTypeCompiled extends CompiledFont {
   }
 
   /** @implement */
-  compileGlyphImpl(code: Uint8Array, cmds: CmdArgs[], glyphId: number) {
+  compileGlyphImpl(code: Uint8Array, cmds: Commands, glyphId: number) {
     compileGlyf(code, cmds, this);
   }
 }
@@ -954,7 +973,7 @@ export class Type2Compiled extends CompiledFont {
   constructor(
     cffInfo: CffInfo,
     cmap?: Range[],
-    fontMatrix?: FontMatrix,
+    fontMatrix?: matrix_t,
     glyphNameMap?: Record<string, string | number>,
   ) {
     super(fontMatrix || [0.001, 0, 0, 0.001, 0, 0]);
@@ -974,7 +993,7 @@ export class Type2Compiled extends CompiledFont {
   }
 
   /** @implement */
-  compileGlyphImpl(code: Uint8Array, cmds: CmdArgs[], glyphId: number) {
+  compileGlyphImpl(code: Uint8Array, cmds: Commands, glyphId: number) {
     compileCharString(code, cmds, this, glyphId);
   }
 }

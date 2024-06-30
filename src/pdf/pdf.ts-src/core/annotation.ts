@@ -75,6 +75,10 @@ import {
   getInheritableProperty,
   getRotationMatrix,
   isAscii,
+  isNumberArray,
+  lookupMatrix,
+  lookupNormalRect,
+  lookupRect,
   numberToString,
   stringToUTF16String,
 } from "./core_utils.ts";
@@ -104,6 +108,7 @@ import { writeObject } from "./writer.ts";
 import type { XFAHTMLObj } from "./xfa/alias.ts";
 import { XFAFactory } from "./xfa/factory.ts";
 import type { XRef } from "./xref.ts";
+import type { Dot } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 type AnnotType =
@@ -128,7 +133,7 @@ type AnnotType =
 
 interface Dependency_ {
   ref: Ref;
-  data: string;
+  data: string | undefined;
 }
 
 type CreateNewAnnotationP_ = {
@@ -636,22 +641,24 @@ function getPdfColorArray(color: Uint8ClampedArray) {
   return Array.from(color, (c) => c / 255);
 }
 
+type QuadPoint_ = TupleOf<Dot, 4>;
+
 export function getQuadPoints(
   dict: Dict,
   rect?: rect_t,
-): TupleOf<AnnotPoint, 4>[] | null {
+): QuadPoint_[] | null {
   // The region is described as a number of quadrilaterals.
   // Each quadrilateral must consist of eight coordinates.
   const quadPoints = dict.getArray("QuadPoints") as number[];
   if (
-    !Array.isArray(quadPoints) ||
+    !isNumberArray(quadPoints) ||
     quadPoints.length === 0 ||
     quadPoints.length % 8 > 0
   ) {
     return null;
   }
 
-  const quadPointsLists: TupleOf<AnnotPoint, 4>[] = [];
+  const quadPointsLists: QuadPoint_[] = [];
   for (let i = 0, ii = quadPoints.length / 8; i < ii; i++) {
     // Each series of eight numbers represents the coordinates for one
     // quadrilateral in the order [x1, y1, x2, y2, x3, y3, x4, y4].
@@ -780,7 +787,12 @@ export type AnnotationData =
     state?: string | undefined;
     stateModel?: string | undefined;
 
-    quadPoints?: TupleOf<AnnotPoint, 4>[] | null;
+    /**
+     * ! `null` and `undefined` are used differently.
+     * @see {@linkcode Annotation.viewable}
+     * @see {@linkcode Annotation.printable}
+     */
+    quadPoints?: QuadPoint_[] | null;
 
     /* WidgetAnnotation */
     fieldValue?: string | string[] | undefined;
@@ -832,14 +844,14 @@ export type AnnotationData =
 
     lineCoordinates?: rect_t; /* LineAnnotation */
 
-    vertices?: AnnotPoint[]; /* PolylineAnnotation */
+    vertices?: Dot[]; /* PolylineAnnotation */
 
     lineEndings?: [
       LineEndingStr_,
       LineEndingStr_,
     ]; /* LineAnnotation, PolylineAnnotation */
 
-    inkLists?: AnnotPoint[][]; /* InkAnnotation */
+    inkLists?: Dot[][]; /* InkAnnotation */
 
     //
 
@@ -871,7 +883,7 @@ export type DashArray =
 
 export type AnnotSaveData = {
   ref: Ref;
-  data: string;
+  data: string | undefined;
   xfa?: {
     path: string | undefined;
     value: string;
@@ -1112,9 +1124,7 @@ export class Annotation {
    * @param rectangle The rectangle array with exactly four entries
    */
   setRectangle(rectangle: unknown) {
-    this.rectangle = Array.isArray(rectangle) && rectangle.length === 4
-      ? Util.normalizeRect(rectangle as rect_t)
-      : [0, 0, 0, 0];
+    this.rectangle = lookupNormalRect(rectangle, [0, 0, 0, 0]);
   }
   /* ~ */
 
@@ -1460,9 +1470,11 @@ export class Annotation {
       ["ExtGState", "ColorSpace", "Pattern", "Shading", "XObject", "Font"],
       appearance,
     );
-    const bbox = appearanceDict.getArray("BBox") as rect_t || [0, 0, 1, 1];
-    const matrix = appearanceDict.getArray("Matrix") as matrix_t ||
-      [1, 0, 0, 1, 0, 0];
+    const bbox = lookupRect(appearanceDict.getArray("BBox"), [0, 0, 1, 1]);
+    const matrix = lookupMatrix(
+      appearanceDict.getArray("Matrix"),
+      IDENTITY_MATRIX,
+    );
     const transform = getTransformMatrix(rect!, bbox, matrix);
 
     const opList = new OperatorList();
@@ -1569,10 +1581,13 @@ export class Annotation {
 
     if (text.length > 1 || text[0]) {
       const appearanceDict = this.appearance.dict!;
+      const bbox = lookupRect(appearanceDict.getArray("BBox"), undefined);
+      const matrix = lookupMatrix(appearanceDict.getArray("Matrix"), undefined);
+
       this.data.textPosition = this._transformPoint(
         firstPosition!,
-        appearanceDict.getArray("BBox") as rect_t | undefined,
-        appearanceDict.getArray("Matrix") as matrix_t | undefined,
+        bbox,
+        matrix,
       );
       this.data.textContent = text;
     }
@@ -1710,7 +1725,7 @@ export class AnnotationBorderStyle {
   setWidth(width?: number | Name, rect: rect_t = [0, 0, 0, 0]) {
     /*#static*/ if (PDFJSDev || TESTING) {
       assert(
-        Array.isArray(rect) && rect.length === 4,
+        isNumberArray(rect, 4),
         "A valid `rect` parameter must be provided.",
       );
     }
@@ -1840,11 +1855,6 @@ export class AnnotationBorderStyle {
   }
 }
 
-export interface AnnotPoint {
-  x: number;
-  y: number;
-}
-
 type AColor = TupleOf<number, 0 | 1 | 3 | 4>; // Table 164 C
 
 interface SetDefaultAppearanceP_ {
@@ -1855,7 +1865,7 @@ interface SetDefaultAppearanceP_ {
   fillColor?: AColor | undefined;
   fillAlpha?: number | undefined;
   blendMode?: string;
-  pointsCallback: (buffer: string[], points: TupleOf<AnnotPoint, 4>) => rect_t;
+  pointsCallback: (buffer: string[], points: QuadPoint_) => rect_t;
 }
 
 interface CreateNewDictP_ {
@@ -2022,10 +2032,7 @@ export class MarkupAnnotation extends Annotation {
     }
 
     for (const points of pointsArray) {
-      const [mX, MX, mY, MY] = pointsCallback(
-        buffer,
-        <TupleOf<AnnotPoint, 4>> points,
-      );
+      const [mX, MX, mY, MY] = pointsCallback(buffer, points as QuadPoint_);
       minX = Math.min(minX, mX);
       maxX = Math.max(maxX, MX);
       minY = Math.min(minY, mY);
@@ -2198,8 +2205,7 @@ export class WidgetAnnotation extends Annotation {
     this.setDefaultAppearance(params);
 
     data.hasAppearance ||= this._needAppearances &&
-      data.fieldValue !== undefined &&
-      data.fieldValue !== null;
+      data.fieldValue != undefined;
 
     const fieldType = getInheritableProperty({ dict, key: "FT" });
     data.fieldType = fieldType instanceof Name ? fieldType.name : undefined;
@@ -3438,7 +3444,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
       );
     }
 
-    if (value === null || value === undefined) {
+    if (value == undefined) {
       // There is no default appearance so use the one derived
       // from the field value.
       value = this.data.checkBox
@@ -3451,8 +3457,10 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
       : this.uncheckedAppearance;
     if (appearance) {
       const savedAppearance = this.appearance;
-      const savedMatrix = appearance.dict!.getArray("Matrix") ||
-        IDENTITY_MATRIX;
+      const savedMatrix = lookupMatrix(
+        appearance.dict!.getArray("Matrix"),
+        IDENTITY_MATRIX,
+      );
 
       if (rotation) {
         appearance.dict!.set(
@@ -3722,7 +3730,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
 
     const yes =
       this.data.fieldValue !== undefined && this.data.fieldValue !== "Off"
-        ? <string> this.data.fieldValue
+        ? this.data.fieldValue as string
         : "Yes";
 
     const exportValues = normalAppearance.getKeys();
@@ -4263,11 +4271,10 @@ export class PopupAnnotation extends Annotation {
       warn("Popup annotation has a missing or invalid parent annotation.");
       return;
     }
-
-    const parentRect = parentItem.getArray("Rect");
-    this.data.parentRect = Array.isArray(parentRect) && parentRect.length === 4
-      ? Util.normalizeRect(parentRect as rect_t)
-      : undefined;
+    this.data.parentRect = lookupNormalRect(
+      parentItem.getArray("Rect"),
+      undefined,
+    );
 
     const rt = parentItem.get("RT");
     if (rt instanceof Name && rt.name === AnnotationReplyType.GROUP) {
@@ -4569,7 +4576,7 @@ class LineAnnotation extends MarkupAnnotation {
     this.data.hasOwnCanvas = this.data.noRotate;
     this.data.noHTML = false;
 
-    const lineCoordinates = dict.getArray("L") as rect_t;
+    const lineCoordinates = lookupRect(dict.getArray("L"), [0, 0, 0, 0]);
     this.data.lineCoordinates = Util.normalizeRect(lineCoordinates);
 
     /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
@@ -4774,8 +4781,8 @@ class PolylineAnnotation extends MarkupAnnotation {
     // The vertices array is an array of numbers representing the alternating
     // horizontal and vertical coordinates, respectively, of each vertex.
     // Convert this to an array of objects with x and y coordinates.
-    const rawVertices = <number[]> dict.getArray("Vertices");
-    if (!Array.isArray(rawVertices)) {
+    const rawVertices = dict.getArray("Vertices");
+    if (!isNumberArray(rawVertices)) {
       return;
     }
 
@@ -4867,11 +4874,15 @@ class InkAnnotation extends MarkupAnnotation {
       // of each vertex. Convert this to an array of objects with x and y
       // coordinates.
       this.data.inkLists.push([]);
+      if (!Array.isArray(rawInkLists[i])) {
+        continue;
+      }
       for (let j = 0, jj = rawInkLists[i].length; j < jj; j += 2) {
-        this.data.inkLists[i].push({
-          x: xref.fetchIfRef(rawInkLists[i][j]) as number,
-          y: xref.fetchIfRef(rawInkLists[i][j + 1]) as number,
-        });
+        const x = xref.fetchIfRef(rawInkLists[i][j]),
+          y = xref.fetchIfRef(rawInkLists[i][j + 1]);
+        if (typeof x === "number" && typeof y === "number") {
+          this.data.inkLists[i].push({ x, y });
+        }
       }
     }
 
@@ -5065,7 +5076,7 @@ class InkAnnotation extends MarkupAnnotation {
       `${numberToString(outline[4])} ${numberToString(outline[5])} m`,
     );
     for (let i = 6, ii = outline.length; i < ii; i += 6) {
-      if (isNaN(outline[i]) || outline[i] === null) {
+      if (isNaN(outline[i]) || outline[i] == undefined) {
         appearanceBuffer.push(
           `${numberToString(outline[i + 4])} ${
             numberToString(

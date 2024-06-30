@@ -551,7 +551,7 @@ export class TilingPattern implements STPattern {
   static readonly MAX_PATTERN_SIZE = 3000;
 
   operatorList: OpListIR;
-  matrix: matrix_t;
+  matrix;
   bbox;
   xstep;
   ystep;
@@ -572,7 +572,7 @@ export class TilingPattern implements STPattern {
     baseTransform: matrix_t,
   ) {
     this.operatorList = IR[2];
-    this.matrix = IR[3] || [1, 0, 0, 1, 0, 0];
+    this.matrix = IR[3];
     this.bbox = IR[4];
     this.xstep = IR[5];
     this.ystep = IR[6];
@@ -622,7 +622,7 @@ export class TilingPattern implements STPattern {
     const y1 = bbox[3];
 
     // Obtain scale from matrix and current transformation matrix.
-    const matrixScale = Util.singularValueDecompose2dScale(this.matrix);
+    const matrixScale = Util.singularValueDecompose2dScale(this.matrix!);
     const curMatrixScale = Util.singularValueDecompose2dScale(
       this.baseTransform,
     );

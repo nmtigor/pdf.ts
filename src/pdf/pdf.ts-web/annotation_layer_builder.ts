@@ -53,6 +53,7 @@ interface AnnotationLayerBuilderOptions {
   fieldObjectsPromise: FieldObjectsPromise | undefined;
   annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
   accessibilityManager: TextAccessibilityManager | undefined;
+  annotationEditorUIManager?: unknown;
   onAppend?: (div: HTMLDivElement) => void;
 }
 
@@ -68,6 +69,7 @@ export class AnnotationLayerBuilder {
   _fieldObjectsPromise;
   _annotationCanvasMap;
   _accessibilityManager;
+  _annotationEditorUIManager;
   #onAppend;
 
   annotationLayer: AnnotationLayer | undefined;
@@ -75,9 +77,11 @@ export class AnnotationLayerBuilder {
   _cancelled = false;
   _eventBus;
 
-  #onPresentationModeChanged:
-    | ((evt: { state: PresentationModeState }) => void)
-    | undefined;
+  //kkkk TOCLEANUP
+  // #onPresentationModeChanged:
+  //   | ((evt: { state: PresentationModeState }) => void)
+  //   | undefined;
+  #eventAbortController: AbortController | undefined;
 
   constructor({
     pdfPage,
@@ -91,6 +95,7 @@ export class AnnotationLayerBuilder {
     fieldObjectsPromise,
     annotationCanvasMap,
     accessibilityManager,
+    annotationEditorUIManager,
     onAppend,
   }: AnnotationLayerBuilderOptions) {
     this.pdfPage = pdfPage;
@@ -105,6 +110,7 @@ export class AnnotationLayerBuilder {
       Promise.resolve(undefined);
     this._annotationCanvasMap = annotationCanvasMap;
     this._accessibilityManager = accessibilityManager;
+    this._annotationEditorUIManager = annotationEditorUIManager;
     this.#onAppend = onAppend;
 
     this._eventBus = linkService.eventBus;
@@ -153,6 +159,7 @@ export class AnnotationLayerBuilder {
       div,
       accessibilityManager: this._accessibilityManager,
       annotationCanvasMap: this._annotationCanvasMap,
+      annotationEditorUIManager: this._annotationEditorUIManager,
       page: this.pdfPage,
       viewport: viewport.clone({ dontFlip: true }),
     } as AnnotationLayerP);
@@ -174,13 +181,15 @@ export class AnnotationLayerBuilder {
     if (this.linkService.isInPresentationMode) {
       this.#updatePresentationModeState(PresentationModeState.FULLSCREEN);
     }
-    if (!this.#onPresentationModeChanged) {
-      this.#onPresentationModeChanged = (evt) => {
-        this.#updatePresentationModeState(evt.state);
-      };
+    if (!this.#eventAbortController) {
+      this.#eventAbortController = new AbortController();
+
       this._eventBus?._on(
         "presentationmodechanged",
-        this.#onPresentationModeChanged,
+        (evt) => {
+          this.#updatePresentationModeState(evt.state);
+        },
+        { signal: this.#eventAbortController.signal },
       );
     }
   }
@@ -188,13 +197,8 @@ export class AnnotationLayerBuilder {
   cancel() {
     this._cancelled = true;
 
-    if (this.#onPresentationModeChanged) {
-      this._eventBus?._off(
-        "presentationmodechanged",
-        this.#onPresentationModeChanged,
-      );
-      this.#onPresentationModeChanged = undefined;
-    }
+    this.#eventAbortController?.abort();
+    this.#eventAbortController = undefined;
   }
 
   hide() {

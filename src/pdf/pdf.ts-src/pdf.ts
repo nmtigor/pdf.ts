@@ -21,7 +21,6 @@
  * limitations under the License.
  */
 
-import { ColorPicker } from "./display/editor/color_picker.ts";
 import type { FieldObject } from "./core/annotation.ts";
 import type {
   Destination,
@@ -48,6 +47,7 @@ import type {
 import type {
   AnnotIntent,
   DocumentInitP,
+  GetTextContentP,
   Intent,
   OutlineNode,
   PDFDocumentLoadingTask,
@@ -82,6 +82,7 @@ import {
 } from "./display/display_utils.ts";
 import { DrawLayer } from "./display/draw_layer.ts";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.ts";
+import { ColorPicker } from "./display/editor/color_picker.ts";
 import type { PropertyToUpdate } from "./display/editor/editor.ts";
 import { Outliner } from "./display/editor/outliner.ts";
 import type { DispatchUpdateStatesP } from "./display/editor/tools.ts";
@@ -89,8 +90,11 @@ import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
 import type { FontFaceObject } from "./display/font_loader.ts";
 import type { Metadata } from "./display/metadata.ts";
 import type { OptionalContentConfig } from "./display/optional_content_config.ts";
-import type { TextLayerRenderTask } from "./display/text_layer.ts";
-import { renderTextLayer, updateTextLayer } from "./display/text_layer.ts";
+import {
+  renderTextLayer,
+  TextLayer,
+  updateTextLayer,
+} from "./display/text_layer.ts";
 import { GlobalWorkerOptions } from "./display/worker_options.ts";
 import { XfaLayer } from "./display/xfa_layer.ts";
 import type { AppInfo } from "./scripting_api/app.ts";
@@ -161,6 +165,7 @@ export {
   getDocument,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
+  type GetTextContentP,
   getXfaPageViewport,
   GlobalWorkerOptions,
   ImageKind,
@@ -205,7 +210,7 @@ export {
   type StatTimer,
   type TextContent,
   type TextItem,
-  type TextLayerRenderTask,
+  TextLayer,
   UnexpectedResponseException,
   updateTextLayer,
   Util,

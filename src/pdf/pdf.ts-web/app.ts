@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import type { dot2d_t, int } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import "@fe-lib/jslang.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
@@ -261,6 +262,7 @@ type OpenP_ = {
   filename?: string;
   range?: PDFDataRangeTransport;
   originalUrl?: string | undefined;
+  useSystemFonts?: boolean;
 };
 
 type TouchInfo_ = {
@@ -312,14 +314,19 @@ export class PDFViewerApplication {
   url = "";
   baseUrl = "";
   _downloadUrl = "";
-  _boundEvents: Record<string, ((...args: any[]) => void) | undefined> = Object
-    .create(null);
+  //kkkk TOCLEANUP
+  // _boundEvents: Record<string, ((...args: any[]) => void) | undefined> = Object
+  //   .create(null);
+  _eventBusAbortController: AbortController | undefined;
+  _windowAbortController: AbortController | undefined;
   documentInfo: DocumentInfo | undefined;
   metadata: Metadata | undefined;
   #contentDispositionFilename: string | undefined;
   _contentLength: number | undefined;
 
   _saveInProgress = false;
+  _lastScrollTop: number | undefined;
+  _lastScrollLeft: number | undefined;
   _wheelUnusedTicks = 0;
   _wheelUnusedFactor = 1;
   _touchUnusedTicks = 0;
@@ -336,8 +343,6 @@ export class PDFViewerApplication {
   _nimbusDataPromise?: Promise<NimbusExperimentData | undefined>;
   _caretBrowsing: CaretBrowsingMode | undefined;
   _isScrolling = false;
-  _lastScrollTop = 0;
-  _lastScrollLeft = 0;
 
   disableAutoFetchLoadingBarTimeout: number | undefined;
 
@@ -435,9 +440,32 @@ export class PDFViewerApplication {
     const { mainContainer, viewerContainer } = this.appConfig,
       params = parseQueryString(hash);
 
+    const loadPDFBug = async () => {
+      if (this._PDFBug) {
+        return;
+      }
+      const { PDFBug } = /*#static*/ PDFJSDev
+        ? await import(AppOptions.debuggerSrc) // eslint-disable-line no-unsanitized/method
+        // : await __non_webpack_import__(AppOptions.debuggerSrc);
+        : await import(AppOptions.debuggerSrc);
+
+      this._PDFBug = PDFBug;
+    };
+
     if (params.get("workermodules") === "true") {
       try {
-        await loadFakeWorker();
+        GlobalWorkerOptions.workerSrc ||= AppOptions.workerSrc;
+
+        /*#static*/ if (PDFJSDev) {
+          (globalThis as any).pdfjsWorker = await import(
+            "../pdf.ts-src/pdf.worker.ts"
+          );
+        } else {
+          // await __non_webpack_import__(PDFWorker.workerSrc);
+          (globalThis as any).pdfjsWorker = await import(
+            "../pdf.ts-src/pdf.worker.ts"
+          );
+        }
       } catch (ex) {
         console.error(`#parseHashParams: "${(ex as any).message}".`);
       }
@@ -476,7 +504,7 @@ export class PDFViewerApplication {
         case "hover":
           viewerContainer.classList.add(`textLayer-${params.get("textlayer")}`);
           try {
-            await loadPDFBug(this);
+            await loadPDFBug();
             this._PDFBug!.loadCSS();
           } catch (ex) {
             console.error(`#parseHashParams: "${(ex as any).message}".`);
@@ -485,12 +513,11 @@ export class PDFViewerApplication {
       }
     }
     if (params.has("pdfbug")) {
-      AppOptions.set("pdfBug", true);
-      AppOptions.set("fontExtraProperties", true);
+      AppOptions.setAll({ pdfBug: true, fontExtraProperties: true });
 
       const enabled = params.get("pdfbug")!.split(",");
       try {
-        await loadPDFBug(this);
+        await loadPDFBug();
         this._PDFBug!.init(mainContainer, enabled);
       } catch (ex) {
         console.error(`#parseHashParams: "${(ex as any).message}".`);
@@ -509,6 +536,12 @@ export class PDFViewerApplication {
         AppOptions.set(
           "highlightEditorColors",
           params.get("highlighteditorcolors"),
+        );
+      }
+      if (params.has("maxcanvaspixels")) {
+        AppOptions.set(
+          "maxCanvasPixels",
+          Number(params.get("maxcanvaspixels")),
         );
       }
       if (params.has("supportscaretbrowsingmode")) {
@@ -564,8 +597,6 @@ export class PDFViewerApplication {
     const container = appConfig.mainContainer,
       viewer = appConfig.viewerContainer;
     const annotationEditorMode = AppOptions.annotationEditorMode;
-    const isOffscreenCanvasSupported = AppOptions.isOffscreenCanvasSupported &&
-      FeatureTest.isOffscreenCanvasSupported;
     const pageColors = AppOptions.forcePageColors ||
         window.matchMedia("(forced-colors: active)").matches
       ? {
@@ -638,7 +669,7 @@ export class PDFViewerApplication {
 
     if (appConfig.annotationEditorParams) {
       if (annotationEditorMode !== AnnotationEditorType.DISABLE) {
-        if (AppOptions.enableStampEditor && isOffscreenCanvasSupported) {
+        if (AppOptions.enableStampEditor) {
           appConfig.toolbar?.editorStampButton?.classList.remove("hidden");
         }
 
@@ -884,26 +915,24 @@ export class PDFViewerApplication {
     return this.#initializedCapability.promise;
   }
 
-  zoomIn(steps?: number, scaleFactor?: number) {
+  updateZoom(steps?: int, scaleFactor?: number, origin?: dot2d_t) {
     if (this.pdfViewer.isInPresentationMode) {
       return;
     }
-    this.pdfViewer.increaseScale({
+    this.pdfViewer.updateScale({
       drawingDelay: AppOptions.defaultZoomDelay,
       steps,
       scaleFactor,
+      origin,
     });
   }
 
-  zoomOut(steps?: number, scaleFactor?: number) {
-    if (this.pdfViewer.isInPresentationMode) {
-      return;
-    }
-    this.pdfViewer.decreaseScale({
-      drawingDelay: AppOptions.defaultZoomDelay,
-      steps,
-      scaleFactor,
-    });
+  zoomIn() {
+    this.updateZoom(1);
+  }
+
+  zoomOut() {
+    this.updateZoom(-1);
   }
 
   zoomReset() {
@@ -1158,30 +1187,6 @@ export class PDFViewerApplication {
    * @return Promise that is resolved when the document is opened.
    */
   async open(args: OpenP_) {
-    //kkkk TOCLEANUP
-    // const args = (() => {
-    //   let ret: OpenP_;
-    //   /*#static*/ if (PDFJSDev || GENERIC) {
-    //     let deprecatedArgs = false;
-    //     if (typeof args_x === "string") {
-    //       ret = { url: args_x }; // URL
-    //       deprecatedArgs = true;
-    //     } else if ((args_x as any)?.byteLength) {
-    //       ret = { data: args_x as ArrayBuffer }; // ArrayBuffer
-    //       deprecatedArgs = true;
-    //     }
-    //     if (deprecatedArgs) {
-    //       console.error(
-    //         "The `PDFViewerApplication.open` signature was updated, please use an object instead.",
-    //       );
-    //     }
-    //     ret = args_x as OpenP_;
-    //   } else {
-    //     ret = args_x as OpenP_;
-    //   }
-    //   return ret;
-    // })();
-
     if (this.pdfLoadingTask) {
       // We need to destroy already opened document.
       await this.close();
@@ -1210,6 +1215,12 @@ export class PDFViewerApplication {
       /*#static*/ if (MOZCENTRAL || CHROME) {
         AppOptions.set("docBaseUrl", this.baseUrl);
       }
+    }
+
+    // On Android, there is almost no chance to have the font we want so we
+    // don't use the system fonts in this case.
+    if (PDFJSDev ? (window as any).isGECKOVIEW : GECKOVIEW) {
+      args.useSystemFonts = false;
     }
 
     // Set the necessary API parameters, using all the available options.
@@ -2040,83 +2051,104 @@ export class PDFViewerApplication {
   }
 
   bindEvents() {
-    const { eventBus, _boundEvents } = this;
+    if (this._eventBusAbortController) {
+      return;
+    }
+    this._eventBusAbortController = new AbortController();
 
-    _boundEvents.beforePrint = this.beforePrint;
-    _boundEvents.afterPrint = this.afterPrint;
+    const {
+      eventBus,
+      _eventBusAbortController: { signal },
+    } = this;
 
-    eventBus._on("resize", webViewerResize);
-    eventBus._on("hashchange", webViewerHashchange);
-    eventBus._on("beforeprint", _boundEvents.beforePrint);
-    eventBus._on("afterprint", _boundEvents.afterPrint);
-    eventBus._on("pagerender", webViewerPageRender);
-    eventBus._on("pagerendered", webViewerPageRendered);
-    eventBus._on("updateviewarea", webViewerUpdateViewarea);
-    eventBus._on("pagechanging", webViewerPageChanging);
-    eventBus._on("scalechanging", webViewerScaleChanging);
-    eventBus._on("rotationchanging", webViewerRotationChanging);
-    eventBus._on("sidebarviewchanged", webViewerSidebarViewChanged);
-    eventBus._on("pagemode", webViewerPageMode);
-    eventBus._on("namedaction", webViewerNamedAction);
-    eventBus._on("presentationmodechanged", webViewerPresentationModeChanged);
-    eventBus._on("presentationmode", webViewerPresentationMode);
+    eventBus._on("resize", webViewerResize, { signal });
+    eventBus._on("hashchange", webViewerHashchange, { signal });
+    eventBus._on("beforeprint", this.beforePrint, { signal });
+    eventBus._on("afterprint", this.afterPrint, { signal });
+    eventBus._on("pagerender", webViewerPageRender, { signal });
+    eventBus._on("pagerendered", webViewerPageRendered, { signal });
+    eventBus._on("updateviewarea", webViewerUpdateViewarea, { signal });
+    eventBus._on("pagechanging", webViewerPageChanging, { signal });
+    eventBus._on("scalechanging", webViewerScaleChanging, { signal });
+    eventBus._on("rotationchanging", webViewerRotationChanging, { signal });
+    eventBus._on("sidebarviewchanged", webViewerSidebarViewChanged, { signal });
+    eventBus._on("pagemode", webViewerPageMode, { signal });
+    eventBus._on("namedaction", webViewerNamedAction, { signal });
+    eventBus._on(
+      "presentationmodechanged",
+      webViewerPresentationModeChanged,
+      { signal },
+    );
+    eventBus._on("presentationmode", webViewerPresentationMode, { signal });
     eventBus._on(
       "switchannotationeditormode",
       webViewerSwitchAnnotationEditorMode,
+      { signal },
     );
     eventBus._on(
       "switchannotationeditorparams",
       webViewerSwitchAnnotationEditorParams,
+      { signal },
     );
-    eventBus._on("print", webViewerPrint);
-    eventBus._on("download", webViewerDownload);
-    eventBus._on("firstpage", webViewerFirstPage);
-    eventBus._on("lastpage", webViewerLastPage);
-    eventBus._on("nextpage", webViewerNextPage);
-    eventBus._on("previouspage", webViewerPreviousPage);
-    eventBus._on("zoomin", webViewerZoomIn);
-    eventBus._on("zoomout", webViewerZoomOut);
-    eventBus._on("zoomreset", webViewerZoomReset);
-    eventBus._on("pagenumberchanged", webViewerPageNumberChanged);
-    eventBus._on("scalechanged", webViewerScaleChanged);
-    eventBus._on("rotatecw", webViewerRotateCw);
-    eventBus._on("rotateccw", webViewerRotateCcw);
-    eventBus._on("optionalcontentconfig", webViewerOptionalContentConfig);
-    eventBus._on("switchscrollmode", webViewerSwitchScrollMode);
-    eventBus._on("scrollmodechanged", webViewerScrollModeChanged);
-    eventBus._on("switchspreadmode", webViewerSwitchSpreadMode);
-    eventBus._on("spreadmodechanged", webViewerSpreadModeChanged);
-    eventBus._on("documentproperties", webViewerDocumentProperties);
-    eventBus._on("findfromurlhash", webViewerFindFromUrlHash);
-    eventBus._on("updatefindmatchescount", webViewerUpdateFindMatchesCount);
-    eventBus._on("updatefindcontrolstate", webViewerUpdateFindControlState);
+    eventBus._on("print", webViewerPrint, { signal });
+    eventBus._on("download", webViewerDownload, { signal });
+    eventBus._on("firstpage", webViewerFirstPage, { signal });
+    eventBus._on("lastpage", webViewerLastPage, { signal });
+    eventBus._on("nextpage", webViewerNextPage, { signal });
+    eventBus._on("previouspage", webViewerPreviousPage, { signal });
+    eventBus._on("zoomin", webViewerZoomIn, { signal });
+    eventBus._on("zoomout", webViewerZoomOut, { signal });
+    eventBus._on("zoomreset", webViewerZoomReset, { signal });
+    eventBus._on("pagenumberchanged", webViewerPageNumberChanged, { signal });
+    eventBus._on("scalechanged", webViewerScaleChanged, { signal });
+    eventBus._on("rotatecw", webViewerRotateCw, { signal });
+    eventBus._on("rotateccw", webViewerRotateCcw, { signal });
+    eventBus._on(
+      "optionalcontentconfig",
+      webViewerOptionalContentConfig,
+      { signal },
+    );
+    eventBus._on("switchscrollmode", webViewerSwitchScrollMode, { signal });
+    eventBus._on("scrollmodechanged", webViewerScrollModeChanged, { signal });
+    eventBus._on("switchspreadmode", webViewerSwitchSpreadMode, { signal });
+    eventBus._on("spreadmodechanged", webViewerSpreadModeChanged, { signal });
+    eventBus._on("documentproperties", webViewerDocumentProperties, { signal });
+    eventBus._on("findfromurlhash", webViewerFindFromUrlHash, { signal });
+    eventBus._on(
+      "updatefindmatchescount",
+      webViewerUpdateFindMatchesCount,
+      { signal },
+    );
+    eventBus._on(
+      "updatefindcontrolstate",
+      webViewerUpdateFindControlState,
+      { signal },
+    );
 
-    if (AppOptions.pdfBug) {
-      _boundEvents.reportPageStatsPDFBug = reportPageStatsPDFBug;
-
-      eventBus._on("pagerendered", _boundEvents.reportPageStatsPDFBug);
-      eventBus._on("pagechanging", _boundEvents.reportPageStatsPDFBug);
-    }
     /*#static*/ if (PDFJSDev || GENERIC) {
-      eventBus._on("fileinputchange", webViewerFileInputChange);
-      eventBus._on("openfile", webViewerOpenFile);
+      eventBus._on("fileinputchange", webViewerFileInputChange, { signal });
+      eventBus._on("openfile", webViewerOpenFile, { signal });
     }
     /*#static*/ if (MOZCENTRAL) {
-      // The `unbindEvents` method is unused in MOZCENTRAL builds,
-      // hence we don't need to unregister these event listeners.
       eventBus._on(
         "annotationeditorstateschanged",
         webViewerAnnotationEditorStatesChanged,
+        { signal },
       );
-      eventBus._on("reporttelemetry", webViewerReportTelemetry);
+      eventBus._on("reporttelemetry", webViewerReportTelemetry, { signal });
     }
   }
 
   bindWindowEvents() {
+    if (this._windowAbortController) {
+      return;
+    }
+    this._windowAbortController = new AbortController();
+
     const {
       eventBus,
-      _boundEvents,
       appConfig: { mainContainer },
+      _windowAbortController: { signal },
     } = this;
 
     function addWindowResolutionChange(
@@ -2128,54 +2160,62 @@ export class PDFViewerApplication {
       const mediaQueryList = window.matchMedia(
         `(resolution: ${window.devicePixelRatio || 1}dppx)`,
       );
-      mediaQueryList.addEventListener("change", addWindowResolutionChange, {
-        once: true,
-      });
-
-      _boundEvents.removeWindowResolutionChange ||= function () {
-        mediaQueryList.removeEventListener("change", addWindowResolutionChange);
-        _boundEvents.removeWindowResolutionChange = undefined;
-      };
+      mediaQueryList.addEventListener(
+        "change",
+        addWindowResolutionChange,
+        { once: true, signal },
+      );
     }
     addWindowResolutionChange();
 
-    _boundEvents.windowResize = () => {
-      eventBus.dispatch("resize", { source: window });
-    };
-    _boundEvents.windowHashChange = () => {
-      eventBus.dispatch("hashchange", {
-        source: window,
-        hash: document.location.hash.substring(1),
-      });
-    };
-    _boundEvents.windowBeforePrint = () => {
-      eventBus.dispatch("beforeprint", { source: window });
-    };
-    _boundEvents.windowAfterPrint = () => {
-      eventBus.dispatch("afterprint", { source: window });
-    };
-    _boundEvents.windowUpdateFromSandbox = (event: CustomEvent) => {
-      eventBus.dispatch("updatefromsandbox", {
-        source: window,
-        detail: event.detail,
-      });
-    };
-
-    window.on("visibilitychange", webViewerVisibilityChange);
-    window.on("wheel", webViewerWheel, { passive: false });
-    window.on("touchstart", webViewerTouchStart, { passive: false });
-    window.on("touchmove", webViewerTouchMove, { passive: false });
-    window.on("touchend", webViewerTouchEnd, { passive: false });
-    window.on("click", webViewerClick);
-    window.on("keydown", webViewerKeyDown);
-    window.on("keyup", webViewerKeyUp);
-    window.on("resize", _boundEvents.windowResize);
-    window.on("hashchange", _boundEvents.windowHashChange);
-    window.on("beforeprint", _boundEvents.windowBeforePrint);
-    window.on("afterprint", _boundEvents.windowAfterPrint);
+    window.on("visibilitychange", webViewerVisibilityChange, { signal });
+    window.on("wheel", webViewerWheel, { passive: false, signal });
+    window.on("touchstart", webViewerTouchStart, { passive: false, signal });
+    window.on("touchmove", webViewerTouchMove, { passive: false, signal });
+    window.on("touchend", webViewerTouchEnd, { passive: false, signal });
+    window.on("click", webViewerClick, { signal });
+    window.on("keydown", webViewerKeyDown, { signal });
+    window.on("keyup", webViewerKeyUp, { signal });
+    window.on(
+      "resize",
+      () => {
+        eventBus.dispatch("resize", { source: window });
+      },
+      { signal },
+    );
+    window.on(
+      "hashchange",
+      () => {
+        eventBus.dispatch("hashchange", {
+          source: window,
+          hash: document.location.hash.substring(1),
+        });
+      },
+      { signal },
+    );
+    window.on(
+      "beforeprint",
+      () => {
+        eventBus.dispatch("beforeprint", { source: window });
+      },
+      { signal },
+    );
+    window.on(
+      "afterprint",
+      () => {
+        eventBus.dispatch("afterprint", { source: window });
+      },
+      { signal },
+    );
     window.addEventListener(
       "updatefromsandbox",
-      _boundEvents.windowUpdateFromSandbox,
+      (event) => {
+        eventBus.dispatch("updatefromsandbox", {
+          source: window,
+          detail: (event as any).detail,
+        });
+      },
+      { signal },
     );
 
     /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
@@ -2183,133 +2223,58 @@ export class PDFViewerApplication {
         return;
       }
     }
-
-    // Using the values lastScrollTop and lastScrollLeft is a workaround to
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1881974.
-    // TODO: remove them once the bug is fixed.
-    ({ scrollTop: this._lastScrollTop, scrollLeft: this._lastScrollLeft } =
-      mainContainer);
-    const scrollend = (_boundEvents.mainContainerScrollend = () => {
+    /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+      // Using the values lastScrollTop and lastScrollLeft is a workaround to
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1881974.
+      // TODO: remove them once the bug is fixed.
       ({ scrollTop: this._lastScrollTop, scrollLeft: this._lastScrollLeft } =
         mainContainer);
+    }
+
+    const scrollend = () => {
+      /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+        ({ scrollTop: this._lastScrollTop, scrollLeft: this._lastScrollLeft } =
+          mainContainer);
+      }
+
       this._isScrolling = false;
-      mainContainer.on("scroll", scroll, { passive: true });
+      mainContainer.on("scroll", scroll, { passive: true, signal });
       mainContainer.off("scrollend", scrollend);
       mainContainer.off("blur", scrollend);
-    });
-    const scroll = (_boundEvents.mainContainerScroll = () => {
-      if (
-        this._isCtrlKeyDown ||
-        (this._lastScrollTop === mainContainer.scrollTop &&
-          this._lastScrollLeft === mainContainer.scrollLeft)
-      ) {
+    };
+    const scroll = () => {
+      if (this._isCtrlKeyDown) {
         return;
       }
+      /*#static*/ if ((PDFJSDev || !MOZCENTRAL)) {
+        if (
+          this._lastScrollTop === mainContainer.scrollTop &&
+          this._lastScrollLeft === mainContainer.scrollLeft
+        ) {
+          return;
+        }
+      }
+
       mainContainer.off(
         "scroll",
         scroll,
         { passive: true } as EventListenerOptions,
       );
       this._isScrolling = true;
-      mainContainer.on("scrollend", scrollend);
-      mainContainer.on("blur", scrollend);
-    });
-    mainContainer.on("scroll", scroll, { passive: true });
+      mainContainer.on("scrollend", scrollend, { signal });
+      mainContainer.on("blur", scrollend, { signal });
+    };
+    mainContainer.on("scroll", scroll, { passive: true, signal });
   }
 
   unbindEvents() {
-    /*#static*/ if (MOZCENTRAL) {
-      throw new Error("Not implemented: unbindEvents");
-    }
-    const { eventBus, _boundEvents } = this;
-
-    eventBus._off("resize", webViewerResize);
-    eventBus._off("hashchange", webViewerHashchange);
-    eventBus._off("beforeprint", _boundEvents.beforePrint!);
-    eventBus._off("afterprint", _boundEvents.afterPrint!);
-    eventBus._off("pagerender", webViewerPageRender);
-    eventBus._off("pagerendered", webViewerPageRendered);
-    eventBus._off("updateviewarea", webViewerUpdateViewarea);
-    eventBus._off("pagechanging", webViewerPageChanging);
-    eventBus._off("scalechanging", webViewerScaleChanging);
-    eventBus._off("rotationchanging", webViewerRotationChanging);
-    eventBus._off("sidebarviewchanged", webViewerSidebarViewChanged);
-    eventBus._off("pagemode", webViewerPageMode);
-    eventBus._off("namedaction", webViewerNamedAction);
-    eventBus._off("presentationmodechanged", webViewerPresentationModeChanged);
-    eventBus._off("presentationmode", webViewerPresentationMode);
-    eventBus._off("print", webViewerPrint);
-    eventBus._off("download", webViewerDownload);
-    eventBus._off("firstpage", webViewerFirstPage);
-    eventBus._off("lastpage", webViewerLastPage);
-    eventBus._off("nextpage", webViewerNextPage);
-    eventBus._off("previouspage", webViewerPreviousPage);
-    eventBus._off("zoomin", webViewerZoomIn);
-    eventBus._off("zoomout", webViewerZoomOut);
-    eventBus._off("zoomreset", webViewerZoomReset);
-    eventBus._off("pagenumberchanged", webViewerPageNumberChanged);
-    eventBus._off("scalechanged", webViewerScaleChanged);
-    eventBus._off("rotatecw", webViewerRotateCw);
-    eventBus._off("rotateccw", webViewerRotateCcw);
-    eventBus._off("optionalcontentconfig", webViewerOptionalContentConfig);
-    eventBus._off("switchscrollmode", webViewerSwitchScrollMode);
-    eventBus._off("scrollmodechanged", webViewerScrollModeChanged);
-    eventBus._off("switchspreadmode", webViewerSwitchSpreadMode);
-    eventBus._off("spreadmodechanged", webViewerSpreadModeChanged);
-    eventBus._off("documentproperties", webViewerDocumentProperties);
-    eventBus._off("findfromurlhash", webViewerFindFromUrlHash);
-    eventBus._off("updatefindmatchescount", webViewerUpdateFindMatchesCount);
-    eventBus._off("updatefindcontrolstate", webViewerUpdateFindControlState);
-
-    if (_boundEvents.reportPageStatsPDFBug) {
-      eventBus._off("pagerendered", _boundEvents.reportPageStatsPDFBug);
-      eventBus._off("pagechanging", _boundEvents.reportPageStatsPDFBug);
-
-      _boundEvents.reportPageStatsPDFBug = undefined;
-    }
-    /*#static*/ if (PDFJSDev || GENERIC) {
-      eventBus._off("fileinputchange", webViewerFileInputChange);
-      eventBus._off("openfile", webViewerOpenFile);
-    }
-
-    _boundEvents.beforePrint = undefined;
-    _boundEvents.afterPrint = undefined;
+    this._eventBusAbortController?.abort();
+    this._eventBusAbortController = undefined;
   }
 
   unbindWindowEvents() {
-    const {
-      _boundEvents,
-      appConfig: { mainContainer },
-    } = this;
-
-    window.off("visibilitychange", webViewerVisibilityChange);
-    window.off("wheel", webViewerWheel);
-    window.off("touchstart", webViewerTouchStart);
-    window.off("touchmove", webViewerTouchMove);
-    window.off("touchend", webViewerTouchEnd);
-    window.off("click", webViewerClick);
-    window.off("keydown", webViewerKeyDown);
-    window.off("keyup", webViewerKeyUp);
-    window.off("resize", _boundEvents.windowResize!);
-    window.off("hashchange", _boundEvents.windowHashChange!);
-    window.off("beforeprint", _boundEvents.windowBeforePrint!);
-    window.off("afterprint", _boundEvents.windowAfterPrint!);
-    window.removeEventListener(
-      "updatefromsandbox",
-      _boundEvents.windowUpdateFromSandbox!,
-    );
-    mainContainer.off("scroll", _boundEvents.mainContainerScroll!);
-    mainContainer.off("scrollend", _boundEvents.mainContainerScrollend!);
-    mainContainer.off("blur", _boundEvents.mainContainerScrollend!);
-
-    _boundEvents.removeWindowResolutionChange?.();
-    _boundEvents.windowResize = undefined;
-    _boundEvents.windowHashChange = undefined;
-    _boundEvents.windowBeforePrint = undefined;
-    _boundEvents.windowAfterPrint = undefined;
-    _boundEvents.windowUpdateFromSandbox = undefined;
-    _boundEvents.mainContainerScroll = undefined;
-    _boundEvents.mainContainerScrollend = undefined;
+    this._windowAbortController?.abort();
+    this._windowAbortController = undefined;
   }
 
   _accumulateTicks(
@@ -2346,15 +2311,16 @@ export class PDFViewerApplication {
     return newFactor;
   }
 
-  _centerAtPos(previousScale: number, x: number, y: number) {
-    const { pdfViewer } = this;
-    const scaleDiff = pdfViewer.currentScale / previousScale - 1;
-    if (scaleDiff !== 0) {
-      const [top, left] = pdfViewer.containerTopLeft;
-      pdfViewer.container.scrollLeft += (x - left) * scaleDiff;
-      pdfViewer.container.scrollTop += (y - top) * scaleDiff;
-    }
-  }
+  //kkkk TOCLEANUP
+  // _centerAtPos(previousScale: number, x: number, y: number) {
+  //   const { pdfViewer } = this;
+  //   const scaleDiff = pdfViewer.currentScale / previousScale - 1;
+  //   if (scaleDiff !== 0) {
+  //     const [top, left] = pdfViewer.containerTopLeft;
+  //     pdfViewer.container.scrollLeft += (x - left) * scaleDiff;
+  //     pdfViewer.container.scrollTop += (y - top) * scaleDiff;
+  //   }
+  // }
 
   /**
    * Should be called *after* all pages have loaded, or if an error occurred,
@@ -2417,47 +2383,17 @@ let validateFileURL: (file?: string) => void;
   };
 }
 
+//kkkk TOCLEANUP
 // export interface PDFJSWorker {
 //   WorkerMessageHandler: typeof WorkerMessageHandler;
 // }
 
+//kkkk TOCLEANUP
 // declare global {
 //   interface Window {
 //     pdfjsWorker?: PDFJSWorker;
 //   }
 // }
-
-async function loadFakeWorker() {
-  GlobalWorkerOptions.workerSrc ||= AppOptions.workerSrc;
-
-  /*#static*/ if (PDFJSDev) {
-    (globalThis as any).pdfjsWorker = await import(
-      "../pdf.ts-src/pdf.worker.ts"
-    );
-    return;
-  }
-  // await __non_webpack_import__(PDFWorker.workerSrc);
-  (globalThis as any).pdfjsWorker = await import("../pdf.ts-src/pdf.worker.ts");
-}
-
-async function loadPDFBug(self: PDFViewerApplication) {
-  const { PDFBug } = /*#static*/ PDFJSDev
-    ? await import(AppOptions.debuggerSrc) // eslint-disable-line no-unsanitized/method
-    // : await __non_webpack_import__(AppOptions.get("debuggerSrc"));
-    : await import(AppOptions.debuggerSrc);
-
-  self._PDFBug = PDFBug;
-}
-
-function reportPageStatsPDFBug({ pageNumber }: { pageNumber: number }) {
-  if (!(globalThis as any).Stats?.enabled) {
-    return;
-  }
-  const pageView = viewerApp.pdfViewer.getPageView(
-    /* index = */ pageNumber - 1,
-  );
-  (globalThis as any).Stats.add(pageNumber, pageView?.pdfPage?.stats);
-}
 
 function webViewerPageRender({ pageNumber }: EventMap["pagerender"]) {
   // If the page is (the most) visible when it starts rendering,
@@ -2870,6 +2806,7 @@ function webViewerWheel(evt: WheelEvent) {
     evt.deltaX === 0 &&
     (Math.abs(scaleFactor - 1) < 0.05 || isBuiltInMac) &&
     evt.deltaZ === 0;
+  const origin: dot2d_t = [evt.clientX, evt.clientY];
 
   if (
     isPinchToZoom ||
@@ -2891,17 +2828,11 @@ function webViewerWheel(evt: WheelEvent) {
     const previousScale = pdfViewer.currentScale;
     if (isPinchToZoom && supportsPinchToZoom) {
       scaleFactor = viewerApp._accumulateFactor(
-        previousScale,
+        pdfViewer.currentScale,
         scaleFactor,
         "_wheelUnusedFactor",
       );
-      if (scaleFactor < 1) {
-        viewerApp.zoomOut(undefined, scaleFactor);
-      } else if (scaleFactor > 1) {
-        viewerApp.zoomIn(undefined, scaleFactor);
-      } else {
-        return;
-      }
+      viewerApp.updateZoom(undefined, scaleFactor, origin);
     } else {
       const delta = normalizeWheelEventDirection(evt);
 
@@ -2933,19 +2864,8 @@ function webViewerWheel(evt: WheelEvent) {
         );
       }
 
-      if (ticks < 0) {
-        viewerApp.zoomOut(-ticks);
-      } else if (ticks > 0) {
-        viewerApp.zoomIn(ticks);
-      } else {
-        return;
-      }
+      viewerApp.updateZoom(ticks, undefined, origin);
     }
-
-    // After scaling the page via zoomIn/zoomOut, the position of the upper-
-    // left corner is restored. When the mouse wheel is used, the position
-    // under the cursor should be restored instead.
-    viewerApp._centerAtPos(previousScale, evt.clientX, evt.clientY);
   }
 }
 
@@ -3045,42 +2965,25 @@ function webViewerTouchMove(evt: TouchEvent) {
 
   evt.preventDefault();
 
+  const origin: dot2d_t = [(page0X + page1X) / 2, (page0Y + page1Y) / 2];
   const distance = Math.hypot(page0X - page1X, page0Y - page1Y) || 1;
   const pDistance = Math.hypot(pTouch0X - pTouch1X, pTouch0Y - pTouch1Y) || 1;
   const previousScale = pdfViewer.currentScale;
   if (supportsPinchToZoom) {
     const newScaleFactor = viewerApp._accumulateFactor(
-      previousScale,
+      pdfViewer.currentScale,
       distance / pDistance,
       "_touchUnusedFactor",
     );
-    if (newScaleFactor < 1) {
-      viewerApp.zoomOut(undefined, newScaleFactor);
-    } else if (newScaleFactor > 1) {
-      viewerApp.zoomIn(undefined, newScaleFactor);
-    } else {
-      return;
-    }
+    viewerApp.updateZoom(undefined, newScaleFactor, origin);
   } else {
     const PIXELS_PER_LINE_SCALE = 30;
     const ticks = viewerApp._accumulateTicks(
       (distance - pDistance) / PIXELS_PER_LINE_SCALE,
       "_touchUnusedTicks",
     );
-    if (ticks < 0) {
-      viewerApp.zoomOut(-ticks);
-    } else if (ticks > 0) {
-      viewerApp.zoomIn(ticks);
-    } else {
-      return;
-    }
+    viewerApp.updateZoom(ticks, undefined, origin);
   }
-
-  viewerApp._centerAtPos(
-    previousScale,
-    (page0X + page1X) / 2,
-    (page0Y + page1Y) / 2,
-  );
 }
 
 function webViewerTouchEnd(evt: TouchEvent) {

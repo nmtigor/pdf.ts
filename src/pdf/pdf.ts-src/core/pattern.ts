@@ -25,10 +25,22 @@ import type { C2D, dot2d_t, rect_t, TupleOf } from "@fe-lib/alias.ts";
 import { assert, fail } from "@fe-lib/util/trace.ts";
 import { TilingPaintType, TilingType } from "../display/pattern_helper.ts";
 import type { matrix_t } from "../shared/util.ts";
-import { FormatError, info, Util, warn } from "../shared/util.ts";
+import {
+  FormatError,
+  IDENTITY_MATRIX,
+  info,
+  Util,
+  warn,
+} from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { ColorSpace, type CS } from "./colorspace.ts";
-import { MissingDataException } from "./core_utils.ts";
+import {
+  isBooleanArray,
+  isNumberArray,
+  lookupMatrix,
+  lookupNormalRect,
+  MissingDataException,
+} from "./core_utils.ts";
 import type { ParsedFunction, PDFFunctionFactory } from "./function.ts";
 import type { LocalColorSpaceCache } from "./image_utils.ts";
 import type { OpListIR } from "./operator_list.ts";
@@ -184,8 +196,18 @@ class RadialAxialShading extends BaseShading {
     localColorSpaceCache: LocalColorSpaceCache,
   ) {
     super();
-    this.coordsArr = dict.getArray("Coords") as TupleOf<number, 4 | 6>;
+
     this.shadingType = dict.get("ShadingType") as ShadingType;
+    let coordsLen = 0;
+    if (this.shadingType === ShadingType.AXIAL) {
+      coordsLen = 4;
+    } else if (this.shadingType === ShadingType.RADIAL) {
+      coordsLen = 6;
+    }
+    this.coordsArr = dict.getArray("Coords") as TupleOf<number, 4 | 6>;
+    if (!isNumberArray(this.coordsArr, coordsLen)) {
+      throw new FormatError("RadialAxialShading: Invalid /Coords array.");
+    }
     const cs = ColorSpace.parse({
       cs: (dict.getRaw("CS") || dict.getRaw("ColorSpace")) as CS,
       xref,
@@ -193,25 +215,20 @@ class RadialAxialShading extends BaseShading {
       pdfFunctionFactory,
       localColorSpaceCache,
     });
-    const bbox = dict.getArray("BBox") as rect_t;
-    this.bbox = Array.isArray(bbox) && bbox.length === 4
-      ? Util.normalizeRect(bbox)
-      : undefined;
+    this.bbox = lookupNormalRect(dict.getArray("BBox"), undefined);
 
     let t0 = 0.0;
     let t1 = 1.0;
-    if (dict.has("Domain")) {
-      const domainArr = dict.getArray("Domain") as [number, number];
-      t0 = domainArr[0];
-      t1 = domainArr[1];
+    const domainArr = dict.getArray("Domain");
+    if (isNumberArray(domainArr, 2)) {
+      [t0, t1] = domainArr;
     }
 
-    let extendStart = false;
-    let extendEnd = false;
-    if (dict.has("Extend")) {
-      const extendArr = dict.getArray("Extend") as [boolean, boolean];
-      extendStart = extendArr[0];
-      extendEnd = extendArr[1];
+    let extendStart = false,
+      extendEnd = false;
+    const extendArr = dict.getArray("Extend");
+    if (isBooleanArray(extendArr, 2)) {
+      [extendStart, extendEnd] = extendArr;
     }
 
     if (
@@ -348,8 +365,7 @@ class RadialAxialShading extends BaseShading {
 
   /** @implement */
   getIR() {
-    const coordsArr = this.coordsArr;
-    const shadingType = this.shadingType;
+    const { coordsArr, shadingType } = this;
     let type: ShadingType.AXIAL | ShadingType.RADIAL;
     let p0: dot2d_t;
     let p1: dot2d_t;
@@ -540,9 +556,7 @@ interface DecodeContext {
 
 export class MeshShading extends BaseShading {
   static readonly MIN_SPLIT_PATCH_CHUNKS_AMOUNT = 3;
-
   static readonly MAX_SPLIT_PATCH_CHUNKS_AMOUNT = 20;
-
   /**
    * Count of triangles per entire mesh bounds.
    */
@@ -572,10 +586,7 @@ export class MeshShading extends BaseShading {
     }
     const dict = stream.dict!;
     this.shadingType = dict.get("ShadingType") as ShadingType;
-    const bbox = dict.getArray("BBox") as rect_t;
-    this.bbox = Array.isArray(bbox) && bbox.length === 4
-      ? Util.normalizeRect(bbox)
-      : undefined;
+    this.bbox = lookupNormalRect(dict.getArray("BBox"), undefined);
     const cs = ColorSpace.parse({
       cs: (dict.getRaw("CS") || dict.getRaw("ColorSpace")) as CS,
       xref,
@@ -1108,17 +1119,28 @@ export function getTilingPatternIR(
   dict: Dict,
   color?: Uint8ClampedArray,
 ): TilingPatternIR {
-  const matrix = <matrix_t | undefined> dict.getArray("Matrix");
-  const bbox = Util.normalizeRect(<rect_t> dict.getArray("BBox"));
-  const xstep = <number> dict.get("XStep");
-  const ystep = <number> dict.get("YStep");
-  const paintType = <TilingPaintType> dict.get("PaintType");
-  const tilingType = <TilingType> dict.get("TilingType");
-
+  const matrix = lookupMatrix(dict.getArray("Matrix"), IDENTITY_MATRIX);
+  const bbox = lookupNormalRect(dict.getArray("BBox"), undefined);
   // Ensure that the pattern has a non-zero width and height, to prevent errors
   // in `pattern_helper.js` (fixes issue8330.pdf).
-  if (bbox[2] - bbox[0] === 0 || bbox[3] - bbox[1] === 0) {
-    throw new FormatError(`Invalid getTilingPatternIR /BBox array: [${bbox}].`);
+  if (!bbox || bbox[2] - bbox[0] === 0 || bbox[3] - bbox[1] === 0) {
+    throw new FormatError(`Invalid getTilingPatternIR /BBox array.`);
+  }
+  const xstep = dict.get("XStep");
+  if (typeof xstep !== "number") {
+    throw new FormatError(`Invalid getTilingPatternIR /XStep value.`);
+  }
+  const ystep = dict.get("YStep");
+  if (typeof ystep !== "number") {
+    throw new FormatError(`Invalid getTilingPatternIR /YStep value.`);
+  }
+  const paintType = dict.get("PaintType") as TilingPaintType;
+  if (!Number.isInteger(paintType)) {
+    throw new FormatError(`Invalid getTilingPatternIR /PaintType value.`);
+  }
+  const tilingType = dict.get("TilingType") as TilingType;
+  if (!Number.isInteger(tilingType)) {
+    throw new FormatError(`Invalid getTilingPatternIR /TilingType value.`);
   }
 
   return [

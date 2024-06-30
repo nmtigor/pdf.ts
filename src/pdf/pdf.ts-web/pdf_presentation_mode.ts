@@ -77,6 +77,7 @@ interface PrsntModeArgs {
   annotationEditorMode: AnnotationEditorType | undefined;
 }
 
+/** @final */
 export class PDFPresentationMode {
   #state = PresentationModeState.UNKNOWN;
   get active() {
@@ -98,6 +99,9 @@ export class PDFPresentationMode {
 
   switchInProgress?: number;
   controlsTimeout?: number;
+
+  #fullscreenChangeAbortController: AbortController | undefined;
+  #windowAbortController: AbortController | undefined;
 
   constructor({
     container,
@@ -381,58 +385,46 @@ export class PDFPresentationMode {
     }
   };
 
-  #addWindowListeners = () => {
-    // this.showControlsBind = this.#showControls.bind(this);
-    // this.mouseDownBind = this.#mouseDown.bind(this);
-    // this.mouseWheelBind = this.#mouseWheel.bind(this);
-    // this.resetMouseScrollStateBind = this.#resetMouseScrollState.bind(this);
-    // this.contextMenuBind = this.#contextMenu.bind(this);
-    // this.touchSwipeBind = this.#touchSwipe.bind(this);
-
-    window.on("mousemove", this.#showControls);
-    window.on("mousedown", this.#mouseDown);
-    window.on("wheel", this.#mouseWheel, { passive: false });
-    window.on("keydown", this.#resetMouseScrollState);
-    window.on("contextmenu", this.#contextMenu);
-    window.on("touchstart", this.#touchSwipe);
-    window.on("touchmove", this.#touchSwipe);
-    window.on("touchend", this.#touchSwipe);
-  };
-
-  #removeWindowListeners = () => {
-    window.off("mousemove", this.#showControls);
-    window.off("mousedown", this.#mouseDown);
-    window.off("wheel", this.#mouseWheel);
-    window.off("keydown", this.#resetMouseScrollState);
-    window.off("contextmenu", this.#contextMenu);
-    window.off("touchstart", this.#touchSwipe);
-    window.off("touchmove", this.#touchSwipe);
-    window.off("touchend", this.#touchSwipe);
-
-    delete (this as any).showControlsBind;
-    delete (this as any).mouseDownBind;
-    delete (this as any).mouseWheelBind;
-    delete (this as any).resetMouseScrollStateBind;
-    delete (this as any).contextMenuBind;
-    delete (this as any).touchSwipeBind;
-  };
-
-  #fullscreenChange = () => {
-    if (/* isFullscreen = */ document.fullscreenElement) {
-      this.#enter();
-    } else {
-      this.#exit();
+  #addWindowListeners() {
+    if (this.#windowAbortController) {
+      return;
     }
-  };
+    this.#windowAbortController = new AbortController();
+    const { signal } = this.#windowAbortController;
 
-  #addFullscreenChangeListeners() {
-    // this.fullscreenChangeBind = this._fullscreenChange.bind(this);
-    window.on("fullscreenchange", this.#fullscreenChange);
+    window.on("mousemove", this.#showControls, { signal });
+    window.on("mousedown", this.#mouseDown, { signal });
+    window.on("wheel", this.#mouseWheel, { passive: false, signal });
+    window.on("keydown", this.#resetMouseScrollState, { signal });
+    window.on("contextmenu", this.#contextMenu, { signal });
+    window.on("touchstart", this.#touchSwipe, { signal });
+    window.on("touchmove", this.#touchSwipe, { signal });
+    window.on("touchend", this.#touchSwipe, { signal });
   }
 
-  #removeFullscreenChangeListeners = () => {
-    window.off("fullscreenchange", this.#fullscreenChange);
-    // delete (this as any).fullscreenChangeBind;
-  };
+  #removeWindowListeners() {
+    this.#windowAbortController?.abort();
+    this.#windowAbortController = undefined;
+  }
+
+  #addFullscreenChangeListeners() {
+    if (this.#fullscreenChangeAbortController) {
+      return;
+    }
+    this.#fullscreenChangeAbortController = new AbortController();
+
+    window.on("fullscreenchange", () => {
+      if (/* isFullscreen = */ document.fullscreenElement) {
+        this.#enter();
+      } else {
+        this.#exit();
+      }
+    }, { signal: this.#fullscreenChangeAbortController.signal });
+  }
+
+  #removeFullscreenChangeListeners() {
+    this.#fullscreenChangeAbortController?.abort();
+    this.#fullscreenChangeAbortController = undefined;
+  }
 }
 /*80--------------------------------------------------------------------------*/

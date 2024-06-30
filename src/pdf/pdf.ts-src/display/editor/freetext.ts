@@ -21,12 +21,12 @@
  * limitations under the License.
  */
 
-import type { dot2d_t } from "@fe-lib/alias.ts";
+import type { dot2d_t, rect_t } from "@fe-lib/alias.ts";
 import type { rgb_t } from "@fe-lib/color/alias.ts";
 import { html, textnode } from "@fe-lib/dom.ts";
 import { assert } from "@fe-lib/util/trace.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import type { IL10n } from "@pdf.ts-web/interfaces.ts";
+import type { IL10n } from "@fe-pdf.ts-web/interfaces.ts";
 import type { AnnotationData } from "../../core/annotation.ts";
 import {
   AnnotationEditorParamsType,
@@ -35,7 +35,10 @@ import {
   shadow,
   Util,
 } from "../../shared/util.ts";
-import type { AnnotStorageValue } from "../annotation_layer.ts";
+import type {
+  AnnotationElement,
+  AnnotStorageValue,
+} from "../annotation_layer.ts";
 import { FreeTextAnnotationElement } from "../annotation_layer.ts";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
 import type { AnnotationEditorP, PropertyToUpdate } from "./editor.ts";
@@ -415,11 +418,14 @@ export class FreeTextEditor extends AnnotationEditor {
       // we just insert it in the DOM, get its bounding box and then remove it.
       const { currentLayer, div } = this;
       const savedDisplay = div!.style.display;
+      const savedVisibility = div!.classList.contains("hidden");
+      div!.classList.remove("hidden");
       div!.style.display = "hidden";
       currentLayer!.div!.append(this.div!);
       rect = div!.getBoundingClientRect();
       div!.remove();
       div!.style.display = savedDisplay;
+      div!.classList.toggle("hidden", savedVisibility);
     }
 
     // The dimensions are relative to the rotation of the page, hence we need to
@@ -789,7 +795,7 @@ export class FreeTextEditor extends AnnotationEditor {
         value: textContent.join("\n"),
         position: textPosition!,
         pageIndex: pageNumber - 1,
-        rect,
+        rect: rect!.slice(0) as rect_t,
         rotation,
         id,
         deleted: false,
@@ -870,6 +876,38 @@ export class FreeTextEditor extends AnnotationEditor {
       serialized.color!.some((c, i) => c !== color![i]) ||
       serialized.pageIndex !== pageIndex
     );
+  }
+
+  override renderAnnotationElement(annotation: AnnotationElement) {
+    const content = super.renderAnnotationElement(annotation);
+    if (this.deleted) {
+      return content;
+    }
+    const { style } = content;
+    style.fontSize = `calc(${this.#fontSize}px * var(--scale-factor))`;
+    style.color = this.#color;
+
+    content.replaceChildren();
+    for (const line of this.#content.split("\n")) {
+      const div = document.createElement("div");
+      div.append(
+        line ? document.createTextNode(line) : document.createElement("br"),
+      );
+      content.append(div);
+    }
+
+    const padding = FreeTextEditor._internalPadding * this.parentScale;
+    annotation.updateEdited({
+      rect: this.getRect(padding, padding),
+      popupContent: this.#content,
+    });
+
+    return content;
+  }
+
+  override resetAnnotationElement(annotation: AnnotationElement) {
+    super.resetAnnotationElement(annotation);
+    annotation.resetEdited();
   }
 }
 /*80--------------------------------------------------------------------------*/

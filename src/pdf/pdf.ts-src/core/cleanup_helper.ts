@@ -24,11 +24,16 @@
 import { clearPatternCaches } from "./pattern.ts";
 import { clearPrimitiveCaches } from "./primitives.ts";
 import { clearUnicodeCaches } from "./unicode.ts";
+import { JpxImage } from "./jpx.ts";
 /*80--------------------------------------------------------------------------*/
 
 export function clearGlobalCaches() {
   clearPatternCaches();
   clearPrimitiveCaches();
   clearUnicodeCaches();
+
+  // Remove the global `JpxImage` instance, since it may hold a reference to
+  // the WebAssembly module.
+  JpxImage.cleanup();
 }
 /*80--------------------------------------------------------------------------*/

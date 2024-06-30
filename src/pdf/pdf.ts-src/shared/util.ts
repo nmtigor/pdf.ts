@@ -629,13 +629,13 @@ export function bytesToString(bytes: Uint8Array | Uint8ClampedArray) {
   const length = bytes.length;
   const MAX_ARGUMENT_COUNT = 8192;
   if (length < MAX_ARGUMENT_COUNT) {
-    return String.fromCharCode.apply(null, <any> bytes);
+    return String.fromCharCode.apply(null, bytes as any);
   }
   const strBuf = [];
   for (let i = 0; i < length; i += MAX_ARGUMENT_COUNT) {
     const chunkEnd = Math.min(i + MAX_ARGUMENT_COUNT, length);
     const chunk = bytes.subarray(i, chunkEnd);
-    strBuf.push(String.fromCharCode.apply(null, <any> chunk));
+    strBuf.push(String.fromCharCode.apply(null, chunk as any));
   }
   return strBuf.join("");
 }
@@ -885,8 +885,8 @@ export class Util {
   // For coordinate systems whose origin lies in the bottom-left, this
   // means normalization to (BL,TR) ordering. For systems with origin in the
   // top-left, this means (TL,BR) ordering.
-  static normalizeRect(rect: rect_t) {
-    const r = <rect_t> rect.slice(0); // clone rect
+  static normalizeRect(rect: rect_t): rect_t {
+    const r = rect.slice(0) as rect_t; // clone rect
     if (rect[0] > rect[2]) {
       r[0] = rect[2];
       r[2] = rect[0];
@@ -1197,4 +1197,16 @@ export function getUuid() {
 }
 
 export const AnnotationPrefix = "pdfjs_internal_id_";
+
+export const enum FontRenderOps {
+  BEZIER_CURVE_TO = 0,
+  MOVE_TO = 1,
+  LINE_TO = 2,
+  QUADRATIC_CURVE_TO = 3,
+  RESTORE = 4,
+  SAVE = 5,
+  SCALE = 6,
+  TRANSFORM = 7,
+  TRANSLATE = 8,
+}
 /*80--------------------------------------------------------------------------*/

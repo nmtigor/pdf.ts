@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assert, assertEquals, assertFalse } from "@std/testing/asserts.ts";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { MetadataParser } from "../core/metadata_parser.ts";
 import { Metadata } from "./metadata.ts";

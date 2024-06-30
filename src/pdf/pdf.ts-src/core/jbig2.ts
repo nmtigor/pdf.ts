@@ -28,9 +28,9 @@ import { CCITTFaxDecoder, type CCITTFaxDecoderOptions } from "./ccitt.ts";
 import { log2, readInt8, readUint16, readUint32 } from "./core_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
-class Jbig2Error extends BaseException {
+export class Jbig2Error extends BaseException {
   constructor(msg: string) {
-    super(`JBIG2 error: ${msg}`, "Jbig2Error");
+    super(msg, "Jbig2Error");
   }
 }
 /*25-------------------*/

@@ -22,7 +22,7 @@
  */
 
 import { LIB } from "@fe-src/global.ts";
-import { assertEquals } from "@std/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { AnnotationLayer } from "./display/annotation_layer.ts";
 import {
@@ -50,7 +50,11 @@ import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.
 import { ColorPicker } from "./display/editor/color_picker.ts";
 import { Outliner } from "./display/editor/outliner.ts";
 import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
-import { renderTextLayer, updateTextLayer } from "./display/text_layer.ts";
+import {
+  renderTextLayer,
+  TextLayer,
+  updateTextLayer,
+} from "./display/text_layer.ts";
 import { GlobalWorkerOptions } from "./display/worker_options.ts";
 import { XfaLayer } from "./display/xfa_layer.ts";
 import {
@@ -115,6 +119,7 @@ const expectedAPI = Object.freeze({
   renderTextLayer,
   setLayerDimensions,
   shadow,
+  TextLayer,
   UnexpectedResponseException,
   updateTextLayer,
   Util,

@@ -142,25 +142,25 @@ namespace NsCFFParser {
    * Ref. The Type 2 Charstring Format \
    * [T2] https://adobe-type-tools.github.io/font-tech-notes/pdfs/5177.Type2.pdf
    */
-  const CharstringValidationData: (CsVItem | null)[] = [
-    /*  0 */ null,
+  const CharstringValidationData: (CsVItem | undefined)[] = [
+    /*  0 */ undefined,
     /*  1 */ { id: "hstem", min: 2, stackClearing: true, stem: true },
-    /*  2 */ null,
+    /*  2 */ undefined,
     /*  3 */ { id: "vstem", min: 2, stackClearing: true, stem: true },
     /*  4 */ { id: "vmoveto", min: 1, stackClearing: true },
     /*  5 */ { id: "rlineto", min: 2, resetStack: true },
     /*  6 */ { id: "hlineto", min: 1, resetStack: true },
     /*  7 */ { id: "vlineto", min: 1, resetStack: true },
     /*  8 */ { id: "rrcurveto", min: 6, resetStack: true },
-    /*  9 */ null,
+    /*  9 */ undefined,
     /* 10 */ { id: "callsubr", min: 1, undefStack: true },
     /* 11 */ { id: "return", min: 0, undefStack: true },
-    /* 12 */ null,
-    /* 13 */ null,
+    /* 12 */ undefined,
+    /* 13 */ undefined,
     /* 14 */ { id: "endchar", min: 0, stackClearing: true },
-    /* 15 */ null,
-    /* 16 */ null,
-    /* 17 */ null,
+    /* 15 */ undefined,
+    /* 16 */ undefined,
+    /* 17 */ undefined,
     /* 18 */ { id: "hstemhm", min: 2, stackClearing: true, stem: true },
     /* 19 */ { id: "hintmask", min: 0, stackClearing: true },
     /* 20 */ { id: "cntrmask", min: 0, stackClearing: true },
@@ -171,22 +171,22 @@ namespace NsCFFParser {
     /* 25 */ { id: "rlinecurve", min: 8, resetStack: true },
     /* 26 */ { id: "vvcurveto", min: 4, resetStack: true },
     /* 27 */ { id: "hhcurveto", min: 4, resetStack: true },
-    /* 28 */ null, // shortint
+    /* 28 */ undefined, // shortint
     /* 29 */ { id: "callgsubr", min: 1, undefStack: true },
     /* 30 */ { id: "vhcurveto", min: 4, resetStack: true },
     /* 31 */ { id: "hvcurveto", min: 4, resetStack: true },
   ];
 
-  const CharstringValidationData12: (CsVItem | null)[] = [
-    null,
-    null,
-    null,
+  const CharstringValidationData12: (CsVItem | undefined)[] = [
+    undefined,
+    undefined,
+    undefined,
     { id: "and", min: 2, stackDelta: -1 },
     { id: "or", min: 2, stackDelta: -1 },
     { id: "not", min: 1, stackDelta: 0 },
-    null,
-    null,
-    null,
+    undefined,
+    undefined,
+    undefined,
     { id: "abs", min: 1, stackDelta: 0 },
     {
       id: "add",
@@ -212,7 +212,7 @@ namespace NsCFFParser {
         stack[index - 2] = stack[index - 2] / stack[index - 1];
       },
     },
-    null,
+    undefined,
     {
       id: "neg",
       min: 1,
@@ -222,10 +222,10 @@ namespace NsCFFParser {
       },
     },
     { id: "eq", min: 2, stackDelta: -1 },
-    null,
-    null,
+    undefined,
+    undefined,
     { id: "drop", min: 1, stackDelta: -1 },
-    null,
+    undefined,
     { id: "put", min: 2, stackDelta: -2 },
     { id: "get", min: 1, stackDelta: 0 },
     { id: "ifelse", min: 4, stackDelta: -3 },
@@ -238,15 +238,15 @@ namespace NsCFFParser {
         stack[index - 2] = stack[index - 2] * stack[index - 1];
       },
     },
-    null,
+    undefined,
     { id: "sqrt", min: 1, stackDelta: 0 },
     { id: "dup", min: 1, stackDelta: 1 },
     { id: "exch", min: 2, stackDelta: 0 },
     { id: "index", min: 2, stackDelta: 0 },
     { id: "roll", min: 3, stackDelta: -2 },
-    null,
-    null,
-    null,
+    undefined,
+    undefined,
+    undefined,
     { id: "hflex", min: 7, resetStack: true },
     { id: "flex", min: 13, resetStack: true },
     { id: "hflex1", min: 9, resetStack: true },
@@ -269,8 +269,8 @@ namespace NsCFFParser {
     undefStack: boolean;
     hints: number;
     firstStackClearing: boolean;
-    seac: number[] | null;
-    width: number | null;
+    seac: number[] | undefined;
+    width: number | undefined;
     hasVStems: boolean;
   }
 
@@ -460,7 +460,7 @@ namespace NsCFFParser {
         const eof = 15;
         // deno-fmt-ignore
         const lookup = ["0", "1", "2", "3", "4", "5", "6", "7", "8",
-                        "9", ".", "E", "E-", null, "-"];
+                        "9", ".", "E", "E-", undefined, "-"];
         const length = dict.length;
         while (pos < length) {
           const b = dict[pos++];
@@ -582,7 +582,7 @@ namespace NsCFFParser {
       // [CFF] Table 3
       for (let j = 0; j < length;) {
         const value = data[j++];
-        let validationCommand: CsVItem | null = null;
+        let validationCommand: CsVItem | undefined;
         if (value === 12) {
           const q = data[j++];
           if (q === 0) {
@@ -790,8 +790,8 @@ namespace NsCFFParser {
           undefStack: true,
           hints: 0,
           firstStackClearing: true,
-          seac: null,
-          width: null,
+          seac: undefined,
+          width: undefined,
           hasVStems: false,
         };
         let valid = true;
@@ -822,7 +822,7 @@ namespace NsCFFParser {
             globalSubrIndex,
           );
         }
-        if (state.width !== null) {
+        if (state.width !== undefined) {
           const nominalWidth = privateDictToUse.getByName(
             "nominalWidthX",
           ) as number;
@@ -833,7 +833,7 @@ namespace NsCFFParser {
           ) as number;
           widths[i] = defaultWidth;
         }
-        if (state.seac !== null) {
+        if (state.seac !== undefined) {
           seacs[i] = state.seac;
         }
         if (!valid) {
@@ -1218,7 +1218,7 @@ interface CFFTables {
   keyToNameMap: string[];
   nameToKeyMap: Record<string, number>;
   types: (string[] | string)[];
-  defaults: (number[] | number | null)[];
+  defaults: (number[] | number | undefined)[];
   opcodes: ([number, number] | [number])[];
   order: number[];
 }
@@ -1321,20 +1321,20 @@ type CFFLayoutEntry = [
   key: [number, number] | number,
   name: string,
   types: string[] | string,
-  defaults: number[] | number | null,
+  defaults: number[] | number | undefined,
 ];
 type CFFLayout = CFFLayoutEntry[];
 
 namespace NsCFFTopDict {
   const layout: CFFLayout = [
-    [[12, 30], "ROS", ["sid", "sid", "num"], null],
-    [[12, 20], "SyntheticBase", "num", null],
-    [0, "version", "sid", null],
-    [1, "Notice", "sid", null],
-    [[12, 0], "Copyright", "sid", null],
-    [2, "FullName", "sid", null],
-    [3, "FamilyName", "sid", null],
-    [4, "Weight", "sid", null],
+    [[12, 30], "ROS", ["sid", "sid", "num"], undefined],
+    [[12, 20], "SyntheticBase", "num", undefined],
+    [0, "version", "sid", undefined],
+    [1, "Notice", "sid", undefined],
+    [[12, 0], "Copyright", "sid", undefined],
+    [2, "FullName", "sid", undefined],
+    [3, "FamilyName", "sid", undefined],
+    [4, "Weight", "sid", undefined],
     [[12, 1], "isFixedPitch", "num", 0],
     [[12, 2], "ItalicAngle", "num", 0],
     [[12, 3], "UnderlinePosition", "num", -100],
@@ -1344,27 +1344,27 @@ namespace NsCFFTopDict {
     // deno-fmt-ignore
     [[12, 7], "FontMatrix", ["num", "num", "num", "num", "num", "num"],
                             [0.001, 0, 0, 0.001, 0, 0]],
-    [13, "UniqueID", "num", null],
+    [13, "UniqueID", "num", undefined],
     [5, "FontBBox", ["num", "num", "num", "num"], [0, 0, 0, 0]],
     [[12, 8], "StrokeWidth", "num", 0],
-    [14, "XUID", "array", null],
+    [14, "XUID", "array", undefined],
     [15, "charset", "offset", 0],
     [16, "Encoding", "offset", 0],
     [17, "CharStrings", "offset", 0],
-    [18, "Private", ["offset", "offset"], null],
-    [[12, 21], "PostScript", "sid", null],
-    [[12, 22], "BaseFontName", "sid", null],
-    [[12, 23], "BaseFontBlend", "delta", null],
+    [18, "Private", ["offset", "offset"], undefined],
+    [[12, 21], "PostScript", "sid", undefined],
+    [[12, 22], "BaseFontName", "sid", undefined],
+    [[12, 23], "BaseFontBlend", "delta", undefined],
     [[12, 31], "CIDFontVersion", "num", 0],
     [[12, 32], "CIDFontRevision", "num", 0],
     [[12, 33], "CIDFontType", "num", 0],
     [[12, 34], "CIDCount", "num", 8720],
-    [[12, 35], "UIDBase", "num", null],
+    [[12, 35], "UIDBase", "num", undefined],
     // XXX: CID Fonts on DirectWrite 6.1 only seem to work if FDSelect comes
     // before FDArray.
-    [[12, 37], "FDSelect", "offset", null],
-    [[12, 36], "FDArray", "offset", null],
-    [[12, 38], "FontName", "sid", null],
+    [[12, 37], "FDSelect", "offset", undefined],
+    [[12, 36], "FDArray", "offset", undefined],
+    [[12, 38], "FontName", "sid", undefined],
   ];
 
   /**
@@ -1388,24 +1388,24 @@ export var CFFTopDict = NsCFFTopDict.CFFTopDict;
 
 namespace NsCFFPrivateDict {
   const layout: CFFLayout = [
-    [6, "BlueValues", "delta", null],
-    [7, "OtherBlues", "delta", null],
-    [8, "FamilyBlues", "delta", null],
-    [9, "FamilyOtherBlues", "delta", null],
+    [6, "BlueValues", "delta", undefined],
+    [7, "OtherBlues", "delta", undefined],
+    [8, "FamilyBlues", "delta", undefined],
+    [9, "FamilyOtherBlues", "delta", undefined],
     [[12, 9], "BlueScale", "num", 0.039625],
     [[12, 10], "BlueShift", "num", 7],
     [[12, 11], "BlueFuzz", "num", 1],
-    [10, "StdHW", "num", null],
-    [11, "StdVW", "num", null],
-    [[12, 12], "StemSnapH", "delta", null],
-    [[12, 13], "StemSnapV", "delta", null],
+    [10, "StdHW", "num", undefined],
+    [11, "StdVW", "num", undefined],
+    [[12, 12], "StemSnapH", "delta", undefined],
+    [[12, 13], "StemSnapV", "delta", undefined],
     [[12, 14], "ForceBold", "num", 0],
     [[12, 17], "LanguageGroup", "num", 0],
     [[12, 18], "ExpansionFactor", "num", 0.06],
     [[12, 19], "initialRandomSeed", "num", 0],
     [20, "defaultWidthX", "num", 0],
     [21, "nominalWidthX", "num", 0],
-    [19, "Subrs", "offset", null],
+    [19, "Subrs", "offset", undefined],
   ];
 
   export class CFFPrivateDict extends CFFDict {
@@ -1849,7 +1849,7 @@ export class CFFCompiler {
         types = [types];
       }
       if (!Array.isArray(values)) {
-        values = [<number> values];
+        values = [values!];
       }
 
       // Remove any empty dict values.

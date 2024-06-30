@@ -26,12 +26,13 @@ import type { Cssc, rgb_t } from "@fe-lib/color/alias.ts";
 import type { HSElement } from "@fe-lib/dom.ts";
 import { warn } from "@fe-lib/util/trace.ts";
 import { LIB, TESTING } from "@fe-src/global.ts";
-import type { AltTextManager } from "@pdf.ts-web/alt_text_manager.ts";
-import type { MLManager as MLManager_c } from "@pdf.ts-web/chromecom.ts";
-import type { EventBus, EventMap } from "@pdf.ts-web/event_utils.ts";
-import type { MLManager as MLManager_f } from "@pdf.ts-web/firefoxcom.ts";
-import type { MLManager as MLManager_g } from "@pdf.ts-web/genericcom.ts";
-import type { PageColors } from "@pdf.ts-web/pdf_viewer.ts";
+import type { AltTextManager } from "@fe-pdf.ts-web/alt_text_manager.ts";
+import type { MLManager as MLManager_c } from "@fe-pdf.ts-web/chromecom.ts";
+import type { EventBus, EventMap } from "@fe-pdf.ts-web/event_utils.ts";
+import type { MLManager as MLManager_f } from "@fe-pdf.ts-web/firefoxcom.ts";
+import type { MLManager as MLManager_g } from "@fe-pdf.ts-web/genericcom.ts";
+import type { PageColors } from "@fe-pdf.ts-web/pdf_viewer.ts";
+import type { Box } from "../../alias.ts";
 import type { AnnotationEditorName } from "../../shared/util.ts";
 import {
   AnnotationEditorParamsType,
@@ -57,7 +58,7 @@ import type { HighlightEditor } from "./highlight.ts";
 import { InkEditor } from "./ink.ts";
 import { StampEditor } from "./stamp.ts";
 import { HighlightToolbar } from "./toolbar.ts";
-import type { Box } from "../../alias.ts";
+import type { AnnotationElement } from "../annotation_layer.ts";
 /*80--------------------------------------------------------------------------*/
 
 export function bindEvents<T extends AnnotationEditor | AnnotationEditorLayer>(
@@ -617,6 +618,7 @@ export class AnnotationEditorUIManager {
 
   #altTextManager;
   #annotationStorage;
+  #changedExistingAnnotations: Map<string | undefined, string> | undefined;
   #commandManager = new CommandManager();
 
   #currentPageIndex = 0;
@@ -1740,6 +1742,7 @@ export class AnnotationEditorUIManager {
    */
   addDeletedAnnotationElement(editor: AnnotationEditor) {
     this.#deletedAnnotationsElementIds.add(editor.annotationElementId);
+    this.addChangedExistingAnnotation(editor);
     editor.deleted = true;
   }
 
@@ -1755,6 +1758,7 @@ export class AnnotationEditorUIManager {
    */
   removeDeletedAnnotationElement(editor: AnnotationEditor) {
     this.#deletedAnnotationsElementIds.delete(editor.annotationElementId);
+    this.removeChangedExistingAnnotation(editor);
     editor.deleted = false;
   }
 
@@ -2269,6 +2273,35 @@ export class AnnotationEditorUIManager {
       }
     }
     return boxes.length === 0 ? undefined : boxes;
+  }
+
+  addChangedExistingAnnotation({ annotationElementId, id }: AnnotationEditor) {
+    (this.#changedExistingAnnotations ||= new Map()).set(
+      annotationElementId,
+      id,
+    );
+  }
+
+  removeChangedExistingAnnotation({ annotationElementId }: AnnotationEditor) {
+    this.#changedExistingAnnotations?.delete(annotationElementId);
+  }
+
+  renderAnnotationElement(annotation: AnnotationElement) {
+    const editorId = this.#changedExistingAnnotations?.get(annotation.data.id);
+    if (!editorId) {
+      return;
+    }
+    const editor = this.#annotationStorage.getRawValue(editorId);
+    if (!editor) {
+      return;
+    }
+    if (
+      this.#mode === AnnotationEditorType.NONE &&
+      !(editor as AnnotationEditor).hasBeenModified
+    ) {
+      return;
+    }
+    (editor as AnnotationEditor).renderAnnotationElement(annotation);
   }
 }
 /*80--------------------------------------------------------------------------*/

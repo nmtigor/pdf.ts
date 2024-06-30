@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { LIB } from "../../global.ts";
 import { WorkerMessageHandler } from "./core/worker.ts";
@@ -31,7 +31,8 @@ describe("pdfworker_api", () => {
   it("checks that the *official* PDF.js-worker API exposes the expected functionality", async () => {
     // eslint-disable-next-line no-unsanitized/method
     const pdfworkerAPI = await import(
-      /*#static*/ LIB ? "./pdf.worker.ts" : "./pdf.worker.ts"
+      // LIB ? "../../pdf.worker.js" : "../../src/pdf.worker.js"
+      LIB ? "./pdf.worker.ts" : "./pdf.worker.ts"
     );
 
     // The imported Object contains an (automatically) inserted Symbol,

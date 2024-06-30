@@ -22,7 +22,7 @@
  */
 
 import { html, textnode } from "../../lib/dom.ts";
-import type { EventBus, EventMap } from "./event_utils.ts";
+import type { EventBus } from "./event_utils.ts";
 import type { PDFFindController } from "./pdf_find_controller.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -58,12 +58,15 @@ export class TextHighlighter {
   matches: Match[] = [];
   eventBus;
   pageIdx;
-  _onUpdateTextLayerMatches:
-    | ((evt: EventMap["updatetextlayermatches"]) => void)
-    | undefined;
+  //kkkk TOCLEANUP
+  // _onUpdateTextLayerMatches:
+  //   | ((evt: EventMap["updatetextlayermatches"]) => void)
+  //   | undefined;
   textDivs: (HTMLSpanElement | Text)[] | undefined;
   textContentItemsStr: string[] | undefined;
   enabled = false;
+
+  #eventAbortController: AbortController | undefined;
 
   constructor({ findController, eventBus, pageIndex }: TextHighlighterOptions) {
     this.findController = findController;
@@ -94,31 +97,32 @@ export class TextHighlighter {
       throw new Error("TextHighlighter is already enabled.");
     }
     this.enabled = true;
-    if (!this._onUpdateTextLayerMatches) {
-      this._onUpdateTextLayerMatches = (evt) => {
-        if (evt.pageIndex === this.pageIdx || evt.pageIndex === -1) {
-          this._updateMatches();
-        }
-      };
+
+    if (!this.#eventAbortController) {
+      this.#eventAbortController = new AbortController();
+
       this.eventBus._on(
         "updatetextlayermatches",
-        this._onUpdateTextLayerMatches,
+        (evt) => {
+          if (evt.pageIndex === this.pageIdx || evt.pageIndex === -1) {
+            this._updateMatches();
+          }
+        },
+        { signal: this.#eventAbortController.signal },
       );
     }
     this._updateMatches();
   }
 
   disable() {
-    if (!this.enabled) return;
-
-    this.enabled = false;
-    if (this._onUpdateTextLayerMatches) {
-      this.eventBus._off(
-        "updatetextlayermatches",
-        this._onUpdateTextLayerMatches,
-      );
-      this._onUpdateTextLayerMatches = undefined;
+    if (!this.enabled) {
+      return;
     }
+    this.enabled = false;
+
+    this.#eventAbortController?.abort();
+    this.#eventAbortController = undefined;
+
     this._updateMatches(/* reset = */ true);
   }
 
@@ -184,7 +188,7 @@ export class TextHighlighter {
     const isSelectedPage = pageIdx === findController!.selected.pageIdx;
     const selectedMatchIdx = findController!.selected.matchIdx;
     const highlightAll = findController!.state!.highlightAll;
-    let prevEnd = null;
+    let prevEnd: MatchPos | undefined;
     const infinity = {
       divIdx: -1,
       offset: undefined,
@@ -258,7 +262,7 @@ export class TextHighlighter {
       // Match inside new div.
       if (!prevEnd || begin.divIdx !== prevEnd.divIdx) {
         // If there was a previous div, then add the text at the end.
-        if (prevEnd !== null) {
+        if (prevEnd !== undefined) {
           appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
         }
         // Clear the divs and set the content until the starting point.

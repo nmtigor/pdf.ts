@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { warn } from "../shared/util.ts";
 import { validateFontName } from "./core_utils.ts";
 import type { GlobalIdFactory } from "./document.ts";
 import { normalizeFontName } from "./fonts_utils.ts";
@@ -492,17 +493,27 @@ export type SubstitutionInfo = {
  * @param baseFontName The font name to be substituted.
  * @param standardFontName The standard font name to use
  *   if the base font is not available.
+ * @param type The font type.
  * @return an Object with the CSS, the loaded name, the src and the style.
  */
 export function getFontSubstitution(
-  systemFontCache: Map<string, SubstitutionInfo>,
+  systemFontCache: Map<string, SubstitutionInfo | undefined>,
   idFactory: GlobalIdFactory,
   localFontPath: string | undefined,
   baseFontName: string,
   standardFontName: string | undefined,
+  type: string,
 ): SubstitutionInfo | undefined {
   if (baseFontName.startsWith("InvalidPDFjsFont_")) {
     return undefined;
+  }
+
+  if (
+    (type === "TrueType" || type === "Type1") &&
+    /^[A-Z]{6}\+/.test(baseFontName)
+  ) {
+    // When the font is a subset, we need to remove the prefix (see 9.6.4).
+    baseFontName = baseFontName.slice(7);
   }
 
   // It's possible to have a font name with spaces, commas or dashes, hence we
@@ -539,8 +550,8 @@ export function getFontSubstitution(
   const loadedName = `${idFactory.getDocId()}_s${idFactory.createFontId()}`;
   if (!substitution) {
     if (!validateFontName(baseFontName)) {
-      // systemFontCache.set(key, null);
-      systemFontCache.delete(key);
+      warn(`Cannot substitute the font because of its name: ${baseFontName}`);
+      systemFontCache.set(key, undefined);
       // If the baseFontName is not valid we don't want to use it.
       return undefined;
     }

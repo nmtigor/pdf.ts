@@ -3,9 +3,15 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { DENO, TESTING } from "@fe-src/global.ts";
-import { assert } from "@std/assert/mod.ts";
-import { serveDir } from "@std/http/file_server.ts";
+import {
+  D_rp_images,
+  D_rp_pdfs,
+  D_rpe_cmap,
+  D_rpe_sfont,
+} from "@fe-src/alias.ts";
+import { TESTING } from "@fe-src/global.ts";
+import { assert } from "@std/assert";
+import { serveDir } from "@std/http";
 import wretch from "@wretch";
 import { BaseStream } from "../pdf.ts-src/core/base_stream.ts";
 import { Page, PDFDocument } from "../pdf.ts-src/core/document.ts";
@@ -15,12 +21,6 @@ import { NullStream, StringStream } from "../pdf.ts-src/core/stream.ts";
 import { DocumentInitP } from "../pdf.ts-src/display/api.ts";
 import type { PDFDocumentLoadingTask } from "../pdf.ts-src/pdf.ts";
 import { getDocument, PDFWorker } from "../pdf.ts-src/pdf.ts";
-import {
-  D_cmap_url,
-  D_standard_font_data_url,
-  D_test_images,
-  D_test_pdfs,
-} from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 // let fs, http;
@@ -30,23 +30,21 @@ import {
 //   http = await __non_webpack_import__("http");
 // }
 
-export const D_base = (ts: TestServer) =>
-  `http://${ts.hostname}:${ts.port}/../..`;
+export const D_base = (ts: TestServer) => `http://${ts!.hostname}:${ts!.port}`;
 
 // const TEST_PDFS_PATH = isNodeJS ? "./test/pdfs/" : "../pdfs/";
-export const TEST_PDFS_PATH = (ts: TestServer) =>
-  `${D_base(ts)}/${D_test_pdfs}/`;
+export const TEST_PDFS_PATH = (ts: TestServer) => `${D_base(ts)}/${D_rp_pdfs}/`;
 export const TEST_IMAGES_PATH = (ts: TestServer) =>
-  `${D_base(ts)}/${D_test_images}/`;
+  `${D_base(ts)}/${D_rp_images}/`;
 
 // const CMAP_URL = isNodeJS ? "./external/bcmaps/" : "../../external/bcmaps/";
-export const CMAP_URL = (ts: TestServer) => `${D_base(ts)}/${D_cmap_url}/`;
+export const CMAP_URL = (ts: TestServer) => `${D_base(ts)}/${D_rpe_cmap}/`;
 
 // const STANDARD_FONT_DATA_URL = isNodeJS
 //   ? "./external/standard_fonts/"
 //   : "../../external/standard_fonts/";
 export const STANDARD_FONT_DATA_URL = (ts: TestServer) =>
-  `${D_base(ts)}/${D_standard_font_data_url}/`;
+  `${D_base(ts)}/${D_rpe_sfont}/`;
 
 class DOMFileReaderFactory {
   static async fetch(params: { path: string }) {
@@ -84,6 +82,8 @@ export type BuildGetDocumentParamsOptions = {
   isOffscreenCanvasSupported?: boolean;
   ownerDocument?: unknown;
   password?: string;
+  enableXfa?: boolean;
+  disableAutoFetch?: boolean;
   pdfBug?: boolean;
   stopAtErrors?: boolean;
   rangeChunkSize?: number;
@@ -93,7 +93,7 @@ export type BuildGetDocumentParamsOptions = {
 };
 
 const urlOf_ = (ts: TestServer, filename: string) =>
-  new URL(TEST_PDFS_PATH(ts) + filename).href;
+  TEST_PDFS_PATH(ts) + filename;
 
 export function buildGetDocumentParams(
   ts: TestServer,
@@ -135,19 +135,16 @@ export async function getPDF(
       return wretch(link)
         .get()
         .arrayBuffer((ab_y: ArrayBuffer) => {
-          /*#static*/ if (DENO) {
-            const Deno = (globalThis as any).Deno;
-            const D_pdfs_ = `${Deno.cwd()}/../../${D_test_pdfs}`;
-            const permission = Deno.permissions.querySync({
-              name: "write",
-              path: D_pdfs_,
-            });
-            if (permission.state === "granted") {
-              Deno.writeFileSync(
-                `${D_pdfs_}/${filename_x}`,
-                new Uint8Array(ab_y),
-              );
-            }
+          const D_pdfs_ = `${Deno.cwd()}/../../${D_rp_pdfs}`;
+          const permission = Deno.permissions.querySync({
+            name: "write",
+            path: D_pdfs_,
+          });
+          if (permission.state === "granted") {
+            Deno.writeFileSync(
+              `${D_pdfs_}/${filename_x}`,
+              new Uint8Array(ab_y),
+            );
           }
 
           return getDocument(ab_y);
@@ -300,10 +297,7 @@ export type TestServer = {
  * Create http server for tests.
  */
 export function createTemporaryDenoServer(): TestServer {
-  assert(
-    DENO && TESTING,
-    "Should only be used in DENO && TESTING environments.",
-  );
+  assert(TESTING, "Should only be used in DENO && TESTING environments.");
 
   const server = Deno.serve(async (req: Request) =>
     serveDir(req, { fsRoot: "../.." })

@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
 import { bytesToString } from "../shared/util.ts";
 import type { AnnotSaveData } from "./annotation.ts";
@@ -242,6 +242,68 @@ describe("Writer", () => {
         "%%EOF\n";
       assertEquals(data, expected);
     });
+  });
+
+  it("should update a file with a deleted object", async () => {
+    const originalData = new Uint8Array();
+    const newRefs: AnnotSaveData[] = [
+      { ref: Ref.get(123, 0x2d), data: undefined },
+      { ref: Ref.get(456, 0x4e), data: "abc\n" },
+    ];
+    const xrefInfo: XRefInfo = {
+      newRef: Ref.get(789, 0),
+      startXRef: 314,
+      fileIds: ["id", ""],
+      filename: "foo.pdf",
+      info: {},
+    };
+
+    let data: Uint8Array | string = await incrementalUpdate({
+      originalData,
+      xrefInfo,
+      newRefs,
+      useXrefStream: true,
+    });
+    data = bytesToString(data);
+
+    let expected = "\nabc\n" +
+      "789 0 obj\n" +
+      "<< /Prev 314 /Size 790 /Type /XRef /Index [123 1 456 1 789 1] " +
+      "/W [1 1 1] /ID [(id) (\x01#Eg\x89\xab\xcd\xef\xfe\xdc\xba\x98vT2\x10)] " +
+      "/Length 9>> stream\n" +
+      "\x00\x00\x2e" +
+      "\x01\x01\x4e" +
+      "\x01\x05\x00\n" +
+      "endstream\n" +
+      "endobj\n" +
+      "startxref\n" +
+      "5\n" +
+      "%%EOF\n";
+    assertEquals(data, expected);
+
+    data = await incrementalUpdate({
+      originalData,
+      xrefInfo,
+      newRefs,
+      useXrefStream: false,
+    });
+    data = bytesToString(data);
+
+    expected = "\nabc\n" +
+      "xref\n" +
+      "123 1\n" +
+      "0000000000 00046 f\r\n" +
+      "456 1\n" +
+      "0000000001 00078 n\r\n" +
+      "789 1\n" +
+      "0000000005 00000 n\r\n" +
+      "trailer\n" +
+      "<< /Prev 314 /Size 789 " +
+      "/ID [(id) (\x01#Eg\x89\xab\xcd\xef\xfe\xdc\xba\x98vT2\x10)]>>\n" +
+      "startxref\n" +
+      "5\n" +
+      "%%EOF\n";
+    assertEquals(data, expected);
   });
 });
 /*80--------------------------------------------------------------------------*/

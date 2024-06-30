@@ -230,8 +230,7 @@ export abstract class XFAObject {
       const attributes = (proto._attributes = new Set());
       for (const name of Object.getOwnPropertyNames(this)) {
         if (
-          (this as any)[name] === null ||
-          (this as any)[name] === undefined ||
+          (this as any)[name] == undefined ||
           (this as any)[name] instanceof XFAObject ||
           (this as any)[name] instanceof XFAObjectArray
         ) {
@@ -481,7 +480,7 @@ export abstract class XFAObject {
 
     for (const name of Object.getOwnPropertyNames(this)) {
       const value: XFAProp = (this as any)[name];
-      if (value === null || value === undefined) {
+      if (value == undefined) {
         continue;
       }
       if (value instanceof XFAObject) {
@@ -714,8 +713,8 @@ export abstract class XFAObject {
       if (this[_attributeNames].has(name)) {
         continue;
       }
-      const value: NonattrValue = (<any> this)[name];
-      const protoValue: NonattrValue = (<any> proto)[name];
+      const value: NonattrValue = (this as any)[name];
+      const protoValue: NonattrValue = (proto as any)[name];
 
       if (value instanceof XFAObjectArray) {
         for (const child of value[_children]) {
@@ -742,7 +741,7 @@ export abstract class XFAObject {
         continue;
       }
 
-      if (value !== null && value !== undefined) {
+      if (value != undefined) {
         value[$resolvePrototypes](ids, ancestors);
         if (protoValue) {
           // protoValue must be treated as a prototype for value.
@@ -751,7 +750,7 @@ export abstract class XFAObject {
         continue;
       }
 
-      if (protoValue !== null && protoValue !== undefined) {
+      if (protoValue != undefined) {
         const child = (protoValue as XFAObject)[$clone]();
         child[_parent] = this;
         (this as any)[name] = child;
@@ -1088,7 +1087,7 @@ export class XmlObject extends XFAObject {
   /** @final */
   override [$getChildrenByClass](name: string): XFAObject[] | XFAAttribute {
     const value = this[_attributes]?.get(name);
-    if (value !== null && value !== undefined) {
+    if (value != undefined) {
       return value;
     }
     return this[$getChildren](name);

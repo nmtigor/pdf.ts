@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import type { C2D, dot2d_t, rect_t } from "@fe-lib/alias.ts";
+import type { C2D, dot2d_t, int, rect_t, uint } from "@fe-lib/alias.ts";
 import { assert } from "@fe-lib/util/trace.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { matrix_t } from "../shared/util.ts";
@@ -382,32 +382,32 @@ export interface Seac {
   accentOffset: { x: number; y: number };
 }
 
-function int16(b0: number, b1: number) {
+function int16(b0: uint, b1: uint): uint {
   return (b0 << 8) + b1;
 }
 
 function writeSignedInt16(
   bytes: Uint8Array | Uint8ClampedArray,
-  index: number,
-  value: number,
+  index: uint,
+  value: uint,
 ) {
   bytes[index + 1] = value;
   bytes[index] = value >>> 8;
 }
 
-function signedInt16(b0: number, b1: number) {
+function signedInt16(b0: uint, b1: uint): int {
   const value = (b0 << 8) + b1;
   return value & (1 << 15) ? value - 0x10000 : value;
 }
 
-function writeUint32(bytes: Uint8Array, index: number, value: number) {
+function writeUint32(bytes: Uint8Array, index: uint, value: uint) {
   bytes[index + 3] = value & 0xff;
   bytes[index + 2] = value >>> 8;
   bytes[index + 1] = value >>> 16;
   bytes[index] = value >>> 24;
 }
 
-function int32(b0: number, b1: number, b2: number, b3: number) {
+function int32(b0: uint, b1: uint, b2: uint, b3: uint): uint {
   return (b0 << 24) + (b1 << 16) + (b2 << 8) + b3;
 }
 
@@ -613,9 +613,7 @@ function adjustMapping(
   const isInPrivateArea = (code: number) =>
     (PRIVATE_USE_AREAS[0][0] <= code && code <= PRIVATE_USE_AREAS[0][1]) ||
     (PRIVATE_USE_AREAS[1][0] <= code && code <= PRIVATE_USE_AREAS[1][1]);
-  let originalCharCode: number;
-  for (const originalCharCode_s in charCodeToGlyphId) {
-    originalCharCode = +originalCharCode_s | 0;
+  for (const originalCharCode in charCodeToGlyphId) {
     let glyphId = charCodeToGlyphId[originalCharCode];
     // For missing glyphs don't create the mappings so the glyph isn't drawn.
     if (!hasGlyph(glyphId)) {
@@ -641,7 +639,7 @@ function adjustMapping(
     // to PDF the generated font will contain wrong chars. We can avoid that by
     // adding the unicode to the cmap and the print backend will then map the
     // glyph ids to the correct unicode.
-    let unicode = toUnicode!.get(originalCharCode);
+    let unicode = toUnicode!.get(originalCharCode as any);
     if (typeof unicode === "string") {
       unicode = unicode.codePointAt(0);
     }
@@ -651,7 +649,7 @@ function adjustMapping(
     }
 
     newMap[fontCharCode] = glyphId;
-    toFontChar[originalCharCode] = fontCharCode;
+    toFontChar[originalCharCode as any] = fontCharCode;
   }
   return {
     toFontChar,
@@ -3053,12 +3051,12 @@ export class Font extends FontExpotDataEx {
     }
 
     // The original 'post' table is not needed, replace it.
-    tables.post = <OTTable> {
+    tables.post = {
       tag: "post",
-      data: <any> createPostTable(properties),
-    };
+      data: createPostTable(properties) as any,
+    } as OTTable;
 
-    const charCodeToGlyphId: number[] = [];
+    const charCodeToGlyphId: number[] = Object.create(null);
 
     // Helper function to try to skip mapping of empty glyphs.
     function hasGlyph(glyphId: number) {
@@ -3525,43 +3523,44 @@ export class Font extends FontExpotDataEx {
     return builder.toArray();
   }
 
-  get spaceWidth() {
-    // trying to estimate space character width
-    const possibleSpaceReplacements = ["space", "minus", "one", "i", "I"];
-    let width;
-    for (const glyphName of possibleSpaceReplacements) {
-      // if possible, getting width by glyph name
-      if (glyphName in this.widths!) {
-        width = this.widths![glyphName];
-        break;
-      }
-      const glyphsUnicodeMap = getGlyphsUnicode();
-      const glyphUnicode = glyphsUnicodeMap[glyphName];
-      // finding the charcode via unicodeToCID map
-      let charcode: number | string = 0;
-      if (this.composite && this.cMap!.contains(glyphUnicode)) {
-        charcode = +this.cMap!.lookup(glyphUnicode)!;
+  //kkkk TOCLEANUP
+  // get spaceWidth() {
+  //   // trying to estimate space character width
+  //   const possibleSpaceReplacements = ["space", "minus", "one", "i", "I"];
+  //   let width;
+  //   for (const glyphName of possibleSpaceReplacements) {
+  //     // if possible, getting width by glyph name
+  //     if (glyphName in this.widths!) {
+  //       width = this.widths![glyphName];
+  //       break;
+  //     }
+  //     const glyphsUnicodeMap = getGlyphsUnicode();
+  //     const glyphUnicode = glyphsUnicodeMap[glyphName];
+  //     // finding the charcode via unicodeToCID map
+  //     let charcode: number | string = 0;
+  //     if (this.composite && this.cMap!.contains(glyphUnicode)) {
+  //       charcode = +this.cMap!.lookup(glyphUnicode)!;
 
-        if (typeof charcode === "string") {
-          charcode = convertCidString(glyphUnicode, charcode);
-        }
-      }
-      // ... via toUnicode map
-      if (!charcode && this.toUnicode) {
-        charcode = this.toUnicode.charCodeOf(glyphUnicode);
-      }
-      // setting it to unicode if negative or undefined
-      if ((charcode as number) <= 0) {
-        charcode = glyphUnicode;
-      }
-      // trying to get width via charcode
-      width = this.widths![charcode];
-      if (width) {
-        break; // the non-zero width found
-      }
-    }
-    return shadow(this, "spaceWidth", width || this.defaultWidth);
-  }
+  //       if (typeof charcode === "string") {
+  //         charcode = convertCidString(glyphUnicode, charcode);
+  //       }
+  //     }
+  //     // ... via toUnicode map
+  //     if (!charcode && this.toUnicode) {
+  //       charcode = this.toUnicode.charCodeOf(glyphUnicode);
+  //     }
+  //     // setting it to unicode if negative or undefined
+  //     if ((charcode as number) <= 0) {
+  //       charcode = glyphUnicode;
+  //     }
+  //     // trying to get width via charcode
+  //     width = this.widths![charcode];
+  //     if (width) {
+  //       break; // the non-zero width found
+  //     }
+  //   }
+  //   return shadow(this, "spaceWidth", width || this.defaultWidth);
+  // }
 
   #charToGlyph(charcode: number, isSpace = false) {
     let glyph = this._glyphCache[charcode];
