@@ -8,7 +8,7 @@
 import { assert } from "../../../lib/util/trace.js";
 import { PDFJSDev, TESTING } from "../../../global.js";
 import { convertBlackAndWhiteToRGBA, convertToRGBA, } from "../shared/image_utils.js";
-import { FeatureTest, FormatError, ImageKind, info, warn, } from "../shared/util.js";
+import { FeatureTest, FormatError, ImageKind, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import { DecodeStream } from "./decode_stream.js";
@@ -76,6 +76,7 @@ function resizeImageMask(src, bpc, w1, h1, w2, h2) {
  */
 export class PDFImage {
     image;
+    jpxDecoderOptions;
     width;
     height;
     interpolate;
@@ -93,7 +94,6 @@ export class PDFImage {
     mask;
     constructor({ xref, res, image, isInline = false, smask = undefined, mask = undefined, isMask = false, pdfFunctionFactory, localColorSpaceCache, }) {
         this.image = image;
-        let jpxDecode = false;
         const dict = image.dict;
         const filter = dict.get("F", "Filter");
         let filterName;
@@ -123,7 +123,11 @@ export class PDFImage {
                     bitsPerComponent: image.bitsPerComponent,
                 } = JpxImage.parseImageProperties(image.stream));
                 image.stream.reset();
-                jpxDecode = true;
+                this.jpxDecoderOptions = {
+                    numComponents: 0,
+                    isIndexedColormap: false,
+                    smaskInData: dict.has("SMaskInData"),
+                };
                 break;
             case "JBIG2Decode":
                 image.bitsPerComponent = 1;
@@ -165,21 +169,31 @@ export class PDFImage {
         this.bpc = bitsPerComponent;
         if (!this.imageMask) {
             let colorSpace = dict.getRaw("CS") || dict.getRaw("ColorSpace");
-            if (!colorSpace) {
-                info("JPX images (which do not require color spaces)");
-                switch (image.numComps) {
-                    case 1:
-                        colorSpace = Name.get("DeviceGray");
-                        break;
-                    case 3:
-                        colorSpace = Name.get("DeviceRGB");
-                        break;
-                    case 4:
-                        colorSpace = Name.get("DeviceCMYK");
-                        break;
-                    default:
-                        throw new Error(`JPX images with ${image.numComps} color components not supported.`);
+            const hasColorSpace = !!colorSpace;
+            if (!hasColorSpace) {
+                if (this.jpxDecoderOptions) {
+                    colorSpace = Name.get("DeviceRGBA");
                 }
+                else {
+                    switch (image.numComps) {
+                        case 1:
+                            colorSpace = Name.get("DeviceGray");
+                            break;
+                        case 3:
+                            colorSpace = Name.get("DeviceRGB");
+                            break;
+                        case 4:
+                            colorSpace = Name.get("DeviceCMYK");
+                            break;
+                        default:
+                            throw new Error(`Images with ${image.numComps} color components not supported.`);
+                    }
+                }
+            }
+            else if (this.jpxDecoderOptions?.smaskInData) {
+                // If the jpx image has a color space then it mustn't be used in order
+                // to be able to use the color space that comes from the pdf.
+                colorSpace = Name.get("DeviceRGBA");
             }
             this.colorSpace = ColorSpace.parse({
                 cs: colorSpace,
@@ -189,9 +203,16 @@ export class PDFImage {
                 localColorSpaceCache,
             });
             this.numComps = this.colorSpace.numComps;
-            // If the jpx image has a color space then it musn't be used in order to
-            // be able to use the color space that comes from the pdf.
-            this.ignoreColorSpace = jpxDecode && this.colorSpace.name === "Indexed";
+            if (this.jpxDecoderOptions) {
+                // this.jpxDecoderOptions.numComponents = hasColorSpace ? this.numComp : 0; //kkkk bug?
+                this.jpxDecoderOptions.numComponents = hasColorSpace
+                    ? this.numComps
+                    : 0;
+                // If the jpx image has a color space then it musn't be used in order to
+                // be able to use the color space that comes from the pdf.
+                this.jpxDecoderOptions.isIndexedColormap =
+                    this.colorSpace.name === "Indexed";
+            }
         }
         this.decode = dict.getArray("D", "Decode");
         this.needsDecode = false;
@@ -486,7 +507,7 @@ export class PDFImage {
         }
         return output;
     }
-    fillOpacity(rgbaBuf, width, height, actualHeight, image) {
+    async fillOpacity(rgbaBuf, width, height, actualHeight, image) {
         /*#static*/  {
             assert(rgbaBuf instanceof Uint8ClampedArray, 'PDFImage.fillOpacity: Unsupported "rgbaBuf" type.');
         }
@@ -497,7 +518,7 @@ export class PDFImage {
             sw = smask.width;
             sh = smask.height;
             alphaBuf = new Uint8ClampedArray(sw * sh);
-            smask.fillGrayBuffer(alphaBuf);
+            await smask.fillGrayBuffer(alphaBuf);
             if (sw !== width || sh !== height) {
                 alphaBuf = resizeImageMask(alphaBuf, smask.bpc, sw, sh, width, height);
             }
@@ -508,7 +529,7 @@ export class PDFImage {
                 sh = mask.height;
                 alphaBuf = new Uint8ClampedArray(sw * sh);
                 mask.numComps = 1;
-                mask.fillGrayBuffer(alphaBuf);
+                await mask.fillGrayBuffer(alphaBuf);
                 // Need to invert values in rgbaBuf
                 for (i = 0, ii = sw * sh; i < ii; ++i) {
                     alphaBuf[i] = 255 - alphaBuf[i];
@@ -600,6 +621,17 @@ export class PDFImage {
         const rowBytes = (originalWidth * numComps * bpc + 7) >> 3;
         const mustBeResized = isOffscreenCanvasSupported &&
             ImageResizer.needsToBeResized(drawWidth, drawHeight);
+        if (this.colorSpace.name === "DeviceRGBA") {
+            imgData.kind = ImageKind.RGBA_32BPP;
+            const imgArray = (imgData.data = await this.getImageBytes(originalHeight * originalWidth * 4, {}));
+            if (isOffscreenCanvasSupported) {
+                if (!mustBeResized) {
+                    return this.createBitmap(ImageKind.RGBA_32BPP, drawWidth, drawHeight, imgArray);
+                }
+                return ImageResizer.createImage(imgData, false);
+            }
+            return imgData;
+        }
         if (!forceRGBA) {
             // If it is a 1-bit-per-pixel grayscale (i.e. black-and-white) image
             // without any complications, we pass a same-sized copy to the main
@@ -621,7 +653,7 @@ export class PDFImage {
                 !this.mask &&
                 drawWidth === originalWidth &&
                 drawHeight === originalHeight) {
-                const data = this.getImageBytes(originalHeight * rowBytes, {});
+                const data = await this.getImageBytes(originalHeight * rowBytes, {});
                 if (isOffscreenCanvasSupported) {
                     if (mustBeResized) {
                         return ImageResizer.createImage({
@@ -669,7 +701,7 @@ export class PDFImage {
                             break;
                     }
                     if (isHandled) {
-                        const rgba = this.getImageBytes(imageLength, {
+                        const rgba = await this.getImageBytes(imageLength, {
                             drawWidth,
                             drawHeight,
                             forceRGBA: true,
@@ -685,7 +717,7 @@ export class PDFImage {
                         case "DeviceRGB":
                         case "DeviceCMYK":
                             imgData.kind = ImageKind.RGB_24BPP;
-                            imgData.data = this.getImageBytes(imageLength, {
+                            imgData.data = await this.getImageBytes(imageLength, {
                                 drawWidth,
                                 drawHeight,
                                 forceRGB: true,
@@ -699,7 +731,7 @@ export class PDFImage {
                 }
             }
         }
-        const imgArray = this.getImageBytes(originalHeight * rowBytes, {
+        const imgArray = await this.getImageBytes(originalHeight * rowBytes, {
             internal: true,
         });
         // imgArray can be incomplete (e.g. after CCITT fax encoding).
@@ -737,7 +769,7 @@ export class PDFImage {
             alpha01 = 1;
             maybeUndoPreblend = true;
             // Color key masking (opacity) must be performed before decoding.
-            this.fillOpacity(data, drawWidth, drawHeight, actualHeight, comps);
+            await this.fillOpacity(data, drawWidth, drawHeight, actualHeight, comps);
         }
         if (this.needsDecode) {
             this.decodeBuffer(comps);
@@ -762,7 +794,7 @@ export class PDFImage {
         }
         return imgData;
     }
-    fillGrayBuffer(buffer) {
+    async fillGrayBuffer(buffer) {
         /*#static*/  {
             assert(buffer instanceof Uint8ClampedArray, 'PDFImage.fillGrayBuffer: Unsupported "buffer" type.');
         }
@@ -775,7 +807,9 @@ export class PDFImage {
         const bpc = this.bpc;
         // rows start at byte boundary
         const rowBytes = (width * numComps * bpc + 7) >> 3;
-        const imgArray = this.getImageBytes(height * rowBytes, { internal: true });
+        const imgArray = await this.getImageBytes(height * rowBytes, {
+            internal: true,
+        });
         const comps = this.getComponents(imgArray);
         let i, length;
         if (bpc === 1) {
@@ -832,13 +866,13 @@ export class PDFImage {
             interpolate: this.interpolate,
         };
     }
-    getImageBytes(length, { drawWidth, drawHeight, forceRGBA = false, forceRGB = false, internal = false, }) {
+    async getImageBytes(length, { drawWidth, drawHeight, forceRGBA = false, forceRGB = false, internal = false, }) {
         this.image.reset();
         this.image.drawWidth = drawWidth || this.width;
         this.image.drawHeight = drawHeight || this.height;
         this.image.forceRGBA = !!forceRGBA;
         this.image.forceRGB = !!forceRGB;
-        const imageBytes = this.image.getBytes(length, this.ignoreColorSpace);
+        const imageBytes = await this.image.getImageData(length, this.jpxDecoderOptions);
         // If imageBytes came from a DecodeStream, we're safe to transfer it
         // (and thus detach its underlying buffer) because it will constitute
         // the entire DecodeStream's data.  But if it came from a Stream, we

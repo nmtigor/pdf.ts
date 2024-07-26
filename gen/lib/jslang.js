@@ -391,22 +391,23 @@ Date.setFullYear = (refdate, year, month, date) => {
     }
 };
 Math.clamp = (min_x, val_x, max_x) => Math.max(min_x, Math.min(val_x, max_x));
-// Math.minn = ( ...values ) =>
-// {
-//   let ret:number|bigint = Infinity;
-//   values.forEach( v => {
-//     if( v < ret ) ret = v;
-//   })
-//   return ret;
-// }
-// Math.maxn = ( ...values ) =>
-// {
-//   let ret:number|bigint = -Infinity;
-//   values.forEach( v => {
-//     if( v > ret ) ret = v;
-//   })
-//   return ret;
-// }
+/**
+ * Ref. https://stackoverflow.com/a/77377871
+ */
+ReadableStream.prototype[Symbol.asyncIterator] ??= async function* () {
+    const reader = this.getReader();
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done)
+                return;
+            yield value;
+        }
+    }
+    finally {
+        reader.releaseLock();
+    }
+};
 /*80--------------------------------------------------------------------------*/
 /**
  * class X extends mix( Y, Z )

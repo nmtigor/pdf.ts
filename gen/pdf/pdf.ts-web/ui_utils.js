@@ -5,20 +5,6 @@
  * @module pdf/pdf.ts-web/ui_utils.ts
  * @license Apache-2.0
  ******************************************************************************/
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { LIB } from "../../global.js";
 /*80--------------------------------------------------------------------------*/
 export const DEFAULT_SCALE_VALUE = "auto";
@@ -169,7 +155,7 @@ export function scrollIntoView(element, spot, scrollMatches = false) {
  * Helper function to start monitoring the scroll event and converting them into
  * PDF.js friendly one: with scroll debounce and scroll direction.
  */
-export function watchScroll(viewAreaElement, callback) {
+export function watchScroll(viewAreaElement, callback, abortSignal) {
     const debounceScroll = (evt) => {
         if (rAF) {
             return;
@@ -201,7 +187,12 @@ export function watchScroll(viewAreaElement, callback) {
         _eventHandler: debounceScroll,
     };
     let rAF;
-    viewAreaElement.on("scroll", debounceScroll, true);
+    viewAreaElement.on("scroll", debounceScroll, {
+        // useCapture: true,
+        capture: true,
+        signal: abortSignal,
+    });
+    abortSignal?.on("abort", () => window.cancelAnimationFrame(rAF), { once: true });
     return state;
 }
 /**
@@ -259,7 +250,8 @@ export function binarySearchFirstItem(items, condition, start = 0) {
  * of 8).
  * @param x Positive float number.
  * @return Estimated fraction: the first array item is a numerator,
- *  the second one is a denominator.
+ *  the second one is a denominator.\
+ *  They are both natural numbers.
  */
 export function approximateFraction(x) {
     // Fast paths for int numbers or their inversions.
@@ -303,9 +295,12 @@ export function approximateFraction(x) {
     }
     return result;
 }
-export function roundToDivide(x, div) {
-    const r = x % div;
-    return r === 0 ? x : Math.round(x - r + div);
+/**
+ * @param x A positive number to round to a multiple of `div`.
+ * @param div A natural number.
+ */
+export function floorToDivide(x, div) {
+    return x - (x % div);
 }
 /**
  * Gets the size of the specified page, converted from PDF units to inches.

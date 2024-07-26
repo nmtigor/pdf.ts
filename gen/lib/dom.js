@@ -43,6 +43,9 @@ if (globalThis.EventTarget) {
     EventTarget.prototype.on = function (type, listener, options) {
         return this.addEventListener(type, listener, options);
     };
+    EventTarget.prototype.onWheel = function (listener, options) {
+        return this.addEventListener("wheel", listener, Object.assign({ passive: true }, options));
+    };
     EventTarget.prototype.off = function (type, listener, options) {
         return this.removeEventListener(type, listener, options);
     };

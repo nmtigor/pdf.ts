@@ -24,7 +24,7 @@
 import { see_ui_testing } from "@fe-pdf.ts-test/alias.ts";
 import { isObjectLike } from "@fe-lib/jslang.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
-import type { TestServer } from "@fe-pdf.ts-test/test_utils.ts";
+import type { TestServer } from "@fe-pdf.ts-test/unittest_utils.ts";
 import {
   buildGetDocumentParams,
   CMAP_URL,
@@ -33,7 +33,7 @@ import {
   DefaultFileReaderFactory,
   getPDF,
   TEST_PDFS_PATH,
-} from "@fe-pdf.ts-test/test_utils.ts";
+} from "@fe-pdf.ts-test/unittest_utils.ts";
 import {
   AutoPrintRegExp,
   PageLayout,

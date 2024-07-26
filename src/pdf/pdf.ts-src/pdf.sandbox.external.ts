@@ -70,8 +70,8 @@ export class SandboxSupportBase {
   }
 
   /**
-   * @param {String} name - Name of the function to call in the sandbox
-   * @param {Array<Object>} args - Arguments of the function.
+   * @param name Name of the function to call in the sandbox
+   * @param args Arguments of the function.
    */
   callSandboxFunction(
     name: string,
@@ -79,9 +79,12 @@ export class SandboxSupportBase {
       | { callbackId: number; nMilliseconds?: number; interval?: boolean }
       | EventInSandBox,
   ) {
+    if (!this.commFun) {
+      return;
+    }
     try {
       const args_ = this.exportValueToSandbox(args);
-      this.commFun!(name, args_);
+      this.commFun(name, args_);
     } catch (e) {
       this.win.console.error(e);
     }

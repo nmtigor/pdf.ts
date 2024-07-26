@@ -122,6 +122,7 @@ export class StampEditor extends AnnotationEditor {
         /*#static*/ 
         input.type = "file";
         input.accept = _a.supportedTypesStr;
+        const signal = this._uiManager._signal;
         this.#bitmapPromise = new Promise((resolve) => {
             input.on("change", async () => {
                 this.#bitmapPromise = undefined;
@@ -135,11 +136,11 @@ export class StampEditor extends AnnotationEditor {
                 }
                 /*#static*/ 
                 resolve();
-            });
+            }, { signal });
             input.on("cancel", () => {
                 this.remove();
                 resolve();
-            });
+            }, { signal });
         }).finally(() => this.#getBitmapDone());
         /*#static*/  {
             input.click();
@@ -390,6 +391,11 @@ export class StampEditor extends AnnotationEditor {
      * Create the resize observer.
      */
     #createObserver() {
+        if (!this._uiManager._signal) {
+            // This method is called after the canvas has been created but the canvas
+            // creation is async, so it's possible that the viewer has been closed.
+            return;
+        }
         this.#observer = new ResizeObserver((entries) => {
             const rect = entries[0].contentRect;
             if (rect.width && rect.height) {
@@ -397,6 +403,10 @@ export class StampEditor extends AnnotationEditor {
             }
         });
         this.#observer.observe(this.div);
+        this._uiManager._signal.on("abort", () => {
+            this.#observer?.disconnect();
+            this.#observer = undefined;
+        }, { once: true });
     }
     static deserialize(data, parent, uiManager) {
         if (data instanceof StampAnnotationElement) {

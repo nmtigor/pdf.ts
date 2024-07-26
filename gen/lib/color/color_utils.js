@@ -5,7 +5,7 @@
  * conversions that aren't HCT or CAM16.
  *
  * https://github.com/material-foundation/material-color-utilities/blob/main/typescript/utils/color_utils.ts
- * (2023-01-01)
+ * (2024-07-21)
  *
  * @module lib/color/color_utils
  * @license Apache-2.0

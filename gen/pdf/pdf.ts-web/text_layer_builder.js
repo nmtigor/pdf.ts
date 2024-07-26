@@ -61,13 +61,6 @@ export class TextLayerBuilder {
         this.div.tabIndex = 0;
         this.div.className = "textLayer";
     }
-    #finishRendering() {
-        this.#renderingDone = true;
-        const endOfContent = html("div");
-        endOfContent.className = "endOfContent";
-        this.div.append(endOfContent);
-        this.#bindMouse(endOfContent);
-    }
     /**
      * Renders the text layer.
      */
@@ -93,7 +86,11 @@ export class TextLayerBuilder {
         this.highlighter?.setTextMapping(textDivs, textContentItemsStr);
         this.accessibilityManager?.setTextMapping(textDivs);
         await this.#textLayer.render();
-        this.#finishRendering();
+        this.#renderingDone = true;
+        const endOfContent = html("div");
+        endOfContent.className = "endOfContent";
+        this.div.append(endOfContent);
+        this.#bindMouse(endOfContent);
         // Ensure that the textLayer is appended to the DOM *before* handling
         // e.g. a pending search operation.
         this.#onAppend?.(this.div);

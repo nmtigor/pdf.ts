@@ -16,6 +16,9 @@ export const linesOf = (text_x) => text_x.split(/[\n\r\u001C-\u001E\u0085\u2029]
 /** */
 export const isWhitespace = (_x) => /^\s+$/.test(_x);
 /*80--------------------------------------------------------------------------*/
+export const stopPropagation = (evt_x) => {
+    evt_x.stopPropagation();
+};
 /**
  * Event handler to suppress context menu.
  *
@@ -50,5 +53,6 @@ export const decodeABV = textDecoder.decode.bind(textDecoder);
  * @param ms time in milliseconds
  */
 export const wait = (ms = 0) => new Promise((r) => setTimeout(r, ms));
+export const g_abortr = new AbortController();
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=general.js.map

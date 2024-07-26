@@ -75,6 +75,7 @@ import type {
   SidebarView,
   SpreadMode,
 } from "./ui_utils.ts";
+import type { BaseExternalServices } from "./external_services.ts";
 /*80--------------------------------------------------------------------------*/
 
 export const enum WaitOnType {
@@ -145,7 +146,7 @@ export async function waitOnEventOrTimeout({
 }
 /*64----------------------------------------------------------*/
 
-export interface EventMap {
+export type EventMap = {
   afterprint: {};
   annotationeditorlayerrendered: {
     source: PDFPageView;
@@ -460,6 +461,7 @@ export interface EventMap {
     source: PDFFindController;
     state: FindState;
     previous?: boolean | undefined;
+    entireWord: boolean | undefined;
     matchesCount: MatchesCount;
     rawQuery: string | string[] | RegExpMatchArray | null;
   };
@@ -502,7 +504,7 @@ export interface EventMap {
 
   // For testing only
   test: {};
-}
+};
 export type EventName = keyof EventMap;
 
 export type ListenerMap = {
@@ -625,35 +627,59 @@ export class EventBus {
 }
 
 /**
- * NOTE: Only used to support various PDF viewer tests in `mozilla-central`.
+ * NOTE: Only used in the Firefox build-in pdf viewer.
  */
-export class AutomationEventBus extends EventBus {
+export class FirefoxEventBus extends EventBus {
+  #externalServices;
+  #globalEventNames;
+  #isInAutomation;
+
+  constructor(
+    globalEventNames: Set<EventName> | undefined,
+    externalServices: BaseExternalServices,
+    isInAutomation: boolean,
+  ) {
+    super();
+    this.#globalEventNames = globalEventNames;
+    this.#externalServices = externalServices;
+    this.#isInAutomation = isInAutomation;
+  }
+
   override dispatch<EN extends EventName>(eventName: EN, data: EventMap[EN]) {
     /*#static*/ if (!MOZCENTRAL) {
-      throw new Error("Not implemented: AutomationEventBus.dispatch");
+      throw new Error("Not implemented: FirefoxEventBus.dispatch");
     }
     super.dispatch(eventName, data);
 
-    const detail = Object.create(null);
-    if (data) {
-      for (const key in data) {
-        const value = data[key];
-        if (key === "source") {
-          if (<unknown> value === window || <unknown> value === document) {
-            // No need to re-dispatch (already) global events.
-            return;
+    if (this.#isInAutomation) {
+      const detail = Object.create(null);
+      if (data) {
+        for (const key in data) {
+          const value = data[key];
+          if (key === "source") {
+            if (<unknown> value === window || <unknown> value === document) {
+              // No need to re-dispatch (already) global events.
+              return;
+            }
+            continue; // Ignore the `source` property.
           }
-          continue; // Ignore the `source` property.
+          detail[key] = value;
         }
-        detail[key] = value;
       }
+      const event = new CustomEvent(eventName, {
+        bubbles: true,
+        cancelable: true,
+        detail,
+      });
+      document.dispatchEvent(event);
     }
-    const event = new CustomEvent(eventName, {
-      bubbles: true,
-      cancelable: true,
-      detail,
-    });
-    document.dispatchEvent(event);
+
+    if (this.#globalEventNames?.has(eventName)) {
+      this.#externalServices.dispatchGlobalEvent({
+        eventName,
+        detail: data,
+      });
+    }
   }
 }
 /*80--------------------------------------------------------------------------*/

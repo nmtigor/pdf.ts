@@ -23,7 +23,7 @@
 
 import { assertEquals, assertStrictEquals, assertThrows } from "@std/assert";
 import { describe, it } from "@std/testing/bdd.ts";
-import { XRefMock } from "@fe-pdf.ts-test/test_utils.ts";
+import { XRefMock } from "@fe-pdf.ts-test/unittest_utils.ts";
 import {
   arrayBuffersToBytes,
   encodeToXmlString,

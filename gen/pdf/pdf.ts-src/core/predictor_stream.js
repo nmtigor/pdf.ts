@@ -19,6 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { fail } from "../../../lib/util/trace.js";
 import { FormatError } from "../shared/util.js";
 import { DecodeStream } from "./decode_stream.js";
 import { Dict } from "./primitives.js";
@@ -221,6 +222,14 @@ export class PredictorStream extends DecodeStream {
                 throw new FormatError(`Unsupported predictor: ${predictor}`);
         }
         this.bufferLength += rowBytes;
+    }
+    /** @implement */
+    async asyncGetBytes() {
+        return fail("Not implemented");
+    }
+    /** @implement */
+    decodeImage() {
+        return fail("Not implemented");
     }
 }
 /*80--------------------------------------------------------------------------*/

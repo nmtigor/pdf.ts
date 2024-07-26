@@ -90,8 +90,8 @@ import {
 const DEFAULT_CACHE_SIZE = 10;
 
 export const enum PagesCountLimit {
-  FORCE_SCROLL_MODE_PAGE = 15000,
-  FORCE_LAZY_PAGE_INIT = 7500,
+  FORCE_SCROLL_MODE_PAGE = 10000,
+  FORCE_LAZY_PAGE_INIT = 5000,
   PAUSE_EAGER_PAGE_INIT = 250,
 }
 
@@ -231,6 +231,16 @@ export interface PDFViewerOptions {
    * mode.
    */
   pageColors: PageColors | undefined;
+
+  /**
+   * The AbortSignal for the window events.
+   */
+  abortSignal?: AbortSignal;
+
+  /**
+   * Enables hardware acceleration for rendering. The default value is `false`.
+   */
+  enableHWA?: boolean;
 
   /** */
   mlManager: MLManager_g | MLManager_c | MLManager_f | undefined;
@@ -403,6 +413,7 @@ export class PDFViewer {
   maxCanvasPixels;
   l10n;
   #containerTopLeft: dot2d_t | undefined;
+  #enableHWA = false;
   #enablePermissions;
   #eventAbortController: AbortController | undefined;
   pageColors: PageColors | undefined;
@@ -632,6 +643,7 @@ export class PDFViewer {
     this.#enablePermissions = options.enablePermissions || false;
     this.pageColors = options?.pageColors;
     this.#mlManager = options.mlManager;
+    this.#enableHWA = options.enableHWA || false;
 
     this.defaultRenderingQueue = !options.renderingQueue;
     if ((PDFJSDev || GENERIC) && this.defaultRenderingQueue) {
@@ -642,7 +654,17 @@ export class PDFViewer {
       this.renderingQueue = options.renderingQueue;
     }
 
-    this.scroll = watchScroll(this.container, this._scrollUpdate.bind(this));
+    const { abortSignal } = options;
+    abortSignal?.on("abort", () => {
+      this.#resizeObserver.disconnect();
+      this.#resizeObserver = undefined as any;
+    }, { once: true });
+
+    this.scroll = watchScroll(
+      this.container,
+      this._scrollUpdate.bind(this),
+      abortSignal,
+    );
     this.presentationModeState = PresentationModeState.UNKNOWN;
     this._resetView();
 
@@ -914,13 +936,15 @@ export class PDFViewer {
       // getAllText and we could just get text from the Selection object.
 
       // Select all the document.
-      const savedCursor = this.container.style.cursor;
-      this.container.style.cursor = "wait";
+      const { classList } = this.viewer;
+      classList.add("copyAll");
 
-      const interruptCopy = (ev: KeyboardEvent) => (
-        this.#interruptCopyCondition = ev.key === "Escape"
+      const ac = new AbortController();
+      window.addEventListener(
+        "keydown",
+        (ev) => (this.#interruptCopyCondition = ev.key === "Escape"),
+        { signal: ac.signal },
       );
-      window.on("keydown", interruptCopy);
 
       this.getAllText()
         .then(async (text) => {
@@ -936,8 +960,8 @@ export class PDFViewer {
         .finally(() => {
           this.#getAllTextInProgress = false;
           this.#interruptCopyCondition = false;
-          window.off("keydown", interruptCopy);
-          this.container.style.cursor = savedCursor;
+          ac.abort();
+          classList.remove("copyAll");
         });
 
       event.preventDefault();
@@ -1128,6 +1152,7 @@ export class PDFViewer {
             pageColors,
             l10n: this.l10n,
             layerProperties: this._layerProperties,
+            enableHWA: this.#enableHWA,
           });
           this._pages.push(pageView);
         }

@@ -1095,3 +1095,47 @@ export function csscLess(a_x: Cssc, b_x: Cssc) {
 //   return `#${r}${r}${g}${g}${b}${b}`;
 // }
 /*80--------------------------------------------------------------------------*/
+
+/**
+ * Ref. https://github.com/material-foundation/material-color-utilities/blob/main/typescript/palettes/core_palette.ts
+ * Ref. https://m3.material.io/styles/color/static/baseline
+ */
+export class M3KeyColrs {
+  /** Primary */
+  a1: Colr;
+  /** Secondary */
+  a2: Colr;
+  /** Tertiary */
+  a3: Colr;
+  /** Neutral */
+  n1: Colr;
+  /** Neutral variant */
+  n2: Colr;
+  /** Error */
+  error: Colr;
+
+  /**
+   * @const @param src_x
+   */
+  constructor(src_x: Colr) {
+    this.a1 = src_x.dup().setTone(40);
+    this.a2 = src_x.dup().setChroma(src_x.chroma / 3).setTone(40);
+    this.a3 = src_x.dup()
+      .setHue((src_x.hue + 60) % 360).setChroma(src_x.chroma / 2).setTone(40);
+    this.n1 = src_x.dup().setChroma(Math.min(src_x.chroma / 12, 4)).setTone(98);
+    this.n2 = src_x.dup().setChroma(Math.min(src_x.chroma / 6, 8)).setTone(90);
+    this.error = src_x.dup().setHue(25).setChroma(84).setTone(40);
+  }
+
+  toJSON() {
+    return {
+      a1: this.a1.hex,
+      a2: this.a2.hex,
+      a3: this.a3.hex,
+      n1: this.n1.hex,
+      n2: this.n2.hex,
+      error: this.error.hex,
+    };
+  }
+}
+/*80--------------------------------------------------------------------------*/

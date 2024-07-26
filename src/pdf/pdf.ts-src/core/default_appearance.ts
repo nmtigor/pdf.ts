@@ -373,7 +373,7 @@ export class FakeUnicodeFont {
     const canvas = /*#static*/ DENO
       ? denoCanvas!.createCanvas(1, 1) as OffscreenCanvas
       : new OffscreenCanvas(1, 1);
-    this.ctxMeasure = canvas.getContext("2d") as OC2D;
+    this.ctxMeasure = canvas.getContext("2d", { willReadFrequently: true })!;
 
     if (!FakeUnicodeFont.#fontNameId) {
       FakeUnicodeFont.#fontNameId = 1;

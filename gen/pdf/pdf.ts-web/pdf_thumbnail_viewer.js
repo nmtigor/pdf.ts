@@ -19,6 +19,7 @@ export class PDFThumbnailViewer {
     linkService;
     renderingQueue;
     pageColors;
+    enableHWA;
     scroll;
     _thumbnails;
     getThumbnail(index) {
@@ -52,13 +53,15 @@ export class PDFThumbnailViewer {
     _pagesRequests;
     _setImageDisabled;
     pdfDocument;
-    constructor({ container, eventBus, linkService, renderingQueue, pageColors, }) {
+    constructor({ container, eventBus, linkService, renderingQueue, pageColors, abortSignal, enableHWA, }) {
         this.container = container;
         this.eventBus = eventBus;
         this.linkService = linkService;
         this.renderingQueue = renderingQueue;
         this.pageColors = pageColors || undefined;
-        this.scroll = watchScroll(this.container, this.#scrollUpdated);
+        this.enableHWA = enableHWA || false;
+        // this.scroll = watchScroll(this.container, this.#scrollUpdated);
+        this.scroll = watchScroll(this.container, this.#scrollUpdated.bind(this), abortSignal);
         this.#resetView();
     }
     #scrollUpdated = () => {
@@ -151,6 +154,7 @@ export class PDFThumbnailViewer {
                     linkService: this.linkService,
                     renderingQueue: this.renderingQueue,
                     pageColors: this.pageColors,
+                    enableHWA: this.enableHWA,
                 });
                 this._thumbnails.push(thumbnail);
             }

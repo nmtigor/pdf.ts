@@ -13,6 +13,7 @@ import { TESTING } from "../../global.js";
  */
 export class L10n {
     #dir;
+    #elements = new Set();
     #lang;
     #l10n;
     constructor({ lang, isRTL }, l10n) {
@@ -46,6 +47,7 @@ export class L10n {
     }
     /** @implement */
     async translate(element) {
+        this.#elements.add(element);
         try {
             this.#l10n.connectRoot(element);
             await this.#l10n.translateRoots();
@@ -53,6 +55,17 @@ export class L10n {
         catch {
             // Element is under an existing root, so there is no need to add it again.
         }
+    }
+    /**
+     * @inheritdoc
+     * @implement
+     */
+    async destroy() {
+        for (const element of this.#elements) {
+            this.#l10n.disconnectRoot(element);
+        }
+        this.#elements.clear();
+        this.#l10n.pauseObserving();
     }
     /** @implement */
     pause() {

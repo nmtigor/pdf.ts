@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { fail } from "@fe-lib/util/trace.ts";
 import { FormatError } from "../shared/util.ts";
 import { DecodeStream } from "./decode_stream.ts";
 import type { FlateStream } from "./flate_stream.ts";
@@ -260,6 +261,16 @@ export class PredictorStream extends DecodeStream {
         throw new FormatError(`Unsupported predictor: ${predictor}`);
     }
     this.bufferLength += rowBytes;
+  }
+
+  /** @implement */
+  async asyncGetBytes() {
+    return fail("Not implemented");
+  }
+
+  /** @implement */
+  decodeImage() {
+    return fail("Not implemented");
   }
 }
 /*80--------------------------------------------------------------------------*/

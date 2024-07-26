@@ -27,6 +27,9 @@ export class AnnotationEditorLayer {
         return this.#editors.size === 0;
     }
     #uiManager;
+    get _signal() {
+        return this.#uiManager._signal;
+    }
     get scale() {
         return this.#uiManager.viewParameters.realScale;
     }
@@ -264,7 +267,7 @@ export class AnnotationEditorLayer {
         this.div.tabIndex = -1;
         if (this.#textLayer?.div && !this.#boundTextLayerPointerDown) {
             this.#boundTextLayerPointerDown = this.#textLayerPointerDown.bind(this);
-            this.#textLayer.div.on("pointerdown", this.#boundTextLayerPointerDown);
+            this.#textLayer.div.on("pointerdown", this.#boundTextLayerPointerDown, { signal: this.#uiManager._signal });
             this.#textLayer.div.classList.add("highlighting");
         }
     }
@@ -292,7 +295,7 @@ export class AnnotationEditorLayer {
             HighlightEditor.startHighlighting(this, this.#uiManager.direction === "ltr", event);
             this.#textLayer.div.on("pointerup", () => {
                 this.#textLayer.div.classList.remove("free");
-            }, { once: true });
+            }, { once: true, signal: this.#uiManager._signal });
             event.preventDefault();
         }
     }
@@ -300,10 +303,11 @@ export class AnnotationEditorLayer {
         if (this.#boundPointerdown) {
             return;
         }
+        const signal = this.#uiManager._signal;
         this.#boundPointerdown = this.pointerdown.bind(this);
         this.#boundPointerup = this.pointerup.bind(this);
-        this.div.on("pointerdown", this.#boundPointerdown);
-        this.div.on("pointerup", this.#boundPointerup);
+        this.div.on("pointerdown", this.#boundPointerdown, { signal });
+        this.div.on("pointerup", this.#boundPointerup, { signal });
     }
     disableClick() {
         if (!this.#boundPointerdown) {
@@ -400,7 +404,7 @@ export class AnnotationEditorLayer {
                 if (!editor.div.contains(document.activeElement)) {
                     editor.div.on("focusin", () => {
                         editor._focusEventsAllowed = true;
-                    }, { once: true });
+                    }, { once: true, signal: this.#uiManager._signal });
                     activeElement.focus();
                 }
                 else {

@@ -463,7 +463,9 @@ export class HighlightEditor extends AnnotationEditor {
             div.classList.add("free");
         }
         else {
-            this.div.on("keydown", this.#boundKeydown);
+            this.div.on("keydown", this.#boundKeydown, {
+                signal: this._uiManager._signal,
+            });
         }
         const highlightDiv = (this.#highlightDiv = html("div"));
         div.append(highlightDiv);
@@ -553,7 +555,7 @@ export class HighlightEditor extends AnnotationEditor {
         }
         const [pageWidth, pageHeight] = this.pageDimensions;
         const boxes = this.#boxes;
-        const quadPoints = new Array(boxes.length * 8);
+        const quadPoints = new Float32Array(boxes.length * 8);
         let i = 0;
         for (const { x, y, width, height } of boxes) {
             const sx = x * pageWidth;
@@ -578,7 +580,8 @@ export class HighlightEditor extends AnnotationEditor {
         const pointerMove = (e) => {
             this.#highlightMove(parent, e);
         };
-        const pointerDownOptions = { capture: true, passive: false };
+        const signal = parent._signal;
+        const pointerDownOptions = { capture: true, passive: false, signal };
         const pointerDown = (e) => {
             // Avoid to have undesired clicks during the drawing.
             e.preventDefault();
@@ -592,11 +595,11 @@ export class HighlightEditor extends AnnotationEditor {
             window.off("contextmenu", noContextMenu);
             this.#endHighlight(parent, e);
         };
-        window.on("blur", pointerUpCallback);
-        window.on("pointerup", pointerUpCallback);
+        window.on("blur", pointerUpCallback, { signal });
+        window.on("pointerup", pointerUpCallback, { signal });
         window.on("pointerdown", pointerDown, pointerDownOptions);
-        window.on("contextmenu", noContextMenu);
-        textLayer.on("pointermove", pointerMove);
+        window.on("contextmenu", noContextMenu, { signal });
+        textLayer.on("pointermove", pointerMove, { signal });
         // this._freeHighlight = new FreeOutliner(
         //   { x, y },
         //   [layerX, layerY, parentWidth, parentHeight],

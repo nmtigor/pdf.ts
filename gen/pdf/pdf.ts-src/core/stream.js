@@ -19,6 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { fail } from "../../../lib/util/trace.js";
 import { stringToBytes } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 /*80--------------------------------------------------------------------------*/
@@ -65,6 +66,10 @@ export class Stream extends BaseStream {
         }
         this.pos = end;
         return bytes.subarray(pos, end);
+    }
+    /** @implement */
+    async asyncGetBytes() {
+        return fail("Not implemented");
     }
     /** @implement */
     getByteRange(begin, end) {

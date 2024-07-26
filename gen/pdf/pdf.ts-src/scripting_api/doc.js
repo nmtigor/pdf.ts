@@ -5,12 +5,26 @@
  * @module pdf/pdf.ts-src/scripting_api/doc.ts
  * @license Apache-2.0
  ******************************************************************************/
+/* Copyright 2020 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { isObjectLike } from "../../../lib/jslang.js";
+import { serializeError } from "./app_utils.js";
 import { createActionsMap } from "./common.js";
 import { ZoomType } from "./constants.js";
 import { PDFObject } from "./pdf_object.js";
 import { PrintParams } from "./print_params.js";
-import { serializeError } from "./app_utils.js";
-import { isObjectLike } from "../../../lib/jslang.js";
 const DOC_EXTERNAL = false;
 class InfoProxyHandler {
     static get(obj, prop) {
@@ -199,10 +213,11 @@ export class Doc extends PDFObject {
     }
     _actions;
     _globalEval;
-    _pageActions = new Map();
+    _pageActions;
     _userActivation = false;
     _disablePrinting = false;
     _disableSaving = false;
+    _otherPageActions;
     _xfa;
     get xfa() {
         return this._xfa;
@@ -306,15 +321,18 @@ export class Doc extends PDFObject {
     }
     _dispatchPageEvent(name, actions, pageNumber) {
         if (name === "PageOpen") {
+            this._pageActions ||= new Map();
             if (!this._pageActions.has(pageNumber)) {
                 this._pageActions.set(pageNumber, createActionsMap(actions));
             }
             this._pageNum = pageNumber - 1;
         }
-        const actions_ = this._pageActions.get(pageNumber)?.get(name);
-        if (actions_) {
-            for (const action of actions_) {
-                this._globalEval(action);
+        for (const acts of [this._pageActions, this._otherPageActions]) {
+            const actions_1 = acts?.get(pageNumber)?.get(name);
+            if (actions_1) {
+                for (const action of actions_1) {
+                    this._globalEval(action);
+                }
             }
         }
     }
@@ -330,6 +348,33 @@ export class Doc extends PDFObject {
         this._fields.set(name, field);
         this._fieldNames.push(name);
         this._numFields++;
+        // Fields on a page can have PageOpen/PageClose actions.
+        const po = field.obj._actions.get("PageOpen");
+        const pc = field.obj._actions.get("PageClose");
+        if (po || pc) {
+            this._otherPageActions ||= new Map();
+            let actions = this._otherPageActions.get(field.obj._page + 1);
+            if (!actions) {
+                actions = new Map();
+                this._otherPageActions.set(field.obj._page + 1, actions);
+            }
+            if (po) {
+                let poActions = actions.get("PageOpen");
+                if (!poActions) {
+                    poActions = [];
+                    actions.set("PageOpen", poActions);
+                }
+                poActions.push(...po);
+            }
+            if (pc) {
+                let pcActions = actions.get("PageClose");
+                if (!pcActions) {
+                    pcActions = [];
+                    actions.set("PageClose", pcActions);
+                }
+                pcActions.push(...pc);
+            }
+        }
     }
     _getDate(date) {
         // date format is D:YYYYMMDDHHmmSS[OHH'mm']

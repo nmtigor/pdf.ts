@@ -98,7 +98,7 @@ export const DefaultStandardFontDataFactory = DOMStandardFontDataFactory;
  * @headconst @param src_x Can be a URL where a PDF file is located, a typed
  *    array (Uint8Array) already populated with data, or a parameter object.
  */
-export function getDocument(src_x) {
+export function getDocument(src_x = {}) {
     let src = src_x;
     /*#static*/  {
         if (typeof src_x === "string" || src_x instanceof URL) {
@@ -107,12 +107,6 @@ export function getDocument(src_x) {
         else if (src instanceof ArrayBuffer || ArrayBuffer.isView(src)) {
             src = { data: src_x };
         }
-    }
-    if (typeof src !== "object") {
-        throw new Error("Invalid parameter in getDocument, need parameter object.");
-    }
-    if (!src.url && !src.data && !src.range) {
-        throw new Error("Invalid parameter object: need either .data, .range or .url");
     }
     const task = new PDFDocumentLoadingTask();
     const { docId } = task;
@@ -164,6 +158,7 @@ export function getDocument(src_x) {
     const disableStream = src.disableStream === true;
     const disableAutoFetch = src.disableAutoFetch === true;
     const pdfBug = src.pdfBug === true;
+    const enableHWA = src.enableHWA === true;
     // Parameters whose default values depend on other parameters.
     const length = rangeTransport ? rangeTransport.length : src.length ?? NaN;
     const useSystemFonts = typeof src.useSystemFonts === "boolean"
@@ -179,7 +174,7 @@ export function getDocument(src_x) {
                 isValidFetchUrl(cMapUrl, globalThis.document?.baseURI) &&
                 isValidFetchUrl(standardFontDataUrl, globalThis.document?.baseURI));
     const canvasFactory = src.canvasFactory ||
-        new DefaultCanvasFactory({ ownerDocument });
+        new DefaultCanvasFactory({ ownerDocument, enableHWA });
     const filterFactory = src.filterFactory ||
         new DefaultFilterFactory({ docId, ownerDocument });
     // Parameters only intended for development/testing purposes.
@@ -269,6 +264,9 @@ export function getDocument(src_x) {
         }
         else if (!data) {
             /*#static*/ 
+            if (!url) {
+                throw new Error("getDocument - no `url` parameter provided.");
+            }
             const createPDFNetworkStream = (params) => {
                 if (GENERIC) {
                     if (isNodeJS) {
@@ -1455,6 +1453,13 @@ export class PDFWorker {
         }
         return this.#readyCapability.promise;
     }
+    #resolve() {
+        this.#readyCapability.resolve();
+        // Send global setting, e.g. verbosity level.
+        this.#messageHandler.send("configure", {
+            verbosity: this.verbosity,
+        });
+    }
     #port;
     /**
      * The current `workerPort`, when it exists.
@@ -1494,105 +1499,91 @@ export class PDFWorker {
             // Ignoring "ready" event -- MessageHandler should already be initialized
             // and ready to accept messages.
         });
-        this.#readyCapability.resolve();
-        // Send global setting, e.g. verbosity level.
-        this.#messageHandler.send("configure", {
-            verbosity: this.verbosity,
-        });
+        this.#resolve();
     }
     #initialize() {
         // If worker support isn't disabled explicit and the browser has worker
         // support, create a new web worker and test if it/the browser fulfills
         // all requirements to run parts of pdf.js in a web worker.
         // Right now, the requirement is, that an Uint8Array is still an
-        // Uint8Array as it arrives on the worker. (Chrome added this with v.15.)
-        if (!PDFWorkerUtil.isWorkerDisabled &&
-            !_a.#mainThreadWorkerMessageHandler) {
-            let { workerSrc } = _a;
-            try {
-                // Wraps workerSrc path into blob URL, if the former does not belong
-                // to the same origin.
-                /*#static*/  {
-                    if (!PDFWorkerUtil.isSameOrigin(window.location.href, workerSrc)) {
-                        workerSrc = PDFWorkerUtil.createCDNWrapper(new URL(workerSrc, window.location).href);
-                    }
-                }
-                const worker = new Worker(workerSrc, { type: "module" });
-                const messageHandler = new MessageHandler("main", "worker", worker);
-                const terminateEarly = () => {
-                    worker.removeEventListener("error", onWorkerError);
-                    messageHandler.destroy();
-                    worker.terminate();
-                    if (this.destroyed) {
-                        this.#readyCapability.reject(new Error("Worker was destroyed"));
-                    }
-                    else {
-                        // Fall back to fake worker if the termination is caused by an
-                        // error (e.g. NetworkError / SecurityError).
-                        this.#setupFakeWorker();
-                    }
-                };
-                const onWorkerError = (evt) => {
-                    console.error(evt);
-                    if (!this._webWorker) {
-                        // Worker failed to initialize due to an error. Clean up and fall
-                        // back to the fake worker.
-                        terminateEarly();
-                    }
-                };
-                worker.on("error", onWorkerError);
-                messageHandler.on("test", (data) => {
-                    worker.removeEventListener("error", onWorkerError);
-                    if (this.destroyed) {
-                        terminateEarly();
-                        return; // worker was destroyed
-                    }
-                    if (data) {
-                        this.#messageHandler = messageHandler;
-                        this.#port = worker;
-                        this._webWorker = worker;
-                        this.#readyCapability.resolve();
-                        // Send global setting, e.g. verbosity level.
-                        messageHandler.send("configure", {
-                            verbosity: this.verbosity,
-                        });
-                    }
-                    else {
-                        this.#setupFakeWorker();
-                        messageHandler.destroy();
-                        worker.terminate();
-                    }
-                });
-                messageHandler.on("ready", () => {
-                    worker.removeEventListener("error", onWorkerError);
-                    if (this.destroyed) {
-                        terminateEarly();
-                        return; // worker was destroyed
-                    }
-                    try {
-                        sendTest();
-                    }
-                    catch {
-                        // We need fallback to a faked worker.
-                        this.#setupFakeWorker();
-                    }
-                });
-                const sendTest = () => {
-                    const testObj = new Uint8Array();
-                    // Ensure that we can use `postMessage` transfers.
-                    messageHandler.send("test", testObj, [testObj.buffer]);
-                };
-                // It might take time for the worker to initialize. We will try to send
-                // the "test" message immediately, and once the "ready" message arrives.
-                // The worker shall process only the first received "test" message.
-                sendTest();
-                return;
-            }
-            catch {
-                info("The worker has been disabled.");
-            }
+        // Uint8Array as it arrives on the worker.
+        if (PDFWorkerUtil.isWorkerDisabled ||
+            _a.#mainThreadWorkerMessageHandler) {
+            this.#setupFakeWorker();
+            return;
         }
-        // Either workers are disabled, not supported or have thrown an exception.
+        let { workerSrc } = _a;
+        try {
+            // Wraps workerSrc path into blob URL, if the former does not belong
+            // to the same origin.
+            /*#static*/  {
+                if (!PDFWorkerUtil.isSameOrigin(window.location.href, workerSrc)) {
+                    workerSrc = PDFWorkerUtil.createCDNWrapper(new URL(workerSrc, window.location).href);
+                }
+            }
+            const worker = new Worker(workerSrc, { type: "module" });
+            const messageHandler = new MessageHandler("main", "worker", worker);
+            const terminateEarly = () => {
+                ac.abort();
+                messageHandler.destroy();
+                worker.terminate();
+                if (this.destroyed) {
+                    this.#readyCapability.reject(new Error("Worker was destroyed"));
+                }
+                else {
+                    // Fall back to fake worker if the termination is caused by an
+                    // error (e.g. NetworkError / SecurityError).
+                    this.#setupFakeWorker();
+                }
+            };
+            const ac = new AbortController();
+            worker.on("error", () => {
+                if (!this._webWorker) {
+                    // Worker failed to initialize due to an error. Clean up and fall
+                    // back to the fake worker.
+                    terminateEarly();
+                }
+            }, { signal: ac.signal });
+            messageHandler.on("test", (data) => {
+                ac.abort();
+                if (this.destroyed || !data) {
+                    terminateEarly();
+                    return;
+                }
+                this.#messageHandler = messageHandler;
+                this.#port = worker;
+                this._webWorker = worker;
+                this.#resolve();
+            });
+            messageHandler.on("ready", () => {
+                ac.abort();
+                if (this.destroyed) {
+                    terminateEarly();
+                    return;
+                }
+                try {
+                    sendTest();
+                }
+                catch {
+                    // We need fallback to a faked worker.
+                    this.#setupFakeWorker();
+                }
+            });
+            const sendTest = () => {
+                const testObj = new Uint8Array();
+                // Ensure that we can use `postMessage` transfers.
+                messageHandler.send("test", testObj, [testObj.buffer]);
+            };
+            // It might take time for the worker to initialize. We will try to send
+            // the "test" message immediately, and once the "ready" message arrives.
+            // The worker shall process only the first received "test" message.
+            sendTest();
+            return;
+        }
+        catch {
+            info("The worker has been disabled.");
+        }
+        // Either workers are not supported or have thrown an exception.
         // Thus, we fallback to a faked worker.
         this.#setupFakeWorker();
     }
@@ -1615,13 +1606,8 @@ export class PDFWorker {
             // messages -- the main thread sends to it self.
             const workerHandler = new MessageHandler(id + "_worker", id, port);
             workerMessageHandler.setup(workerHandler, port);
-            const messageHandler = new MessageHandler(id, id + "_worker", port);
-            this.#messageHandler = messageHandler;
-            this.#readyCapability.resolve();
-            // Send global setting, e.g. verbosity level.
-            messageHandler.send("configure", {
-                verbosity: this.verbosity,
-            });
+            this.#messageHandler = new MessageHandler(id, id + "_worker", port);
+            this.#resolve();
         })
             .catch((reason) => {
             this.#readyCapability.reject(new Error(`Setting up fake worker failed: "${reason.message}".`));
@@ -2451,6 +2437,7 @@ export class RenderTask {
  * @ignore
  */
 export class InternalRenderTask {
+    #rAF;
     static #canvasInUse = new WeakSet();
     callback;
     params;
@@ -2530,6 +2517,10 @@ export class InternalRenderTask {
         this.running = false;
         this.cancelled = true;
         this.gfx?.endDrawing();
+        if (this.#rAF) {
+            window.cancelAnimationFrame(this.#rAF);
+            this.#rAF = undefined;
+        }
         InternalRenderTask.#canvasInUse.delete(this._canvas);
         this.callback(error ||
             new RenderingCancelledException(`Rendering cancelled, page ${this._pageIndex + 1}`, extraDelay));
@@ -2559,7 +2550,8 @@ export class InternalRenderTask {
     };
     _scheduleNext = () => {
         if (this._useRequestAnimationFrame) {
-            globalThis.requestAnimationFrame(() => {
+            this.#rAF = globalThis.requestAnimationFrame(() => {
+                this.#rAF = undefined;
                 this._next().catch(this.cancel);
             });
         }

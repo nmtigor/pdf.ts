@@ -991,6 +991,7 @@ export class PDFFindController {
             source: this,
             state,
             previous,
+            entireWord: this.#state?.entireWord,
             matchesCount: this.#requestMatchesCount(),
             rawQuery: this.#state?.query ?? null,
         });

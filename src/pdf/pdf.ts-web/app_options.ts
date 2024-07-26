@@ -22,6 +22,7 @@
  */
 
 import { Locale } from "@fe-lib/Locale.ts";
+import { D_rp_web, D_rpe_cmap, D_rpe_sfont } from "@fe-src/alias.ts";
 import {
   CHROME,
   GENERIC,
@@ -30,6 +31,7 @@ import {
   PDFJSDev,
   TESTING,
 } from "@fe-src/global.ts";
+import { AD_gh } from "../alias.ts";
 import {
   AnnotationEditorType,
   AnnotationMode,
@@ -43,8 +45,6 @@ import {
   SpreadMode,
   TextLayerMode,
 } from "./ui_utils.ts";
-import { AD_gh } from "../alias.ts";
-import { D_rp_web, D_rpe_cmap, D_rpe_sfont } from "@fe-src/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 export enum OptionKind {
@@ -332,6 +332,11 @@ const defaultOptions = {
   docBaseUrl: {
     value: undefined as string | undefined,
     kind: OptionKind.API,
+  },
+  enableHWA: {
+    /** @type {boolean} */
+    value: !MOZCENTRAL,
+    kind: OptionKind.API + OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   enableXfa: {
     value: true,
@@ -650,6 +655,9 @@ export abstract class AppOptions {
   }
   static get docBaseUrl() {
     return this.#get("docBaseUrl") as string | undefined;
+  }
+  static get enableHWA() {
+    return this.#get("enableHWA") as boolean;
   }
   static get enableXfa() {
     return this.#get("enableXfa") as boolean;

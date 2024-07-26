@@ -83,6 +83,9 @@ export class AnnotationEditorLayer {
   }
 
   #uiManager;
+  get _signal() {
+    return this.#uiManager._signal;
+  }
   get scale() {
     return this.#uiManager.viewParameters.realScale;
   }
@@ -373,6 +376,7 @@ export class AnnotationEditorLayer {
       this.#textLayer.div.on(
         "pointerdown",
         this.#boundTextLayerPointerDown,
+        { signal: this.#uiManager._signal },
       );
       this.#textLayer.div.classList.add("highlighting");
     }
@@ -416,7 +420,7 @@ export class AnnotationEditorLayer {
         () => {
           this.#textLayer!.div.classList.remove("free");
         },
-        { once: true },
+        { once: true, signal: this.#uiManager._signal },
       );
       event.preventDefault();
     }
@@ -426,10 +430,11 @@ export class AnnotationEditorLayer {
     if (this.#boundPointerdown) {
       return;
     }
+    const signal = this.#uiManager._signal;
     this.#boundPointerdown = this.pointerdown.bind(this);
     this.#boundPointerup = this.pointerup.bind(this);
-    this.div!.on("pointerdown", this.#boundPointerdown);
-    this.div!.on("pointerup", this.#boundPointerup);
+    this.div!.on("pointerdown", this.#boundPointerdown, { signal });
+    this.div!.on("pointerup", this.#boundPointerup, { signal });
   }
 
   disableClick() {
@@ -540,13 +545,9 @@ export class AnnotationEditorLayer {
       this.#editorFocusTimeoutId = setTimeout(() => {
         this.#editorFocusTimeoutId = undefined;
         if (!editor.div!.contains(document.activeElement)) {
-          editor.div!.on(
-            "focusin",
-            () => {
-              editor._focusEventsAllowed = true;
-            },
-            { once: true },
-          );
+          editor.div!.on("focusin", () => {
+            editor._focusEventsAllowed = true;
+          }, { once: true, signal: this.#uiManager._signal });
           (activeElement as HSElement).focus();
         } else {
           editor._focusEventsAllowed = true;

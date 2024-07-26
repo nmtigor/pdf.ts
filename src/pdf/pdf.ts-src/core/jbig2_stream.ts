@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { fail } from "@fe-lib/util/trace.ts";
 import { shadow } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { ImageStream } from "./decode_stream.ts";
@@ -44,9 +45,20 @@ export class Jbig2Stream extends ImageStream {
 
   /** @implement */
   readBlock() {
+    this.decodeImage();
+  }
+
+  /** @implement */
+  async asyncGetBytes() {
+    return fail("Not implemented");
+  }
+
+  /** @implement */
+  decodeImage(bytes?: Uint8Array | Uint8ClampedArray) {
     if (this.eof) {
-      return;
+      return this.buffer;
     }
+    bytes ||= this.bytes;
     const jbig2Image = new Jbig2Image();
 
     const chunks: Chunk[] = [];
@@ -57,7 +69,7 @@ export class Jbig2Stream extends ImageStream {
         chunks.push({ data: globals, start: 0, end: globals.length });
       }
     }
-    chunks.push({ data: this.bytes, start: 0, end: this.bytes.length });
+    chunks.push({ data: bytes, start: 0, end: bytes.length });
     const data = jbig2Image.parseChunks(chunks)!;
     const dataLength = data.length;
 
@@ -68,6 +80,12 @@ export class Jbig2Stream extends ImageStream {
     this.buffer = data;
     this.bufferLength = dataLength;
     this.eof = true;
+
+    return this.buffer;
+  }
+
+  override get canAsyncDecodeImageFromBuffer() {
+    return this.stream.isAsync;
   }
 
   override ensureBuffer(requested: number) {

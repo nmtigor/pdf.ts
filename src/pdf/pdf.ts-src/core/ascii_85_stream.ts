@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { fail } from "@fe-lib/util/trace.ts";
 import { BaseStream } from "./base_stream.ts";
 import { isWhiteSpace } from "./core_utils.ts";
 import { DecodeStream } from "./decode_stream.ts";
@@ -104,6 +105,16 @@ export class Ascii85Stream extends DecodeStream {
         t >>= 8;
       }
     }
+  }
+
+  /** @implement */
+  async asyncGetBytes() {
+    return fail("Not implemented");
+  }
+
+  /** @implement */
+  decodeImage() {
+    return fail("Not implemented");
   }
 }
 /*80--------------------------------------------------------------------------*/

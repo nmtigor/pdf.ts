@@ -45,6 +45,7 @@ export type L10nCtorP = {
  */
 export class L10n implements IL10n {
   #dir: "rtl" | "ltr";
+  #elements = new Set<HTMLElement>();
   #lang;
   #l10n!: DOMLocalization;
 
@@ -93,12 +94,25 @@ export class L10n implements IL10n {
 
   /** @implement */
   async translate(element: HTMLElement) {
+    this.#elements.add(element);
     try {
       this.#l10n.connectRoot(element);
       await this.#l10n.translateRoots();
     } catch {
       // Element is under an existing root, so there is no need to add it again.
     }
+  }
+
+  /**
+   * @inheritdoc
+   * @implement
+   */
+  async destroy() {
+    for (const element of this.#elements) {
+      this.#l10n.disconnectRoot(element);
+    }
+    this.#elements.clear();
+    this.#l10n.pauseObserving();
   }
 
   /** @implement */

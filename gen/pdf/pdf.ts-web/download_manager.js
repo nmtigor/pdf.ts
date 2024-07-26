@@ -45,14 +45,15 @@ function download(blobUrl, filename) {
 export class DownloadManager {
     #openBlobUrls = new WeakMap();
     onerror;
-    /** @implement */
-    downloadUrl(url, filename, _options) {
-        if (!createValidAbsoluteUrl(url, "http://example.com")) {
-            console.error(`downloadUrl - not a valid URL: ${url}`);
-            return; // restricted/invalid URL
-        }
-        download(url + "#pdfjs.action=download", filename);
-    }
+    //kkkk TOCLEANUP
+    // /** @implement */
+    // downloadUrl(url: string, filename: string, _options?: object) {
+    //   if (!createValidAbsoluteUrl(url, "http://example.com")) {
+    //     console.error(`downloadUrl - not a valid URL: ${url}`);
+    //     return; // restricted/invalid URL
+    //   }
+    //   download(url + "#pdfjs.action=download", filename);
+    // }
     /** @implement */
     downloadData(data, filename, contentType) {
         const blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
@@ -93,8 +94,18 @@ export class DownloadManager {
         return false;
     }
     /** @implement */
-    download(blob, url, filename, _options) {
-        const blobUrl = URL.createObjectURL(blob);
+    download(data, url, filename, _options) {
+        let blobUrl;
+        if (data) {
+            blobUrl = URL.createObjectURL(new Blob([data], { type: "application/pdf" }));
+        }
+        else {
+            if (!createValidAbsoluteUrl(url, "http://example.com")) {
+                console.error(`download - not a valid URL: ${url}`);
+                return;
+            }
+            blobUrl = url + "#pdfjs.action=download";
+        }
         download(blobUrl, filename);
     }
 }

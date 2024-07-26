@@ -21,10 +21,12 @@
  * limitations under the License.
  */
 
+import { isObjectLike } from "@fe-lib/jslang.ts";
 import type { ScriptingDocProperties } from "@fe-pdf.ts-web/app.ts";
 import type { AnnotActions } from "../core/core_utils.ts";
 import type { Name } from "../core/primitives.ts";
 import type { FieldWrapped } from "./app.ts";
+import { serializeError } from "./app_utils.ts";
 import type { ScriptingActionName, ScriptingActions } from "./common.ts";
 import { createActionsMap } from "./common.ts";
 import { ZoomType } from "./constants.ts";
@@ -32,8 +34,6 @@ import type { EventDispatcher } from "./event.ts";
 import type { ScriptingData, SendData } from "./pdf_object.ts";
 import { PDFObject } from "./pdf_object.ts";
 import { PrintParams } from "./print_params.ts";
-import { serializeError } from "./app_utils.ts";
-import { isObjectLike } from "@fe-lib/jslang.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface Info_ {
@@ -312,10 +312,11 @@ export class Doc extends PDFObject<SendDocData_> {
 
   _actions;
   _globalEval;
-  _pageActions = new Map<number, ScriptingActions>();
+  _pageActions: Map<number, ScriptingActions> | undefined;
   _userActivation = false;
   _disablePrinting = false;
   _disableSaving = false;
+  _otherPageActions: Map<number, ScriptingActions> | undefined;
 
   _xfa: unknown;
   get xfa() {
@@ -436,16 +437,19 @@ export class Doc extends PDFObject<SendDocData_> {
     pageNumber: number,
   ) {
     if (name === "PageOpen") {
+      this._pageActions ||= new Map();
       if (!this._pageActions.has(pageNumber)) {
         this._pageActions.set(pageNumber, createActionsMap(actions));
       }
       this._pageNum = pageNumber - 1;
     }
 
-    const actions_ = this._pageActions.get(pageNumber)?.get(name);
-    if (actions_) {
-      for (const action of actions_) {
-        this._globalEval(action);
+    for (const acts of [this._pageActions, this._otherPageActions]) {
+      const actions_1 = acts?.get(pageNumber)?.get(name);
+      if (actions_1) {
+        for (const action of actions_1) {
+          this._globalEval(action);
+        }
       }
     }
   }
@@ -463,6 +467,34 @@ export class Doc extends PDFObject<SendDocData_> {
     this._fields.set(name, field);
     this._fieldNames.push(name);
     this._numFields++;
+
+    // Fields on a page can have PageOpen/PageClose actions.
+    const po = field.obj._actions.get("PageOpen");
+    const pc = field.obj._actions.get("PageClose");
+    if (po || pc) {
+      this._otherPageActions ||= new Map();
+      let actions = this._otherPageActions.get(field.obj._page + 1);
+      if (!actions) {
+        actions = new Map();
+        this._otherPageActions.set(field.obj._page + 1, actions);
+      }
+      if (po) {
+        let poActions = actions.get("PageOpen");
+        if (!poActions) {
+          poActions = [];
+          actions.set("PageOpen", poActions);
+        }
+        poActions.push(...po);
+      }
+      if (pc) {
+        let pcActions = actions.get("PageClose");
+        if (!pcActions) {
+          pcActions = [];
+          actions.set("PageClose", pcActions);
+        }
+        pcActions.push(...pc);
+      }
+    }
   }
 
   _getDate(date?: string) {

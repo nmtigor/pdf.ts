@@ -21,20 +21,14 @@
  * limitations under the License.
  */
 
-import type { OC2D, TypedArray } from "@fe-lib/alias.ts";
+import type { OC2D, TypedArray, uint } from "@fe-lib/alias.ts";
 import { assert } from "@fe-lib/util/trace.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import {
   convertBlackAndWhiteToRGBA,
   convertToRGBA,
 } from "../shared/image_utils.ts";
-import {
-  FeatureTest,
-  FormatError,
-  ImageKind,
-  info,
-  warn,
-} from "../shared/util.ts";
+import { FeatureTest, FormatError, ImageKind, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { ColorSpace, type CS } from "./colorspace.ts";
 import { DecodeStream, ImageStream } from "./decode_stream.ts";
@@ -157,11 +151,18 @@ interface GetImageBytesP_ {
   internal?: boolean;
 }
 
+export type DecoderOptions = {
+  numComponents: uint;
+  isIndexedColormap: boolean;
+  smaskInData: boolean;
+};
+
 /**
  * 8.9
  */
 export class PDFImage {
   image;
+  jpxDecoderOptions: DecoderOptions | undefined;
 
   width: number;
   height: number;
@@ -195,7 +196,6 @@ export class PDFImage {
     localColorSpaceCache,
   }: PDFImageCtorP_) {
     this.image = image;
-    let jpxDecode = false;
     const dict = image.dict!;
 
     const filter = dict.get("F", "Filter");
@@ -226,7 +226,11 @@ export class PDFImage {
           bitsPerComponent: image.bitsPerComponent,
         } = JpxImage.parseImageProperties(image.stream));
         image.stream.reset();
-        jpxDecode = true;
+        this.jpxDecoderOptions = {
+          numComponents: 0,
+          isIndexedColormap: false,
+          smaskInData: dict.has("SMaskInData"),
+        } satisfies DecoderOptions;
         break;
       case "JBIG2Decode":
         image.bitsPerComponent = 1;
@@ -234,8 +238,8 @@ export class PDFImage {
         break;
     }
 
-    let width = <number> dict.get("W", "Width");
-    let height = <number> dict.get("H", "Height");
+    let width = dict.get("W", "Width") as number;
+    let height = dict.get("H", "Height") as number;
 
     if (
       Number.isInteger(image.width) &&
@@ -259,9 +263,9 @@ export class PDFImage {
     this.width = width;
     this.height = height;
 
-    this.interpolate = <boolean> dict.get("I", "Interpolate");
-    this.imageMask = <boolean> dict.get("IM", "ImageMask") || false;
-    this.matte = <number[] | undefined> dict.get("Matte") || false;
+    this.interpolate = dict.get("I", "Interpolate") as boolean;
+    this.imageMask = dict.get("IM", "ImageMask") as boolean || false;
+    this.matte = dict.get("Matte") as number[] | undefined || false;
 
     let bitsPerComponent = image.bitsPerComponent;
     if (!bitsPerComponent) {
@@ -283,23 +287,31 @@ export class PDFImage {
 
     if (!this.imageMask) {
       let colorSpace = dict.getRaw("CS") || dict.getRaw("ColorSpace");
-      if (!colorSpace) {
-        info("JPX images (which do not require color spaces)");
-        switch (image.numComps) {
-          case 1:
-            colorSpace = Name.get("DeviceGray");
-            break;
-          case 3:
-            colorSpace = Name.get("DeviceRGB");
-            break;
-          case 4:
-            colorSpace = Name.get("DeviceCMYK");
-            break;
-          default:
-            throw new Error(
-              `JPX images with ${image.numComps} color components not supported.`,
-            );
+      const hasColorSpace = !!colorSpace;
+      if (!hasColorSpace) {
+        if (this.jpxDecoderOptions) {
+          colorSpace = Name.get("DeviceRGBA");
+        } else {
+          switch (image.numComps) {
+            case 1:
+              colorSpace = Name.get("DeviceGray");
+              break;
+            case 3:
+              colorSpace = Name.get("DeviceRGB");
+              break;
+            case 4:
+              colorSpace = Name.get("DeviceCMYK");
+              break;
+            default:
+              throw new Error(
+                `Images with ${image.numComps} color components not supported.`,
+              );
+          }
         }
+      } else if (this.jpxDecoderOptions?.smaskInData) {
+        // If the jpx image has a color space then it mustn't be used in order
+        // to be able to use the color space that comes from the pdf.
+        colorSpace = Name.get("DeviceRGBA");
       }
 
       this.colorSpace = ColorSpace.parse({
@@ -311,9 +323,16 @@ export class PDFImage {
       });
       this.numComps = this.colorSpace.numComps;
 
-      // If the jpx image has a color space then it musn't be used in order to
-      // be able to use the color space that comes from the pdf.
-      this.ignoreColorSpace = jpxDecode && this.colorSpace.name === "Indexed";
+      if (this.jpxDecoderOptions) {
+        // this.jpxDecoderOptions.numComponents = hasColorSpace ? this.numComp : 0; //kkkk bug?
+        this.jpxDecoderOptions.numComponents = hasColorSpace
+          ? this.numComps!
+          : 0;
+        // If the jpx image has a color space then it musn't be used in order to
+        // be able to use the color space that comes from the pdf.
+        this.jpxDecoderOptions.isIndexedColormap =
+          this.colorSpace.name === "Indexed";
+      }
     }
 
     this.decode = dict.getArray("D", "Decode") as number[] | undefined;
@@ -672,7 +691,7 @@ export class PDFImage {
     return output;
   }
 
-  fillOpacity(
+  async fillOpacity(
     rgbaBuf: Uint8ClampedArray,
     width: number,
     height: number,
@@ -693,7 +712,7 @@ export class PDFImage {
       sw = smask.width;
       sh = smask.height;
       alphaBuf = new Uint8ClampedArray(sw * sh);
-      smask.fillGrayBuffer(alphaBuf);
+      await smask.fillGrayBuffer(alphaBuf);
       if (sw !== width || sh !== height) {
         alphaBuf = resizeImageMask(alphaBuf, smask.bpc, sw, sh, width, height);
       }
@@ -703,7 +722,7 @@ export class PDFImage {
         sh = mask.height;
         alphaBuf = new Uint8ClampedArray(sw * sh);
         mask.numComps = 1;
-        mask.fillGrayBuffer(alphaBuf);
+        await mask.fillGrayBuffer(alphaBuf);
 
         // Need to invert values in rgbaBuf
         for (i = 0, ii = sw * sh; i < ii; ++i) {
@@ -803,6 +822,28 @@ export class PDFImage {
     const mustBeResized = isOffscreenCanvasSupported &&
       ImageResizer.needsToBeResized(drawWidth, drawHeight);
 
+    if (this.colorSpace!.name === "DeviceRGBA") {
+      imgData.kind = ImageKind.RGBA_32BPP;
+      const imgArray = (imgData.data = await this.getImageBytes(
+        originalHeight * originalWidth * 4,
+        {},
+      ));
+
+      if (isOffscreenCanvasSupported) {
+        if (!mustBeResized) {
+          return this.createBitmap(
+            ImageKind.RGBA_32BPP,
+            drawWidth,
+            drawHeight,
+            imgArray,
+          );
+        }
+        return ImageResizer.createImage(imgData, false);
+      }
+
+      return imgData;
+    }
+
     if (!forceRGBA) {
       // If it is a 1-bit-per-pixel grayscale (i.e. black-and-white) image
       // without any complications, we pass a same-sized copy to the main
@@ -827,7 +868,7 @@ export class PDFImage {
         drawWidth === originalWidth &&
         drawHeight === originalHeight
       ) {
-        const data = this.getImageBytes(originalHeight * rowBytes, {});
+        const data = await this.getImageBytes(originalHeight * rowBytes, {});
         if (isOffscreenCanvasSupported) {
           if (mustBeResized) {
             return ImageResizer.createImage(
@@ -854,7 +895,7 @@ export class PDFImage {
           );
           const buffer = imgData.data!;
           for (let i = 0, ii = buffer.length; i < ii; i++) {
-            buffer[i] ^= 0xff;
+            (buffer[i] as number) ^= 0xff;
           }
         }
         return imgData;
@@ -885,7 +926,7 @@ export class PDFImage {
           }
 
           if (isHandled) {
-            const rgba = this.getImageBytes(imageLength, {
+            const rgba = await this.getImageBytes(imageLength, {
               drawWidth,
               drawHeight,
               forceRGBA: true,
@@ -905,7 +946,7 @@ export class PDFImage {
             case "DeviceRGB":
             case "DeviceCMYK":
               imgData.kind = ImageKind.RGB_24BPP;
-              imgData.data = this.getImageBytes(imageLength, {
+              imgData.data = await this.getImageBytes(imageLength, {
                 drawWidth,
                 drawHeight,
                 forceRGB: true,
@@ -920,7 +961,7 @@ export class PDFImage {
       }
     }
 
-    const imgArray = this.getImageBytes(originalHeight * rowBytes, {
+    const imgArray = await this.getImageBytes(originalHeight * rowBytes, {
       internal: true,
     });
     // imgArray can be incomplete (e.g. after CCITT fax encoding).
@@ -966,7 +1007,7 @@ export class PDFImage {
       maybeUndoPreblend = true;
 
       // Color key masking (opacity) must be performed before decoding.
-      this.fillOpacity(data!, drawWidth, drawHeight, actualHeight, comps);
+      await this.fillOpacity(data!, drawWidth, drawHeight, actualHeight, comps);
     }
 
     if (this.needsDecode) {
@@ -1006,7 +1047,7 @@ export class PDFImage {
     return imgData;
   }
 
-  fillGrayBuffer(buffer: Uint8ClampedArray) {
+  async fillGrayBuffer(buffer: Uint8ClampedArray) {
     /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         buffer instanceof Uint8ClampedArray,
@@ -1026,7 +1067,9 @@ export class PDFImage {
 
     // rows start at byte boundary
     const rowBytes = (width * numComps * bpc + 7) >> 3;
-    const imgArray = this.getImageBytes(height * rowBytes, { internal: true });
+    const imgArray = await this.getImageBytes(height * rowBytes, {
+      internal: true,
+    });
 
     const comps = this.getComponents(imgArray);
     let i, length;
@@ -1092,7 +1135,7 @@ export class PDFImage {
     };
   }
 
-  getImageBytes(
+  async getImageBytes(
     length: number,
     {
       drawWidth,
@@ -1107,7 +1150,10 @@ export class PDFImage {
     this.image.drawHeight = drawHeight || this.height;
     this.image.forceRGBA = !!forceRGBA;
     this.image.forceRGB = !!forceRGB;
-    const imageBytes = this.image.getBytes(length, this.ignoreColorSpace);
+    const imageBytes = await this.image.getImageData(
+      length,
+      this.jpxDecoderOptions,
+    );
 
     // If imageBytes came from a DecodeStream, we're safe to transfer it
     // (and thus detach its underlying buffer) because it will constitute

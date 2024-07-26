@@ -22,12 +22,17 @@
  */
 
 import type { FindControlState } from "./app.ts";
-import type { EventMap } from "./event_utils.ts";
+import type { EventMap, EventName } from "./event_utils.ts";
 import type { NimbusExperimentData } from "./firefoxcom.ts";
 import type { IScripting } from "./interfaces.ts";
 import type { L10n } from "./l10n.ts";
 import type { MatchesCount } from "./pdf_find_controller.ts";
 /*80--------------------------------------------------------------------------*/
+
+export type GlobalEvent<EN extends EventName> = {
+  eventName: EN;
+  detail: EventMap[EN];
+};
 
 export abstract class BaseExternalServices {
   updateFindControlState(data: FindControlState) {}
@@ -49,5 +54,11 @@ export abstract class BaseExternalServices {
   async getNimbusExperimentData(): Promise<NimbusExperimentData | undefined> {
     return undefined;
   }
+
+  async getGlobalEventNames(): Promise<Set<EventName> | undefined> {
+    return undefined;
+  }
+
+  dispatchGlobalEvent<EN extends EventName>(_event: GlobalEvent<EN>) {}
 }
 /*80--------------------------------------------------------------------------*/

@@ -14,7 +14,7 @@
  * and a difference of 50 guarantees a contrast ratio >= 4.5.
  *
  * https://github.com/material-foundation/material-color-utilities/blob/main/typescript/hct/hct.ts
- * (2023-01-01)
+ * (2023-06-22)
  *
  * @module lib/color/hct
  * @license Apache-2.0

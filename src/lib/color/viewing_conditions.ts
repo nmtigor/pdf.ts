@@ -1,6 +1,6 @@
 /** 80**************************************************************************
  * https://github.com/material-foundation/material-color-utilities/blob/main/typescript/hct/viewing_conditions.ts
- * (2023-01-01)
+ * (2023-06-22)
  *
  * @module lib/color/viewing_conditions.ts
  * @license Apache-2.0

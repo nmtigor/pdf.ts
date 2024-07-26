@@ -5,20 +5,6 @@
  * @module pdf/pdf.ts-src/core/decode_stream.ts
  * @license Apache-2.0
  ******************************************************************************/
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { fail } from "../../../lib/util/trace.js";
 import { BaseStream } from "./base_stream.js";
 import { Stream } from "./stream.js";
@@ -40,10 +26,7 @@ export class DecodeStream extends BaseStream {
     get length() {
         return fail("Abstract getter `length` accessed");
     }
-    /**
-     * @implement
-     * @final
-     */
+    /** @final @implement */
     get isEmpty() {
         while (!this.eof && this.bufferLength === 0) {
             this.readBlock();
@@ -51,6 +34,7 @@ export class DecodeStream extends BaseStream {
         return this.bufferLength === 0;
     }
     minBufferLength = 512;
+    stream;
     str;
     constructor(maybeMinBufferLength) {
         super();
@@ -75,10 +59,7 @@ export class DecodeStream extends BaseStream {
         buffer2.set(buffer);
         return (this.buffer = buffer2);
     }
-    /**
-     * @implement
-     * @final
-     */
+    /** @final @implement */
     getByte() {
         const pos = this.pos;
         while (this.bufferLength <= pos) {
@@ -90,14 +71,14 @@ export class DecodeStream extends BaseStream {
         return this.buffer[this.pos++];
     }
     /** @final @implement */
-    getBytes(length, ignoreColorSpace = false) {
+    getBytes(length, decoderOptions) {
         const pos = this.pos;
         let end;
         if (length) {
             this.ensureBuffer(pos + length);
             end = pos + length;
             while (!this.eof && this.bufferLength < end) {
-                this.readBlock(ignoreColorSpace);
+                this.readBlock(decoderOptions);
             }
             const bufEnd = this.bufferLength;
             if (end > bufEnd) {
@@ -106,12 +87,19 @@ export class DecodeStream extends BaseStream {
         }
         else {
             while (!this.eof) {
-                this.readBlock(ignoreColorSpace);
+                this.readBlock(decoderOptions);
             }
             end = this.bufferLength;
         }
         this.pos = end;
         return this.buffer.subarray(pos, end);
+    }
+    async getImageData(length, decoderOptions) {
+        if (!this.canAsyncDecodeImageFromBuffer) {
+            return this.getBytes(length, decoderOptions);
+        }
+        const data = await this.stream.asyncGetBytes();
+        return this.decodeImage(data, decoderOptions);
     }
     /** @implement */
     reset() {
@@ -186,6 +174,14 @@ export class StreamsSequenceStream extends DecodeStream {
         const buffer = this.ensureBuffer(newLength);
         buffer.set(chunk, bufferLength);
         this.bufferLength = newLength;
+    }
+    /** @implement */
+    async asyncGetBytes() {
+        return fail("Not implemented");
+    }
+    /** @implement */
+    decodeImage() {
+        return fail("Not implemented");
     }
     getBaseStreams() {
         const baseStreamsBuf = [];

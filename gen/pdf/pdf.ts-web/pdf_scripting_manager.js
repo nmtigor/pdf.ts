@@ -98,7 +98,7 @@ export class PDFScriptingManager {
             this.#dispatchPageOpen(pageNumber);
         }, { signal });
         eventBus._on("pagerendered", ({ pageNumber }) => {
-            if (!this.#pageOpenPending.has(pageNumber)) {
+            if (!this._pageOpenPending.has(pageNumber)) {
                 return; // No pending "PageOpen" event for the newly rendered page.
             }
             if (pageNumber !== this.#pdfViewer.currentPageNumber) {
@@ -196,11 +196,11 @@ export class PDFScriptingManager {
     //     new Map<InternalEventName, InternalListenerMap[InternalEventName]>(),
     //   );
     // }
-    get #pageOpenPending() {
-        return shadow(this, "#pageOpenPending", new Set());
+    get _pageOpenPending() {
+        return shadow(this, "_pageOpenPending", new Set());
     }
-    get #visitedPages() {
-        return shadow(this, "#visitedPages", new Map());
+    get _visitedPages() {
+        return shadow(this, "_visitedPages", new Map());
     }
     async #updateFromSandbox(detail) {
         const pdfViewer = this.#pdfViewer;
@@ -288,7 +288,7 @@ export class PDFScriptingManager {
         }
     }
     async #dispatchPageOpen(pageNumber, initialize = false) {
-        const pdfDocument = this.#pdfDocument, visitedPages = this.#visitedPages;
+        const pdfDocument = this.#pdfDocument, visitedPages = this._visitedPages;
         if (initialize) {
             this.#closeCapability = new PromiseCap();
         }
@@ -297,10 +297,10 @@ export class PDFScriptingManager {
         }
         const pageView = this.#pdfViewer.getPageView(/* index = */ pageNumber - 1);
         if (pageView?.renderingState !== RenderingStates.FINISHED) {
-            this.#pageOpenPending.add(pageNumber);
+            this._pageOpenPending.add(pageNumber);
             return; // Wait for the page to finish rendering.
         }
-        this.#pageOpenPending.delete(pageNumber);
+        this._pageOpenPending.delete(pageNumber);
         const actionsPromise = (async () => {
             // Avoid sending, and thus serializing, the `actions` data more than once.
             const actions = await (!visitedPages.has(pageNumber)
@@ -319,11 +319,11 @@ export class PDFScriptingManager {
         visitedPages.set(pageNumber, actionsPromise);
     }
     async #dispatchPageClose(pageNumber) {
-        const pdfDocument = this.#pdfDocument, visitedPages = this.#visitedPages;
+        const pdfDocument = this.#pdfDocument, visitedPages = this._visitedPages;
         if (!this.#closeCapability) {
             return; // Scripting isn't fully initialized yet.
         }
-        if (this.#pageOpenPending.has(pageNumber)) {
+        if (this._pageOpenPending.has(pageNumber)) {
             return; // The page is still rendering; no "PageOpen" event dispatched.
         }
         const actionsPromise = visitedPages.get(pageNumber);
@@ -376,8 +376,8 @@ export class PDFScriptingManager {
         this.#willPrintCapability = undefined;
         this.#eventAbortController?.abort();
         this.#eventAbortController = undefined;
-        this.#pageOpenPending.clear();
-        this.#visitedPages.clear();
+        this._pageOpenPending.clear();
+        this._visitedPages.clear();
         this.#scripting = undefined;
         this.#ready = false;
         this.#destroyCapability?.resolve();

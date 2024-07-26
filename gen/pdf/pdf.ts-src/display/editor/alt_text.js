@@ -45,19 +45,20 @@ export class AltText {
         altText.textContent = msg;
         altText.setAttribute("aria-label", msg);
         altText.tabIndex = 0;
-        altText.on("contextmenu", noContextMenu);
-        altText.on("pointerdown", (event) => event.stopPropagation());
+        const signal = this.#editor._uiManager._signal;
+        altText.on("contextmenu", noContextMenu, { signal });
+        altText.on("pointerdown", (event) => event.stopPropagation(), { signal });
         const onClick = (event) => {
             event.preventDefault();
             this.#editor._uiManager.editAltText(this.#editor);
         };
-        altText.on("click", onClick, { capture: true });
+        altText.on("click", onClick, { capture: true, signal });
         altText.on("keydown", (event) => {
             if (event.target === altText && event.key === "Enter") {
                 this.#altTextWasFromKeyBoard = true;
                 onClick(event);
             }
-        });
+        }, { signal });
         await this.#setState();
         return altText;
     }
@@ -127,6 +128,11 @@ export class AltText {
             const id = (tooltip.id = `alt-text-tooltip-${this.#editor.id}`);
             button.setAttribute("aria-describedby", id);
             const DELAY_TO_SHOW_TOOLTIP = 100;
+            const signal = this.#editor._uiManager._signal;
+            signal.on("abort", () => {
+                clearTimeout(this.#altTextTooltipTimeout);
+                this.#altTextTooltipTimeout = undefined;
+            }, { once: true });
             button.on("mouseenter", () => {
                 this.#altTextTooltipTimeout = setTimeout(() => {
                     this.#altTextTooltipTimeout = undefined;
@@ -135,14 +141,14 @@ export class AltText {
                         action: "alt_text_tooltip",
                     });
                 }, DELAY_TO_SHOW_TOOLTIP);
-            });
+            }, { signal });
             button.on("mouseleave", () => {
                 if (this.#altTextTooltipTimeout) {
                     clearTimeout(this.#altTextTooltipTimeout);
                     this.#altTextTooltipTimeout = undefined;
                 }
                 this.#altTextTooltip?.classList.remove("show");
-            });
+            }, { signal });
         }
         tooltip.innerText = this.#altTextDecorative
             ? await _a._l10nPromise.get("pdfjs-editor-alt-text-decorative-tooltip")

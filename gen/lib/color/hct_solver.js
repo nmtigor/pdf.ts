@@ -1,6 +1,6 @@
 /** 80**************************************************************************
  * https://github.com/material-foundation/material-color-utilities/blob/main/typescript/hct/hct_solver.ts
- * (2023-01-01)
+ * (2023-06-22)
  *
  * @module lib/color/hct_solver.ts
  * @license Apache-2.0

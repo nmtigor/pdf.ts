@@ -62,6 +62,7 @@ export class PDFThumbnailView {
     pdfPageRotate;
     _optionalContentConfigPromise;
     pageColors;
+    enableHWA;
     eventBus;
     linkService;
     renderingQueue;
@@ -76,16 +77,14 @@ export class PDFThumbnailView {
     _placeholderImg;
     canvas;
     image;
-    constructor({ container, eventBus, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, pageColors, }) {
+    constructor({ container, eventBus, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, pageColors, enableHWA, }) {
         this.id = id;
         this.renderingId = "thumbnail" + id;
-        // this.pageLabel = null;
-        // this.pdfPage = null;
-        // this.rotation = 0;
         this.viewport = defaultViewport;
         this.pdfPageRotate = defaultViewport.rotation;
         this._optionalContentConfigPromise = optionalContentConfigPromise;
         this.pageColors = pageColors || undefined;
+        this.enableHWA = enableHWA || false;
         this.eventBus = eventBus;
         this.linkService = linkService;
         this.renderingQueue = renderingQueue;
@@ -162,11 +161,14 @@ export class PDFThumbnailView {
         }
         this.resume = undefined;
     }
-    #getPageDrawContext(upscaleFactor = 1) {
+    #getPageDrawContext(upscaleFactor = 1, enableHWA = this.enableHWA) {
         // Keep the no-thumbnail outline visible, i.e. `data-loaded === false`,
         // until rendering/image conversion is complete, to avoid display issues.
         const canvas = html("canvas");
-        const ctx = canvas.getContext("2d", { alpha: false });
+        const ctx = canvas.getContext("2d", {
+            alpha: false,
+            willReadFrequently: !enableHWA,
+        });
         const outputScale = new OutputScale();
         canvas.width = (upscaleFactor * this.canvasWidth * outputScale.sx) | 0;
         canvas.height = (upscaleFactor * this.canvasHeight * outputScale.sy) | 0;
@@ -284,7 +286,7 @@ export class PDFThumbnailView {
         this.#convertCanvasToImage(canvas);
     }
     #reduceImage(img) {
-        const { ctx, canvas } = this.#getPageDrawContext();
+        const { ctx, canvas } = this.#getPageDrawContext(1, true);
         if (img.width <= 2 * canvas.width) {
             ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
             return canvas;

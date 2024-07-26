@@ -5,8 +5,8 @@
 /*80--------------------------------------------------------------------------*/
 /**
  * When push to https://github.com/nmtigor/pdf.ts/tree/github-pages, and visit
- * https://nmtigor.github.io/pdf.ts/ using GitHub Pages to , this must be
- * changed to "/pdf.ts"!
+ * https://nmtigor.github.io/pdf.ts/ using GitHub Pages, this MUST be changed to
+ * "/pdf.ts"!
  */
 export const AD_gh = "/pdf.ts";
 /*80--------------------------------------------------------------------------*/

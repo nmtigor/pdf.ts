@@ -31,14 +31,14 @@ import {
   describe,
   it,
 } from "@std/testing/bdd.ts";
-import type { TestServer } from "@fe-pdf.ts-test/test_utils.ts";
+import type { TestServer } from "@fe-pdf.ts-test/unittest_utils.ts";
 import {
   CMAP_URL,
   createIdFactory,
   createTemporaryDenoServer,
   STANDARD_FONT_DATA_URL,
   XRefMock,
-} from "@fe-pdf.ts-test/test_utils.ts";
+} from "@fe-pdf.ts-test/unittest_utils.ts";
 import { AnnotStorageRecord } from "../display/annotation_layer.ts";
 import {
   DefaultCMapReaderFactory,
@@ -310,24 +310,12 @@ describe("annotation", () => {
 
     it("should process quadpoints in the standard order", () => {
       rect = [10, 10, 20, 20];
-      dict.set(
-        "QuadPoints",
-        [10, 20, 20, 20, 10, 10, 20, 10, 11, 19, 19, 19, 11, 11, 19, 11],
-      );
-      assertEquals(getQuadPoints(dict, rect), [
-        [
-          { x: 10, y: 20 },
-          { x: 20, y: 20 },
-          { x: 10, y: 10 },
-          { x: 20, y: 10 },
-        ],
-        [
-          { x: 11, y: 19 },
-          { x: 19, y: 19 },
-          { x: 11, y: 11 },
-          { x: 19, y: 11 },
-        ],
-      ]);
+      // deno-fmt-ignore
+      const quadPoints = [
+        10, 20, 20, 20, 10, 10, 20, 10, 11, 19, 19, 19, 11, 11, 19, 11,
+      ];
+      dict.set("QuadPoints", quadPoints);
+      assertEquals(getQuadPoints(dict, rect), Float32Array.from(quadPoints));
     });
 
     it("should normalize and process quadpoints in non-standard orders", () => {
@@ -345,14 +333,10 @@ describe("annotation", () => {
 
       for (const nonStandardOrder of nonStandardOrders) {
         dict.set("QuadPoints", nonStandardOrder);
-        assertEquals(getQuadPoints(dict, rect), [
-          [
-            { x: 10, y: 20 },
-            { x: 20, y: 20 },
-            { x: 10, y: 10 },
-            { x: 20, y: 10 },
-          ],
-        ]);
+        assertEquals(
+          getQuadPoints(dict, rect),
+          Float32Array.from([10, 20, 20, 20, 10, 10, 20, 10]),
+        );
       }
     });
   });
@@ -1474,12 +1458,10 @@ describe("annotation", () => {
         idFactoryMock,
       ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
-      assertEquals(data.quadPoints, [[
-        { x: 10, y: 20 },
-        { x: 20, y: 20 },
-        { x: 10, y: 10 },
-        { x: 20, y: 10 },
-      ]]);
+      assertEquals(
+        data.quadPoints,
+        Float32Array.from([10, 20, 20, 20, 10, 10, 20, 10]),
+      );
     });
   });
 
@@ -4497,7 +4479,8 @@ describe("annotation", () => {
       const inkDict = new Dict();
       inkDict.set("Type", Name.get("Annot"));
       inkDict.set("Subtype", Name.get("Ink"));
-      inkDict.set("InkList", [[1, 1, 1, 2, 2, 2, 3, 3]]);
+      const inkList = [1, 1, 1, 2, 2, 2, 3, 3];
+      inkDict.set("InkList", [inkList]);
 
       const inkRef = Ref.get(142, 0);
       const xref = new XRefMock([{ ref: inkRef, data: inkDict }]) as any;
@@ -4510,22 +4493,16 @@ describe("annotation", () => {
       ))!;
       assertEquals(data.annotationType, AnnotationType.INK);
       assertEquals(data.inkLists!.length, 1);
-      assertEquals(data.inkLists![0], [
-        { x: 1, y: 1 },
-        { x: 1, y: 2 },
-        { x: 2, y: 2 },
-        { x: 3, y: 3 },
-      ]);
+      assertEquals(data.inkLists![0], Float32Array.from(inkList));
     });
 
     it("should handle multiple ink lists", async () => {
       const inkDict = new Dict();
       inkDict.set("Type", Name.get("Annot"));
       inkDict.set("Subtype", Name.get("Ink"));
-      inkDict.set("InkList", [
-        [1, 1, 1, 2],
-        [3, 3, 4, 5],
-      ]);
+      const inkList0 = [1, 1, 1, 2];
+      const inkList1 = [3, 3, 4, 5];
+      inkDict.set("InkList", [inkList0, inkList1]);
 
       const inkRef = Ref.get(143, 0);
       const xref = new XRefMock([{ ref: inkRef, data: inkDict }]) as any;
@@ -4538,14 +4515,8 @@ describe("annotation", () => {
       ))!;
       assertEquals(data.annotationType, AnnotationType.INK);
       assertEquals(data.inkLists!.length, 2);
-      assertEquals(data.inkLists![0], [
-        { x: 1, y: 1 },
-        { x: 1, y: 2 },
-      ]);
-      assertEquals(data.inkLists![1], [
-        { x: 3, y: 3 },
-        { x: 4, y: 5 },
-      ]);
+      assertEquals(data.inkLists![0], Float32Array.from(inkList0));
+      assertEquals(data.inkLists![1], Float32Array.from(inkList1));
     });
 
     it("should create a new Ink annotation", async () => {
@@ -4788,14 +4759,10 @@ describe("annotation", () => {
         idFactoryMock,
       ))!;
       assertEquals(data.annotationType, AnnotationType.HIGHLIGHT);
-      assertEquals(data.quadPoints, [
-        [
-          { x: 10, y: 20 },
-          { x: 20, y: 20 },
-          { x: 10, y: 10 },
-          { x: 20, y: 10 },
-        ],
-      ]);
+      assertEquals(
+        data.quadPoints,
+        Float32Array.from([10, 20, 20, 20, 10, 10, 20, 10]),
+      );
     });
 
     it("should set quadpoints to null when empty", async () => {
@@ -4834,7 +4801,8 @@ describe("annotation", () => {
             rotation: 0,
             opacity: 1,
             color: [0, 0, 0],
-            quadPoints: [1, 2, 3, 4, 5, 6, 7],
+            // quadPoints: [1, 2, 3, 4, 5, 6, 7],
+            quadPoints: Float32Array.from([1, 2, 3, 4, 5, 6, 7]),
             outlines: [
               [8, 9, 10, 11],
               [12, 13, 14, 15],
@@ -4888,7 +4856,8 @@ describe("annotation", () => {
               rotation: 0,
               opacity: 0.5,
               color: [0, 255, 0],
-              quadPoints: [1, 2, 3, 4, 5, 6, 7],
+              // quadPoints: [1, 2, 3, 4, 5, 6, 7],
+              quadPoints: Float32Array.from([1, 2, 3, 4, 5, 6, 7]),
               outlines: [[8, 9, 10, 11]] as Outlines,
             },
           ],
@@ -4929,10 +4898,10 @@ describe("annotation", () => {
             thickness: 3.14,
             outlines: {
               // deno-fmt-ignore
-              outline: Float64Array.from([
+              outline: Float32Array.from([
                 NaN, NaN, 8, 9, 10, 11, NaN, NaN, 12, 13, 14, 15,
               ]),
-              points: [Float64Array.from([16, 17, 18, 19])],
+              points: [Float32Array.from([16, 17, 18, 19])],
             } as Outlines,
           },
         ],
@@ -4983,10 +4952,10 @@ describe("annotation", () => {
               thickness: 3.14,
               outlines: {
                 // deno-fmt-ignore
-                outline: Float64Array.from([
+                outline: Float32Array.from([
                   NaN, NaN, 8, 9, 10, 11, NaN, NaN, 12, 13, 14, 15,
                 ]),
-                points: [Float64Array.from([16, 17, 18, 19])],
+                points: [Float32Array.from([16, 17, 18, 19])],
               } as Outlines,
             },
           ],
@@ -5054,14 +5023,10 @@ describe("annotation", () => {
         idFactoryMock,
       ))!;
       assertEquals(data.annotationType, AnnotationType.UNDERLINE);
-      assertEquals(data.quadPoints, [
-        [
-          { x: 10, y: 20 },
-          { x: 20, y: 20 },
-          { x: 10, y: 10 },
-          { x: 20, y: 10 },
-        ],
-      ]);
+      assertEquals(
+        data.quadPoints,
+        Float32Array.from([10, 20, 20, 20, 10, 10, 20, 10]),
+      );
     });
   });
 
@@ -5107,14 +5072,10 @@ describe("annotation", () => {
         idFactoryMock,
       ))!;
       assertEquals(data.annotationType, AnnotationType.SQUIGGLY);
-      assertEquals(data.quadPoints, [
-        [
-          { x: 10, y: 20 },
-          { x: 20, y: 20 },
-          { x: 10, y: 10 },
-          { x: 20, y: 10 },
-        ],
-      ]);
+      assertEquals(
+        data.quadPoints,
+        Float32Array.from([10, 20, 20, 20, 10, 10, 20, 10]),
+      );
     });
   });
 
@@ -5160,14 +5121,10 @@ describe("annotation", () => {
         idFactoryMock,
       ))!;
       assertEquals(data.annotationType, AnnotationType.STRIKEOUT);
-      assertEquals(data.quadPoints, [
-        [
-          { x: 10, y: 20 },
-          { x: 20, y: 20 },
-          { x: 10, y: 10 },
-          { x: 20, y: 10 },
-        ],
-      ]);
+      assertEquals(
+        data.quadPoints,
+        Float32Array.from([10, 20, 20, 20, 10, 10, 20, 10]),
+      );
     });
   });
 });

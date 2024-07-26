@@ -20,12 +20,12 @@
  * limitations under the License.
  */
 import { Locale } from "../../lib/Locale.js";
+import { D_rp_web, D_rpe_cmap, D_rpe_sfont } from "../../alias.js";
 import { CHROME, GENERIC, LIB, MOZCENTRAL, PDFJSDev, TESTING, } from "../../global.js";
+import { AD_gh } from "../alias.js";
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel, } from "../pdf.ts-src/pdf.js";
 import { LinkTarget } from "./pdf_link_service.js";
 import { CursorTool, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
-import { AD_gh } from "../alias.js";
-import { D_rp_web, D_rpe_cmap, D_rpe_sfont } from "../../alias.js";
 /*80--------------------------------------------------------------------------*/
 export var OptionKind;
 (function (OptionKind) {
@@ -284,6 +284,11 @@ const defaultOptions = {
     docBaseUrl: {
         value: undefined,
         kind: OptionKind.API,
+    },
+    enableHWA: {
+        /** @type {boolean} */
+        value: !MOZCENTRAL,
+        kind: OptionKind.API + OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     enableXfa: {
         value: true,
@@ -561,6 +566,9 @@ export class AppOptions {
     }
     static get docBaseUrl() {
         return this.#get("docBaseUrl");
+    }
+    static get enableHWA() {
+        return this.#get("enableHWA");
     }
     static get enableXfa() {
         return this.#get("enableXfa");

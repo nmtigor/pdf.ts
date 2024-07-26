@@ -1,4 +1,6 @@
-"use strict";
+/** 80**************************************************************************
+ * @module lib/HttpStatusCode
+ ******************************************************************************/
 /**
  * Hypertext Transfer Protocol (HTTP) response status codes.
  * @see {@link https://en.wikipedia.org/wiki/List_of_HTTP_status_codes}
@@ -25,10 +27,13 @@ export var HttpStatusCode;
      */
     HttpStatusCode[HttpStatusCode["PROCESSING"] = 102] = "PROCESSING";
     /**
-     * Standard response for successful HTTP requests.
-     * The actual response will depend on the request method used.
-     * In a GET request, the response will contain an entity corresponding to the requested resource.
-     * In a POST request, the response will contain an entity describing or containing the result of the action.
+     * Standard response for successful HTTP requests. The actual response will
+     * depend on the request method used. In a GET request, the response will
+     * contain an entity corresponding to the requested resource. In a POST
+     * request, the response will contain an entity describing or containing the
+     * result of the action.
+     *
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc9110#name-200-ok}
      */
     HttpStatusCode[HttpStatusCode["OK"] = 200] = "OK";
     /**
@@ -56,9 +61,12 @@ export var HttpStatusCode;
      */
     HttpStatusCode[HttpStatusCode["RESET_CONTENT"] = 205] = "RESET_CONTENT";
     /**
-     * The server is delivering only part of the resource (byte serving) due to a range header sent by the client.
-     * The range header is used by HTTP clients to enable resuming of interrupted downloads,
-     * or split a download into multiple simultaneous streams.
+     * The server is delivering only part of the resource (byte serving) due to a
+     * range header sent by the client. The range header is used by HTTP clients
+     * to enable resuming of interrupted downloads, or split a download into
+     * multiple simultaneous streams.
+     *
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc9110#name-206-partial-content}
      */
     HttpStatusCode[HttpStatusCode["PARTIAL_CONTENT"] = 206] = "PARTIAL_CONTENT";
     /**

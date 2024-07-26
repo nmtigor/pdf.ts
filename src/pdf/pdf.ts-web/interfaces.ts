@@ -161,7 +161,8 @@ export interface IVisibleView extends IRenderableView {
 }
 
 export interface IDownloadManager {
-  downloadUrl(url: string, filename: string, _options?: object): void;
+  //kkkk TOCLEANUP
+  // downloadUrl(url: string, filename: string, _options?: object): void;
 
   downloadData(
     data: Uint8Array | Uint8ClampedArray,
@@ -178,7 +179,12 @@ export interface IDownloadManager {
     dest?: string,
   ): boolean;
 
-  download(blob: Blob, url: string, filename: string, _options?: object): void;
+  download(
+    data: BlobPart,
+    url: string,
+    filename: string,
+    _options?: object,
+  ): void;
 }
 
 export interface IL10n {
@@ -204,6 +210,8 @@ export interface IL10n {
    * Translates HTML element.
    */
   translate(element: HTMLElement): Promise<void>;
+
+  destroy(): Promise<void>;
 
   /**
    * Pause the localization.

@@ -30,11 +30,11 @@ import {
   fail,
 } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import type { TestServer } from "@fe-pdf.ts-test/test_utils.ts";
+import type { TestServer } from "@fe-pdf.ts-test/unittest_utils.ts";
 import {
   CMAP_URL,
   createTemporaryDenoServer,
-} from "@fe-pdf.ts-test/test_utils.ts";
+} from "@fe-pdf.ts-test/unittest_utils.ts";
 import { DefaultCMapReaderFactory } from "../display/api.ts";
 import { CMapData } from "../display/base_factory.ts";
 import { type CharCodeOut, CMap, CMapFactory, IdentityCMap } from "./cmap.ts";

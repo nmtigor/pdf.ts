@@ -4,8 +4,8 @@
  ******************************************************************************/
 /*80--------------------------------------------------------------------------*/
 /**
- * `tasks` could be modified IN PLACE, although remaining elements will be kept
- * intact.
+ * `tasks` could be modified IN PLACE, although remaining elements themselves
+ * will be kept intact.
  * @const @param filter
  */
 export const filter_tasks = (tasks, filter) => {

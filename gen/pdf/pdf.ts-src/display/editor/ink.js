@@ -211,7 +211,7 @@ export class InkEditor extends AnnotationEditor {
             clearTimeout(this.#canvasContextMenuTimeoutId);
             this.#canvasContextMenuTimeoutId = undefined;
         }
-        this.#observer.disconnect();
+        this.#observer?.disconnect();
         this.#observer = undefined;
         super.remove();
     }
@@ -241,7 +241,9 @@ export class InkEditor extends AnnotationEditor {
         }
         super.enableEditMode();
         this._isDraggable = false;
-        this.canvas.on("pointerdown", this.#boundCanvasPointerdown);
+        this.canvas.on("pointerdown", this.#boundCanvasPointerdown, {
+            signal: this._uiManager._signal,
+        });
     }
     disableEditMode() {
         if (!this.isInEditMode() || this.canvas === undefined) {
@@ -287,10 +289,11 @@ export class InkEditor extends AnnotationEditor {
      * Start to draw on the canvas.
      */
     #startDrawing(x, y) {
-        this.canvas.on("contextmenu", noContextMenu);
-        this.canvas.on("pointerleave", this.#boundCanvasPointerleave);
-        this.canvas.on("pointermove", this.#boundCanvasPointermove);
-        this.canvas.on("pointerup", this.#boundCanvasPointerup);
+        const signal = this._uiManager._signal;
+        this.canvas.on("contextmenu", noContextMenu, { signal });
+        this.canvas.on("pointerleave", this.#boundCanvasPointerleave, { signal });
+        this.canvas.on("pointermove", this.#boundCanvasPointermove, { signal });
+        this.canvas.on("pointerup", this.#boundCanvasPointerup, { signal });
         this.canvas.off("pointerdown", this.#boundCanvasPointerdown);
         this.isEditing = true;
         if (!this.#isCanvasInitialized) {
@@ -541,7 +544,9 @@ export class InkEditor extends AnnotationEditor {
         this.canvas.off("pointerleave", this.#boundCanvasPointerleave);
         this.canvas.off("pointermove", this.#boundCanvasPointermove);
         this.canvas.off("pointerup", this.#boundCanvasPointerup);
-        this.canvas.on("pointerdown", this.#boundCanvasPointerdown);
+        this.canvas.on("pointerdown", this.#boundCanvasPointerdown, {
+            signal: this._uiManager._signal,
+        });
         // Slight delay to avoid the context menu to appear (it can happen on a long
         // tap with a pen).
         if (this.#canvasContextMenuTimeoutId) {
@@ -579,6 +584,10 @@ export class InkEditor extends AnnotationEditor {
             }
         });
         this.#observer.observe(this.div);
+        this._uiManager._signal.on("abort", () => {
+            this.#observer?.disconnect();
+            this.#observer = undefined;
+        }, { once: true });
     }
     get isResizable() {
         return !this.isEmpty() && this.#disableEditing;

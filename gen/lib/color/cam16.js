@@ -1,6 +1,6 @@
 /** 80**************************************************************************
  * https://github.com/material-foundation/material-color-utilities/blob/main/typescript/hct/cam16.ts
- * (2023-01-01)
+ * (2023-06-22)
  *
  * @module lib/color/cam16
  * @license Apache-2.0

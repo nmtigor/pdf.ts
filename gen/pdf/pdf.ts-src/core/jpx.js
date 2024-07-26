@@ -19,8 +19,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { IMAGE_DECODERS } from "../../../global.js";
 import OpenJPEG from "../../../3rd/openjpeg/openjpeg.js";
+import { IMAGE_DECODERS } from "../../../global.js";
 import { BaseException, warn } from "../shared/util.js";
 import { Stream } from "./stream.js";
 /*80--------------------------------------------------------------------------*/
@@ -31,9 +31,10 @@ export class JpxError extends BaseException {
 }
 export class JpxImage {
     static #module;
-    static decode(data, ignoreColorSpace = false) {
+    static decode(data, decoderOptions) {
+        decoderOptions ||= {};
         this.#module ||= OpenJPEG({ warn });
-        const imageData = this.#module.decode(data, ignoreColorSpace);
+        const imageData = this.#module.decode(data, decoderOptions);
         if (typeof imageData === "string") {
             throw new JpxError(imageData);
         }

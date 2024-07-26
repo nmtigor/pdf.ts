@@ -120,7 +120,7 @@ export class AnnotationElement {
         this._fieldObjects = parameters.fieldObjects;
         this.parent = parameters.parent;
         if (isRenderable) {
-            this.container = this.#createContainer(ignoreBorder);
+            this.container = this._createContainer(ignoreBorder);
         }
         if (createQuadrilaterals) {
             this.#createQuadrilaterals();
@@ -171,7 +171,7 @@ export class AnnotationElement {
      * Create an empty container for the annotation's HTML element.
      * @return A section element.
      */
-    #createContainer(ignoreBorder = false) {
+    _createContainer(ignoreBorder = false) {
         const { data, parent: { page, viewport } } = this;
         const container = createHTML("section");
         container.setAttribute("data-annotation-id", data.id);
@@ -395,6 +395,7 @@ export class AnnotationElement {
      * Create quadrilaterals from the annotation's quadpoints.
      */
     #createQuadrilaterals() {
+        //kkkk TOCLEANUP
         // if (!this.data.quadPoints) {
         //   return undefined;
         // }
@@ -408,7 +409,7 @@ export class AnnotationElement {
         //     quadPoint[1].x,
         //     quadPoint[1].y,
         //   ];
-        //   quadrilaterals.push(this.#createContainer(ignoreBorder));
+        //   quadrilaterals.push(this._createContainer(ignoreBorder));
         //   firstQuadRect ||= this.data.rect;
         // }
         // this.data.rect = savedRect;
@@ -421,9 +422,10 @@ export class AnnotationElement {
         if (!quadPoints) {
             return;
         }
-        const [rectBlX, rectBlY, rectTrX, rectTrY] = this.data.rect;
-        if (quadPoints.length === 1) {
-            const [, { x: trX, y: trY }, { x: blX, y: blY }] = quadPoints[0];
+        const [rectBlX, rectBlY, rectTrX, rectTrY] = this.data.rect
+            .map((x) => Math.fround(x));
+        if (quadPoints.length === 8) {
+            const [trX, trY, blX, blY] = quadPoints.subarray(2, 6);
             if (rectTrX === trX &&
                 rectTrY === trY &&
                 rectBlX === blX &&
@@ -465,7 +467,11 @@ export class AnnotationElement {
             clipPathUnits: "objectBoundingBox",
         });
         defs.append(clipPath);
-        for (const [, { x: trX, y: trY }, { x: blX, y: blY }] of quadPoints) {
+        for (let i = 2, ii = quadPoints.length; i < ii; i += 8) {
+            const trX = quadPoints[i];
+            const trY = quadPoints[i + 1];
+            const blX = quadPoints[i + 2];
+            const blY = quadPoints[i + 3];
             const rect = createSVG("rect");
             const x = (blX - rectBlX) / width;
             const y = (rectTrY - trY) / height;
@@ -2281,8 +2287,12 @@ class PolylineAnnotationElement extends AnnotationElement {
         // Create an invisible polyline with the same points that acts as the
         // trigger for the popup. Only the polyline itself should trigger the
         // popup, not the entire container.
-        const data = this.data;
-        const { width, height } = getRectDims(data.rect);
+        const { data } = this;
+        const { rect, vertices, borderStyle, popupRef } = data;
+        if (!vertices) {
+            return this.container;
+        }
+        const { width, height } = getRectDims(rect);
         const svg = this.svgFactory.create(width, height, 
         /* skipDimensions = */ true);
         // Convert the vertices array to a single points string that the SVG
@@ -2290,9 +2300,9 @@ class PolylineAnnotationElement extends AnnotationElement {
         // calculated from a bottom left origin, so transform the polyline
         // coordinates to a top left origin for the SVG element.
         let points = [];
-        for (const coordinate of data.vertices) {
-            const x = coordinate.x - data.rect[0];
-            const y = data.rect[3] - coordinate.y;
+        for (let i = 0, ii = vertices.length; i < ii; i += 2) {
+            const x = vertices[i] - rect[0];
+            const y = rect[3] - vertices[i + 1];
             points.push(`${x},${y}`);
         }
         points = points.join(" ");
@@ -2357,19 +2367,20 @@ export class InkAnnotationElement extends AnnotationElement {
         this.container.classList.add(this.containerClassName);
         // Create an invisible polyline with the same points that acts as the
         // trigger for the popup.
-        const data = this.data;
-        const { width, height } = getRectDims(data.rect);
+        const { data } = this;
+        const { rect, inkLists, borderStyle, popupRef } = data;
+        const { width, height } = getRectDims(rect);
         const svg = this.svgFactory.create(width, height, 
         /* skipDimensions = */ true);
-        for (const inkList of data.inkLists) {
+        for (const inkList of inkLists) {
             // Convert the ink list to a single points string that the SVG
             // polyline element expects ("x1,y1 x2,y2 ..."). PDF coordinates are
             // calculated from a bottom left origin, so transform the polyline
             // coordinates to a top left origin for the SVG element.
             let points = [];
-            for (const coordinate of inkList) {
-                const x = coordinate.x - data.rect[0];
-                const y = data.rect[3] - coordinate.y;
+            for (let i = 0, ii = inkList.length; i < ii; i += 2) {
+                const x = inkList[i] - rect[0];
+                const y = rect[3] - inkList[i + 1];
                 points.push(`${x},${y}`);
             }
             points = points.join(" ");
@@ -2379,13 +2390,13 @@ export class InkAnnotationElement extends AnnotationElement {
                 points,
                 // Ensure that the 'stroke-width' is always non-zero, since otherwise it
                 // won't be possible to open/close the popup (note e.g. issue 11122).
-                "stroke-width": data.borderStyle.width || 1,
+                "stroke-width": borderStyle.width || 1,
                 stroke: "transparent",
                 fill: "transparent",
             });
             // Create the popup ourselves so that we can bind it to the polyline
             // instead of to the entire container (which is the default).
-            if (!data.popupRef && this.hasPopupData) {
+            if (!popupRef && this.hasPopupData) {
                 this._createPopup();
             }
             svg.append(polyline);
@@ -2591,6 +2602,7 @@ export class AnnotationLayer {
             enableScripting: params.enableScripting === true,
             hasJSActions: params.hasJSActions,
             fieldObjects: params.fieldObjects,
+            parent: this,
         };
         for (const data of params.annotations) {
             if (data.noHTML) {

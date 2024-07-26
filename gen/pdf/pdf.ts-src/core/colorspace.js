@@ -250,6 +250,8 @@ export class ColorSpace {
                 case "RGB":
                 case "DeviceRGB":
                     return this.singletons.rgb;
+                case "DeviceRGBA":
+                    return this.singletons.rgba;
                 case "CMYK":
                 case "DeviceCMYK":
                     return this.singletons.cmyk;
@@ -384,6 +386,9 @@ export class ColorSpace {
             },
             get rgb() {
                 return shadow(this, "rgb", new DeviceRgbCS());
+            },
+            get rgba() {
+                return shadow(this, "rgba", new DeviceRgbaCS());
             },
             get cmyk() {
                 return shadow(this, "cmyk", new DeviceCmykCS());
@@ -619,6 +624,28 @@ class DeviceRgbCS extends ColorSpace {
     }
     getOutputLength(inputLength, alpha01) {
         return ((inputLength * (3 + alpha01)) / 3) | 0;
+    }
+    isPassthrough(bits) {
+        return bits === 8;
+    }
+}
+/**
+ * The default color is `new Float32Array([0, 0, 0, 1])`.
+ */
+class DeviceRgbaCS extends ColorSpace {
+    constructor() {
+        super("DeviceRGBA", 4);
+    }
+    /** @implement */
+    getRgbItem() {
+        fail("Not implemented");
+    }
+    /** @implement */
+    getRgbBuffer() {
+        fail("Not implemented");
+    }
+    getOutputLength(inputLength, _alpha01) {
+        return inputLength * 4;
     }
     isPassthrough(bits) {
         return bits === 8;

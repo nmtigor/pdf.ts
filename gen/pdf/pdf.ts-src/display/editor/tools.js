@@ -61,7 +61,7 @@ class ImageManager {
         // behavior in Safari.
         const svg = `data:image/svg+xml;charset=UTF-8,<svg viewBox="0 0 1 1" width="1" height="1" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" style="fill:red;"/></svg>`;
         const canvas = new OffscreenCanvas(1, 3);
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
         const image = new Image();
         image.src = svg;
         const promise = image.decode().then(() => {
@@ -419,6 +419,7 @@ export class ColorManager {
  * some action like copy/paste, undo/redo, ...
  */
 export class AnnotationEditorUIManager {
+    #abortController = new AbortController();
     #activeEditor;
     /**
      * Get the current active editor.
@@ -514,7 +515,6 @@ export class AnnotationEditorUIManager {
     #boundOnEditingAction = this.onEditingAction.bind(this);
     #boundOnPageChanging = this.onPageChanging.bind(this);
     #boundOnScaleChanging = this.onScaleChanging.bind(this);
-    #boundSelectionChange = this.#selectionChange.bind(this);
     #boundOnRotationChanging = this.onRotationChanging.bind(this);
     #previousStates = {
         isEditing: false,
@@ -526,6 +526,7 @@ export class AnnotationEditorUIManager {
     };
     #translation = [0, 0];
     #translationTimeoutId;
+    _signal;
     #container;
     #viewer;
     viewParameters = {
@@ -657,6 +658,7 @@ export class AnnotationEditorUIManager {
         ]));
     }
     constructor(container, viewer, altTextManager, eventBus, pdfDocument, pageColors, highlightColors, enableHighlightFloatingButton, mlManager) {
+        this._signal = this.#abortController.signal;
         this.#container = container;
         this.#viewer = viewer;
         this.#altTextManager = altTextManager;
@@ -666,6 +668,7 @@ export class AnnotationEditorUIManager {
         this._eventBus._on("scalechanging", this.#boundOnScaleChanging);
         this._eventBus._on("rotationchanging", this.#boundOnRotationChanging);
         this.#addSelectionListener();
+        this.#addDragAndDropListeners();
         this.#addKeyboardManager();
         this.#annotationStorage = pdfDocument.annotationStorage;
         this.#filterFactory = pdfDocument.filterFactory;
@@ -684,8 +687,9 @@ export class AnnotationEditorUIManager {
         }
     }
     destroy() {
-        this.#removeKeyboardManager();
-        this.#removeFocusManager();
+        this.#abortController?.abort();
+        this.#abortController = undefined;
+        this._signal = undefined;
         this._eventBus._off("editingaction", this.#boundOnEditingAction);
         this._eventBus._off("pagechanging", this.#boundOnPageChanging);
         this._eventBus._off("scalechanging", this.#boundOnScaleChanging);
@@ -710,7 +714,6 @@ export class AnnotationEditorUIManager {
             clearTimeout(this.#translationTimeoutId);
             this.#translationTimeoutId = undefined;
         }
-        this.#removeSelectionListener();
     }
     get hcmFilter() {
         return shadow(this, "hcmFilter", this.#pageColors
@@ -870,6 +873,7 @@ export class AnnotationEditorUIManager {
         }
         this.#highlightWhenShiftUp = this.isShiftKeyDown;
         if (!this.isShiftKeyDown) {
+            const signal = this._signal;
             const pointerup = (e) => {
                 if (e.type === "pointerup" && e.button !== 0) {
                     // Do nothing on right click.
@@ -881,8 +885,8 @@ export class AnnotationEditorUIManager {
                     this.#onSelectEnd("main_toolbar");
                 }
             };
-            window.on("pointerup", pointerup);
-            window.on("blur", pointerup);
+            window.on("pointerup", pointerup, { signal });
+            window.on("blur", pointerup, { signal });
         }
     }
     #onSelectEnd(methodOfCreation = "") {
@@ -894,14 +898,14 @@ export class AnnotationEditorUIManager {
         }
     }
     #addSelectionListener() {
-        document.on("selectionchange", this.#boundSelectionChange);
-    }
-    #removeSelectionListener() {
-        document.off("selectionchange", this.#boundSelectionChange);
+        document.on("selectionchange", this.#selectionChange.bind(this), {
+            signal: this._signal,
+        });
     }
     #addFocusManager() {
-        window.on("focus", this.#boundFocus);
-        window.on("blur", this.#boundBlur);
+        const signal = this._signal;
+        window.on("focus", this.#boundFocus, { signal });
+        window.on("blur", this.#boundBlur, { signal });
     }
     #removeFocusManager() {
         window.off("focus", this.#boundFocus);
@@ -937,28 +941,35 @@ export class AnnotationEditorUIManager {
         this.#lastActiveElement = undefined;
         lastActiveElement.on("focusin", () => {
             lastEditor._focusEventsAllowed = true;
-        }, { once: true });
+        }, { once: true, signal: this._signal });
         lastActiveElement.focus();
     }
     #addKeyboardManager() {
+        const signal = this._signal;
         // The keyboard events are caught at the container level in order to be able
         // to execute some callbacks even if the current page doesn't have focus.
-        window.on("keydown", this.#boundKeydown);
-        window.on("keyup", this.#boundKeyup);
+        window.on("keydown", this.#boundKeydown, { signal });
+        window.on("keyup", this.#boundKeyup, { signal });
     }
     #removeKeyboardManager() {
         window.off("keydown", this.#boundKeydown);
         window.off("keyup", this.#boundKeyup);
     }
     #addCopyPasteListeners() {
-        document.on("copy", this.#boundCopy);
-        document.on("cut", this.#boundCut);
-        document.on("paste", this.#boundPaste);
+        const signal = this._signal;
+        document.on("copy", this.#boundCopy, { signal });
+        document.on("cut", this.#boundCut, { signal });
+        document.on("paste", this.#boundPaste, { signal });
     }
     #removeCopyPasteListeners() {
         document.off("copy", this.#boundCopy);
         document.off("cut", this.#boundCut);
         document.off("paste", this.#boundPaste);
+    }
+    #addDragAndDropListeners() {
+        const signal = this._signal;
+        document.on("dragover", this.dragOver.bind(this), { signal });
+        document.on("drop", this.drop.bind(this), { signal });
     }
     addEditListeners() {
         this.#addKeyboardManager();
@@ -967,6 +978,31 @@ export class AnnotationEditorUIManager {
     removeEditListeners() {
         this.#removeKeyboardManager();
         this.#removeCopyPasteListeners();
+    }
+    dragOver(event) {
+        for (const { type } of event.dataTransfer.items) {
+            for (const editorType of this.#editorTypes) {
+                if (editorType.isHandlingMimeForPasting(type)) {
+                    event.dataTransfer.dropEffect = "copy";
+                    event.preventDefault();
+                    return;
+                }
+            }
+        }
+    }
+    /**
+     * Drop callback.
+     */
+    drop(event) {
+        for (const item of event.dataTransfer.items) {
+            for (const editorType of this.#editorTypes) {
+                if (editorType.isHandlingMimeForPasting(item.type)) {
+                    editorType.paste(item, this.currentLayer);
+                    event.preventDefault();
+                    return;
+                }
+            }
+        }
     }
     /**
      * Copy callback.

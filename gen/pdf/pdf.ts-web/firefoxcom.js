@@ -39,6 +39,7 @@ export function initCom(app) {
     viewerApp = app;
 }
 export class FirefoxCom {
+    //kkkk TOCLEANUP
     // /**
     //  * Creates an event that the extension is listening for and will
     //  * synchronously respond to.
@@ -75,7 +76,7 @@ export class FirefoxCom {
      * asynchronously respond to.
      * @param action The action to trigger.
      * @param data The data to send.
-     * @return {Promise<any>} A promise that is resolved with the response data.
+     * @return A promise that is resolved with the response data.
      */
     static requestAsync(action, data) {
         return new Promise((resolve) => {
@@ -112,14 +113,6 @@ export class FirefoxCom {
 }
 export class DownloadManager {
     #openBlobUrls = new WeakMap();
-    /** @implement */
-    downloadUrl(url, filename, options = {}) {
-        FirefoxCom.request("download", {
-            originalUrl: url,
-            filename,
-            options,
-        });
-    }
     /** @implement */
     downloadData(data, filename, contentType) {
         const blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
@@ -166,8 +159,11 @@ export class DownloadManager {
         return false;
     }
     /** @implement */
-    download(blob, url, filename, options = {}) {
-        const blobUrl = URL.createObjectURL(blob);
+    download(data, url, filename, options = {}) {
+        // const blobUrl = URL.createObjectURL(data);
+        const blobUrl = data
+            ? URL.createObjectURL(new Blob([data], { type: "application/pdf" }))
+            : undefined;
         FirefoxCom.request("download", {
             blobUrl,
             originalUrl: url,
@@ -182,6 +178,7 @@ export class Preferences extends BasePreferences {
         return FirefoxCom.requestAsync("getPreferences", prefObj);
     }
 }
+//kkkk TOCLEANUP
 // class MozL10n implements IL10n {
 //   mozL10n;
 //   constructor(mozL10n: DocMozL10n_) {
@@ -288,7 +285,7 @@ class FirefoxComDataRangeTransport extends PDFDataRangeTransport {
     }
     // NOTE: This method is currently not invoked in the Firefox PDF Viewer.
     abort() {
-        FirefoxCom.request("abortLoading", undefined);
+        FirefoxCom.request("abortLoading");
     }
 }
 class FirefoxScripting {
@@ -305,7 +302,7 @@ class FirefoxScripting {
     }
     /** @implement */
     async destroySandbox() {
-        FirefoxCom.request("destroySandbox", undefined);
+        FirefoxCom.request("destroySandbox");
     }
 }
 export class MLManager {
@@ -368,7 +365,7 @@ export class ExternalServices extends BaseExternalServices {
                     break;
             }
         });
-        FirefoxCom.request("initPassiveLoading", undefined);
+        FirefoxCom.request("initPassiveLoading");
     }
     reportTelemetry(data) {
         FirefoxCom.request("reportTelemetry", data);
@@ -378,7 +375,7 @@ export class ExternalServices extends BaseExternalServices {
     }
     async createL10n() {
         const [localeProperties] = await Promise.all([
-            FirefoxCom.requestAsync("getLocaleProperties", undefined),
+            FirefoxCom.requestAsync("getLocaleProperties"),
             // document.l10n.ready, //kkkk bug?
         ]);
         return new L10n(localeProperties, document.l10n);
@@ -420,11 +417,17 @@ export class ExternalServices extends BaseExternalServices {
         /*#static*/  {
             return undefined;
         }
-        const nimbusData = await FirefoxCom.requestAsync("getNimbusExperimentData", undefined);
+        const nimbusData = await FirefoxCom.requestAsync("getNimbusExperimentData");
         // return nimbusData && JSON.parse(nimbusData) as NimbusExperimentData;
         return nimbusData
             ? JSON.parse(nimbusData)
             : undefined;
+    }
+    async getGlobalEventNames() {
+        return FirefoxCom.requestAsync("getGlobalEventNames");
+    }
+    dispatchGlobalEvent(event) {
+        FirefoxCom.request("dispatchGlobalEvent", event);
     }
 }
 //kkkk TOCLEANUP

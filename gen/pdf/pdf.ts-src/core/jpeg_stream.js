@@ -19,6 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { fail } from "../../../lib/util/trace.js";
 import { shadow } from "../shared/util.js";
 import { ImageStream } from "./decode_stream.js";
 import { JpegImage } from "./jpg.js";
@@ -30,16 +31,6 @@ import { Dict } from "./primitives.js";
  */
 export class JpegStream extends ImageStream {
     constructor(stream, maybeLength, params) {
-        // Some images may contain 'junk' before the SOI (start-of-image) marker.
-        // Note: this seems to mainly affect inline images.
-        let ch;
-        while ((ch = stream.getByte()) !== -1) {
-            // Find the first byte of the SOI marker (0xFFD8).
-            if (ch === 0xff) {
-                stream.skip(-1); // Reset the stream position to the SOI.
-                break;
-            }
-        }
         super(stream, maybeLength, params);
     }
     get bytes() {
@@ -48,8 +39,27 @@ export class JpegStream extends ImageStream {
     }
     /** @implement */
     readBlock() {
+        this.decodeImage();
+    }
+    /** @implement */
+    async asyncGetBytes() {
+        return fail("Not implemented");
+    }
+    /** @implement */
+    decodeImage(bytes) {
         if (this.eof) {
-            return;
+            return this.buffer;
+        }
+        bytes ||= this.bytes;
+        // Some images may contain 'junk' before the SOI (start-of-image) marker.
+        // Note: this seems to mainly affect inline images.
+        for (let i = 0, ii = bytes.length - 1; i < ii; i++) {
+            if (bytes[i] === 0xff && bytes[i + 1] === 0xd8) {
+                if (i > 0) {
+                    bytes = bytes.subarray(i);
+                }
+                break;
+            }
         }
         const jpegOptions = {};
         // Checking if values need to be transformed before conversion.
@@ -79,7 +89,7 @@ export class JpegStream extends ImageStream {
             }
         }
         const jpegImage = new JpegImage(jpegOptions);
-        jpegImage.parse(this.bytes);
+        jpegImage.parse(bytes);
         const data = jpegImage.getData({
             width: this.drawWidth,
             height: this.drawHeight,
@@ -90,6 +100,10 @@ export class JpegStream extends ImageStream {
         this.buffer = data;
         this.bufferLength = data.length;
         this.eof = true;
+        return this.buffer;
+    }
+    get canAsyncDecodeImageFromBuffer() {
+        return this.stream.isAsync;
     }
     ensureBuffer(requested) {
         // No-op, since `this.readBlock` will always parse the entire image and

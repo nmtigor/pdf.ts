@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { fail } from "@fe-lib/util/trace.ts";
 import { shadow } from "../shared/util.ts";
 import type { BaseStream } from "./base_stream.ts";
 import { ImageStream } from "./decode_stream.ts";
@@ -34,16 +35,6 @@ import { Dict } from "./primitives.ts";
  */
 export class JpegStream extends ImageStream {
   constructor(stream: BaseStream, maybeLength?: number, params?: Dict) {
-    // Some images may contain 'junk' before the SOI (start-of-image) marker.
-    // Note: this seems to mainly affect inline images.
-    let ch;
-    while ((ch = stream.getByte()) !== -1) {
-      // Find the first byte of the SOI marker (0xFFD8).
-      if (ch === 0xff) {
-        stream.skip(-1); // Reset the stream position to the SOI.
-        break;
-      }
-    }
     super(stream, maybeLength, params);
   }
 
@@ -54,8 +45,30 @@ export class JpegStream extends ImageStream {
 
   /** @implement */
   readBlock() {
+    this.decodeImage();
+  }
+
+  /** @implement */
+  async asyncGetBytes() {
+    return fail("Not implemented");
+  }
+
+  /** @implement */
+  decodeImage(bytes?: Uint8Array | Uint8ClampedArray) {
     if (this.eof) {
-      return;
+      return this.buffer;
+    }
+    bytes ||= this.bytes;
+
+    // Some images may contain 'junk' before the SOI (start-of-image) marker.
+    // Note: this seems to mainly affect inline images.
+    for (let i = 0, ii = bytes.length - 1; i < ii; i++) {
+      if (bytes[i] === 0xff && bytes[i + 1] === 0xd8) {
+        if (i > 0) {
+          bytes = bytes.subarray(i);
+        }
+        break;
+      }
     }
     const jpegOptions: JpegOptions = {};
 
@@ -63,7 +76,7 @@ export class JpegStream extends ImageStream {
     const decodeArr = this.dict!.getArray("D", "Decode") as number[];
     if ((this.forceRGBA || this.forceRGB) && Array.isArray(decodeArr)) {
       const bitsPerComponent =
-        <number> this.dict!.get("BPC", "BitsPerComponent") || 8;
+        this.dict!.get("BPC", "BitsPerComponent") as number || 8;
       const decodeArrLength = decodeArr.length;
       const transform = new Int32Array(decodeArrLength);
       let transformNeeded = false;
@@ -88,7 +101,7 @@ export class JpegStream extends ImageStream {
     }
     const jpegImage = new JpegImage(jpegOptions);
 
-    jpegImage.parse(this.bytes);
+    jpegImage.parse(bytes);
     const data = jpegImage.getData({
       width: this.drawWidth!,
       height: this.drawHeight!,
@@ -99,12 +112,18 @@ export class JpegStream extends ImageStream {
     this.buffer = data;
     this.bufferLength = data.length;
     this.eof = true;
+
+    return this.buffer;
+  }
+
+  override get canAsyncDecodeImageFromBuffer() {
+    return this.stream.isAsync;
   }
 
   override ensureBuffer(requested: number) {
     // No-op, since `this.readBlock` will always parse the entire image and
     // directly insert all of its data into `this.buffer`.
-    return <any> undefined;
+    return undefined as any;
   }
 }
 /*80--------------------------------------------------------------------------*/

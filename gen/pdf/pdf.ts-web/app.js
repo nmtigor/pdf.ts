@@ -15,7 +15,7 @@ import { AltTextManager } from "./alt_text_manager.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { AppOptions, OptionKind, ViewOnLoad } from "./app_options.js";
 import { CaretBrowsingMode } from "./caret_browsing.js";
-import { AutomationEventBus, EventBus } from "./event_utils.js";
+import { EventBus, FirefoxEventBus } from "./event_utils.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
@@ -84,12 +84,14 @@ export class PDFViewerApplication {
     isViewerEmbedded = window.parent !== window;
     url = "";
     baseUrl = "";
+    _allowedGlobalEventsPromise;
     _downloadUrl = "";
     //kkkk TOCLEANUP
     // _boundEvents: Record<string, ((...args: any[]) => void) | undefined> = Object
     //   .create(null);
     _eventBusAbortController;
     _windowAbortController;
+    _globalAbortController = new AbortController();
     documentInfo;
     metadata;
     #contentDispositionFilename;
@@ -267,9 +269,10 @@ export class PDFViewerApplication {
     }
     async #initializeViewerComponents() {
         const { appConfig, externalServices, l10n } = this;
-        const eventBus = AppOptions.isInAutomation
-            ? new AutomationEventBus()
-            : new EventBus();
+        let eventBus;
+        /*#static*/  {
+            eventBus = new EventBus();
+        }
         this.eventBus = eventBus;
         this.overlayManager = new OverlayManager();
         const pdfRenderingQueue = new PDFRenderingQueue();
@@ -308,6 +311,7 @@ export class PDFViewerApplication {
         const altTextManager = appConfig.altTextDialog
             ? new AltTextManager(appConfig.altTextDialog, container, this.overlayManager, eventBus)
             : undefined;
+        const enableHWA = AppOptions.enableHWA;
         const pdfViewer = new PDFViewer({
             container,
             viewer,
@@ -330,6 +334,8 @@ export class PDFViewerApplication {
             enablePermissions: AppOptions.enablePermissions,
             pageColors,
             mlManager: this.mlManager,
+            abortSignal: this._globalAbortController.signal,
+            enableHWA,
         });
         this.pdfViewer = pdfViewer;
         pdfRenderingQueue.setViewer(pdfViewer);
@@ -342,6 +348,8 @@ export class PDFViewerApplication {
                 renderingQueue: pdfRenderingQueue,
                 linkService: pdfLinkService,
                 pageColors,
+                abortSignal: this._globalAbortController.signal,
+                enableHWA,
             });
             pdfRenderingQueue.setThumbnailViewer(this.pdfThumbnailViewer);
         }
@@ -483,16 +491,22 @@ export class PDFViewerApplication {
             });
             // Enable dragging-and-dropping a new PDF file onto the viewerContainer.
             appConfig.mainContainer.on("dragover", (evt) => {
-                evt.preventDefault();
-                evt.dataTransfer.dropEffect =
-                    evt.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
+                for (const item of evt.dataTransfer.items) {
+                    if (item.type === "application/pdf") {
+                        evt.dataTransfer.dropEffect =
+                            evt.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        return;
+                    }
+                }
             });
             appConfig.mainContainer.on("drop", function (evt) {
-                evt.preventDefault();
-                const { files } = evt.dataTransfer;
-                if (!files || files.length === 0) {
+                if (evt.dataTransfer.files?.[0].type !== "application/pdf") {
                     return;
                 }
+                evt.preventDefault();
+                evt.stopPropagation();
                 eventBus.dispatch("fileinputchange", {
                     source: this,
                     fileInput: evt.dataTransfer,
@@ -814,24 +828,18 @@ export class PDFViewerApplication {
             });
         });
     }
-    #ensureDownloadComplete() {
-        if (this.pdfDocument && this.downloadComplete)
-            return;
-        throw new Error("PDF document not downloaded.");
-    }
     async download(options = {}) {
-        const url = this._downloadUrl, filename = this._docFilename;
+        let data;
         try {
-            this.#ensureDownloadComplete();
-            const data = await this.pdfDocument.getData();
-            const blob = new Blob([data], { type: "application/pdf" });
-            await this.downloadManager.download(blob, url, filename, options);
+            if (this.downloadComplete) {
+                data = await this.pdfDocument.getData();
+            }
         }
         catch {
             // When the PDF document isn't ready, or the PDF file is still
             // downloading, simply download using the URL.
-            await this.downloadManager.downloadUrl(url, filename, options);
         }
+        this.downloadManager.download(data, this._downloadUrl, this._docFilename, options);
     }
     async save(options = {}) {
         if (this._saveInProgress) {
@@ -839,16 +847,12 @@ export class PDFViewerApplication {
         }
         this._saveInProgress = true;
         await this.pdfScriptingManager.dispatchWillSave();
-        const url = this._downloadUrl, filename = this._docFilename;
         try {
-            this.#ensureDownloadComplete();
             const data = await this.pdfDocument.saveDocument();
-            const blob = new Blob([data], { type: "application/pdf" });
-            await this.downloadManager.download(blob, url, filename, options);
+            this.downloadManager.download(data, this._downloadUrl, this._docFilename, options);
         }
         catch (reason) {
-            // When the PDF document isn't ready, or the PDF file is still
-            // downloading, simply fallback to a "regular" download.
+            // When the PDF document isn't ready, fallback to a "regular" download.
             console.error(`Error when saving the document: ${reason.message}`);
             await this.download(options);
         }
@@ -866,13 +870,19 @@ export class PDFViewerApplication {
             });
         }
     }
-    downloadOrSave(options = {}) {
-        if (this.pdfDocument?.annotationStorage.size > 0) {
-            this.save(options);
-        }
-        else {
-            this.download(options);
-        }
+    async downloadOrSave(options = {}) {
+        // In the Firefox case, this method MUST always trigger a download.
+        // When the user is closing a modified and unsaved document, we display a
+        // prompt asking for saving or not. In case they save, we must wait for
+        // saving to complete before closing the tab.
+        // So in case this function does not trigger a download, we must trigger a
+        // a message and change PdfjsChild.sys.mjs to take it into account.
+        const { classList } = this.appConfig.appContainer;
+        classList.add("wait");
+        await (this.pdfDocument?.annotationStorage.size > 0
+            ? this.save(options)
+            : this.download(options));
+        classList.remove("wait");
     }
     /**
      * Report the error; used for errors affecting loading and/or parsing of
@@ -1594,6 +1604,17 @@ export class PDFViewerApplication {
         this._windowAbortController?.abort();
         this._windowAbortController = undefined;
     }
+    /**
+     * @ignore
+     */
+    async testingClose() {
+        this.unbindEvents();
+        this.unbindWindowEvents();
+        this._globalAbortController?.abort();
+        this._globalAbortController = undefined;
+        this.findBar?.close();
+        await Promise.all([this.l10n?.destroy(), this.close()]);
+    }
     _accumulateTicks(ticks, prop) {
         // If the direction changed, reset the accumulated ticks.
         if ((this[prop] > 0 && ticks < 0) || (this[prop] < 0 && ticks > 0)) {
@@ -1943,11 +1964,12 @@ function webViewerUpdateFindMatchesCount({ matchesCount }) {
         viewerApp.findBar?.updateResultsCount(matchesCount);
     }
 }
-function webViewerUpdateFindControlState({ state, previous, matchesCount, rawQuery, }) {
+function webViewerUpdateFindControlState({ state, previous, entireWord, matchesCount, rawQuery, }) {
     if (viewerApp.supportsIntegratedFind) {
         viewerApp.externalServices.updateFindControlState({
             result: state,
             findPrevious: previous,
+            entireWord,
             matchesCount,
             rawQuery,
         });

@@ -5,7 +5,6 @@
  * @module pdf/pdf.ts-web/external_services.ts
  * @license Apache-2.0
  ******************************************************************************/
-/*80--------------------------------------------------------------------------*/
 export class BaseExternalServices {
     updateFindControlState(data) { }
     updateFindMatchesCount(data) { }
@@ -17,6 +16,10 @@ export class BaseExternalServices {
     async getNimbusExperimentData() {
         return undefined;
     }
+    async getGlobalEventNames() {
+        return undefined;
+    }
+    dispatchGlobalEvent(_event) { }
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=external_services.js.map

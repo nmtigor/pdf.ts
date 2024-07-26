@@ -5,8 +5,8 @@
  * @module pdf/pdf.ts-src/display/base_factory.ts
  * @license Apache-2.0
  ******************************************************************************/
-import { CMapCompressionType } from "../shared/util.js";
 import { svg as createSVG } from "../../../lib/dom.js";
+import { CMapCompressionType } from "../shared/util.js";
 /*80--------------------------------------------------------------------------*/
 export class BaseFilterFactory {
     addFilter(maps) {
@@ -27,6 +27,10 @@ export class BaseFilterFactory {
     destroy(keepHCM = false) { }
 }
 export class BaseCanvasFactory {
+    #enableHWA = false;
+    constructor({ enableHWA = false } = {}) {
+        this.#enableHWA = enableHWA;
+    }
     /** @final */
     create(width, height) {
         if (width <= 0 || height <= 0) {
@@ -35,7 +39,9 @@ export class BaseCanvasFactory {
         const canvas = this._createCanvas(width, height);
         return {
             canvas,
-            context: canvas.getContext("2d"),
+            context: canvas.getContext("2d", {
+                willReadFrequently: !this.#enableHWA,
+            }),
         };
     }
     /** @final */

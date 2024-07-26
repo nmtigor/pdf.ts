@@ -64,7 +64,9 @@ var PatternType;
 // could easily end up hurting *overall* performance (e.g. rendering as well).
 const TEXT_CHUNK_BATCH_SIZE = 10;
 const deferred = Promise.resolve();
-// Convert PDF blend mode names to HTML5 blend mode names.
+/**
+ * Convert PDF blend mode names to HTML5 blend mode names.
+ */
 function normalizeBlendMode(value, parsingArray = false) {
     if (Array.isArray(value)) {
         // Use the first *supported* BM value in the Array (fixes issue11279.pdf).
@@ -124,7 +126,11 @@ function normalizeBlendMode(value, parsingArray = false) {
     warn(`Unsupported blend mode: ${value.name}`);
     return "source-over";
 }
-function incrementCachedImageMaskCount(data) {
+function addLocallyCachedImageOps(opList, data) {
+    if (data.objId) {
+        opList.addDependency(data.objId);
+    }
+    opList.addImageOps(data.fn, data.args, data.optionalContent);
     if (data.fn === OPS.paintImageMaskXObject && data.args[0]?.count > 0) {
         data.args[0].count++;
     }
@@ -569,6 +575,7 @@ export class PartialEvaluator {
             operatorList.addImageOps(OPS.paintImageMaskXObject, args, optionalContent);
             if (cacheKey) {
                 const cacheData = {
+                    objId,
                     fn: OPS.paintImageMaskXObject,
                     args,
                     optionalContent,
@@ -698,6 +705,7 @@ export class PartialEvaluator {
         });
         if (cacheKey) {
             const cacheData = {
+                objId,
                 fn: OPS.paintImageXObject,
                 args,
                 optionalContent,
@@ -1427,8 +1435,7 @@ export class PartialEvaluator {
                         if (isValidName) {
                             const localImage = localImageCache.getByName(name);
                             if (localImage) {
-                                operatorList.addImageOps(localImage.fn, localImage.args, localImage.optionalContent);
-                                incrementCachedImageMaskCount(localImage);
+                                addLocallyCachedImageOps(operatorList, localImage);
                                 args = undefined;
                                 continue;
                             }
@@ -1439,12 +1446,10 @@ export class PartialEvaluator {
                             }
                             let xobj = xobjs.getRaw(name);
                             if (xobj instanceof Ref) {
-                                // const localImage =  localImageCache.getByRef(xobj);
                                 const localImage = localImageCache.getByRef(xobj) ||
                                     self._regionalImageCache.getByRef(xobj);
                                 if (localImage) {
-                                    operatorList.addImageOps(localImage.fn, localImage.args, localImage.optionalContent);
-                                    incrementCachedImageMaskCount(localImage);
+                                    addLocallyCachedImageOps(operatorList, localImage);
                                     resolveXObject();
                                     return;
                                 }
@@ -1526,10 +1531,10 @@ export class PartialEvaluator {
                     case OPS.endInlineImage:
                         const cacheKey = args[0].cacheKey;
                         if (cacheKey) {
-                            const localImage = localImageCache.getByName(cacheKey);
+                            const localImage = localImageCache
+                                .getByName(cacheKey);
                             if (localImage) {
-                                operatorList.addImageOps(localImage.fn, localImage.args, localImage.optionalContent);
-                                incrementCachedImageMaskCount(localImage);
+                                addLocallyCachedImageOps(operatorList, localImage);
                                 args = undefined;
                                 continue;
                             }
@@ -3220,60 +3225,9 @@ export class PartialEvaluator {
         let defaultWidth = 0;
         const glyphsVMetrics = [];
         let defaultVMetrics;
-        //kkkk TOCLEANUP
-        // let i, ii, j, jj, start: number, code, widths;
         if (properties.composite) {
-            //kkkk TOCLEANUP
-            // defaultWidth = dict.has("DW") ? <number> dict.get("DW") : 1000;
-            // widths = <(number | number[] | Ref)[]> dict.get("W"); // 9.7.4.3
-            // if (widths) {
-            //   for (i = 0, ii = widths.length; i < ii; i++) {
-            //     start = <number> xref.fetchIfRef(widths[i++]);
-            //     code = xref.fetchIfRef(widths[i]);
-            //     if (Array.isArray(code)) {
-            //       for (j = 0, jj = code.length; j < jj; j++) {
-            //         glyphsWidths[start++] = <number> xref.fetchIfRef(code[j]);
-            //       }
-            //     } else {
-            //       const width = <number> xref.fetchIfRef(widths[++i]);
-            //       for (j = start; j <= <number> code; j++) {
-            //         glyphsWidths[j] = width;
-            //       }
-            //     }
-            //   }
-            // }
-            // if (properties.vertical) {
-            //   const vmetrics_ = <[number, number]> dict.getArray("DW2") ??
-            //     [880, -1000];
-            //   defaultVMetrics = [vmetrics_[1], defaultWidth * 0.5, vmetrics_[0]];
-            //   const vmetrics = <(number | number[] | Ref)[]> dict.get("W2"); // 9.7.4.3
-            //   if (vmetrics) {
-            //     for (i = 0, ii = vmetrics.length; i < ii; i++) {
-            //       start = <number> xref.fetchIfRef(vmetrics[i++]);
-            //       code = xref.fetchIfRef(vmetrics[i]);
-            //       if (Array.isArray(code)) {
-            //         for (j = 0, jj = code.length; j < jj; j++) {
-            //           glyphsVMetrics[start++] = <VMetric> [
-            //             xref.fetchIfRef(code[j++]),
-            //             xref.fetchIfRef(code[j++]),
-            //             xref.fetchIfRef(code[j]),
-            //           ];
-            //         }
-            //       } else {
-            //         const vmetric = <VMetric> [
-            //           xref.fetchIfRef(vmetrics[++i]),
-            //           xref.fetchIfRef(vmetrics[++i]),
-            //           xref.fetchIfRef(vmetrics[++i]),
-            //         ];
-            //         for (j = start; j <= <number> code; j++) {
-            //           glyphsVMetrics[j] = vmetric;
-            //         }
-            //       }
-            //     }
-            //   }
-            // }
             const dw = dict.get("DW");
-            defaultWidth = Number.isInteger(dw) ? dw : 1000;
+            defaultWidth = typeof dw === "number" ? Math.ceil(dw) : 1000;
             const widths = dict.get("W"); // 9.7.4.3
             if (Array.isArray(widths)) {
                 for (let i = 0, ii = widths.length; i < ii; i++) {

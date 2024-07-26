@@ -2,7 +2,7 @@
  * Utility methods for mathematical operations
  *
  * https://github.com/material-foundation/material-color-utilities/blob/main/typescript/utils/math_utils.ts
- * (2023-01-01)
+ * (2023-06-22)
  *
  * @module lib/color/math_utils
  * @license Apache-2.0

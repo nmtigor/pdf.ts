@@ -23,8 +23,8 @@ import { DEFAULT_SCALE, DEFAULT_SCALE_DELTA, DEFAULT_SCALE_VALUE, docStyle, getV
 const DEFAULT_CACHE_SIZE = 10;
 export var PagesCountLimit;
 (function (PagesCountLimit) {
-    PagesCountLimit[PagesCountLimit["FORCE_SCROLL_MODE_PAGE"] = 15000] = "FORCE_SCROLL_MODE_PAGE";
-    PagesCountLimit[PagesCountLimit["FORCE_LAZY_PAGE_INIT"] = 7500] = "FORCE_LAZY_PAGE_INIT";
+    PagesCountLimit[PagesCountLimit["FORCE_SCROLL_MODE_PAGE"] = 10000] = "FORCE_SCROLL_MODE_PAGE";
+    PagesCountLimit[PagesCountLimit["FORCE_LAZY_PAGE_INIT"] = 5000] = "FORCE_LAZY_PAGE_INIT";
     PagesCountLimit[PagesCountLimit["PAUSE_EAGER_PAGE_INIT"] = 250] = "PAUSE_EAGER_PAGE_INIT";
 })(PagesCountLimit || (PagesCountLimit = {}));
 //kkkk TOCLEANUP
@@ -123,6 +123,7 @@ export class PDFViewer {
     maxCanvasPixels;
     l10n;
     #containerTopLeft;
+    #enableHWA = false;
     #enablePermissions;
     #eventAbortController;
     pageColors;
@@ -320,6 +321,7 @@ export class PDFViewer {
         this.#enablePermissions = options.enablePermissions || false;
         this.pageColors = options?.pageColors;
         this.#mlManager = options.mlManager;
+        this.#enableHWA = options.enableHWA || false;
         this.defaultRenderingQueue = !options.renderingQueue;
         if ((PDFJSDev || GENERIC) && this.defaultRenderingQueue) {
             // Custom rendering queue is not specified, using default one
@@ -329,7 +331,12 @@ export class PDFViewer {
         else {
             this.renderingQueue = options.renderingQueue;
         }
-        this.scroll = watchScroll(this.container, this._scrollUpdate.bind(this));
+        const { abortSignal } = options;
+        abortSignal?.on("abort", () => {
+            this.#resizeObserver.disconnect();
+            this.#resizeObserver = undefined;
+        }, { once: true });
+        this.scroll = watchScroll(this.container, this._scrollUpdate.bind(this), abortSignal);
         this.presentationModeState = PresentationModeState.UNKNOWN;
         this._resetView();
         /*#static*/  {
@@ -558,10 +565,10 @@ export class PDFViewer {
             // TODO: if all the pages are rendered we don't need to wait for
             // getAllText and we could just get text from the Selection object.
             // Select all the document.
-            const savedCursor = this.container.style.cursor;
-            this.container.style.cursor = "wait";
-            const interruptCopy = (ev) => (this.#interruptCopyCondition = ev.key === "Escape");
-            window.on("keydown", interruptCopy);
+            const { classList } = this.viewer;
+            classList.add("copyAll");
+            const ac = new AbortController();
+            window.addEventListener("keydown", (ev) => (this.#interruptCopyCondition = ev.key === "Escape"), { signal: ac.signal });
             this.getAllText()
                 .then(async (text) => {
                 if (text !== undefined) {
@@ -574,8 +581,8 @@ export class PDFViewer {
                 .finally(() => {
                 this.#getAllTextInProgress = false;
                 this.#interruptCopyCondition = false;
-                window.off("keydown", interruptCopy);
-                this.container.style.cursor = savedCursor;
+                ac.abort();
+                classList.remove("copyAll");
             });
             event.preventDefault();
             event.stopPropagation();
@@ -710,6 +717,7 @@ export class PDFViewer {
                     pageColors,
                     l10n: this.l10n,
                     layerProperties: this._layerProperties,
+                    enableHWA: this.#enableHWA,
                 });
                 this._pages.push(pageView);
             }

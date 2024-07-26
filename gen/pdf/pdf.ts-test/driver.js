@@ -366,7 +366,7 @@ class Snapshot_ extends HTMLVuu {
         this.assignStylo({
             display: "grid",
             gridTemplateRows: "1fr 100px",
-            gridTemplateColumns: "1fr",
+            gridTemplateColumns: "200px",
             placeItems: "stretch",
             width: "200px",
             height: "200px",

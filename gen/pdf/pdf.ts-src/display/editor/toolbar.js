@@ -34,8 +34,9 @@ export class EditorToolbar {
         const editToolbar = (this.#toolbar = div());
         editToolbar.className = "editToolbar";
         editToolbar.setAttribute("role", "toolbar");
-        editToolbar.on("contextmenu", noContextMenu);
-        editToolbar.on("pointerdown", EditorToolbar.#pointerDown);
+        const signal = this.#editor._uiManager._signal;
+        editToolbar.on("contextmenu", noContextMenu, { signal });
+        editToolbar.on("pointerdown", EditorToolbar.#pointerDown, { signal });
         const buttons = (this.#buttons = div());
         buttons.className = "buttons";
         editToolbar.append(buttons);
@@ -68,9 +69,10 @@ export class EditorToolbar {
         // If we're clicking on a button with the keyboard or with
         // the mouse, we don't want to trigger any focus events on
         // the editor.
-        element.on("focusin", this.#focusIn, { capture: true });
-        element.on("focusout", this.#focusOut, { capture: true });
-        element.on("contextmenu", noContextMenu);
+        const signal = this.#editor._uiManager._signal;
+        element.on("focusin", this.#focusIn, { capture: true, signal });
+        element.on("focusout", this.#focusOut, { capture: true, signal });
+        element.on("contextmenu", noContextMenu, { signal });
     }
     hide() {
         this.#toolbar.classList.add("hidden");
@@ -87,7 +89,7 @@ export class EditorToolbar {
         this.#addListenersToElement(button);
         button.on("click", (e) => {
             this.#editor._uiManager.delete();
-        });
+        }, { signal: this.#editor._uiManager._signal });
         this.#buttons.append(button);
     }
     get #divider() {
@@ -122,7 +124,9 @@ export class HighlightToolbar {
         const editToolbar = (this.#toolbar = html("div"));
         editToolbar.className = "editToolbar";
         editToolbar.setAttribute("role", "toolbar");
-        editToolbar.on("contextmenu", noContextMenu);
+        editToolbar.on("contextmenu", noContextMenu, {
+            signal: this.#uiManager._signal,
+        });
         const buttons = (this.#buttons = html("div"));
         buttons.className = "buttons";
         editToolbar.append(buttons);
@@ -173,10 +177,11 @@ export class HighlightToolbar {
         button.append(span);
         span.className = "visuallyHidden";
         span.setAttribute("data-l10n-id", "pdfjs-highlight-floating-button-label");
-        button.on("contextmenu", noContextMenu);
+        const signal = this.#uiManager._signal;
+        button.on("contextmenu", noContextMenu, { signal });
         button.on("click", () => {
             this.#uiManager.highlightSelection("floating_button");
-        });
+        }, { signal });
         this.#buttons.append(button);
     }
 }

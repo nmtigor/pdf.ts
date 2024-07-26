@@ -29,6 +29,9 @@ export const D_cy = `${D_fe}_ui-testing`;
 /*49-------------------------------------------*/
 
 export const D_pdfts = "pdf.ts";
+/*49-------------------------------------------*/
+
+export const D_pdfcy = `${D_pdfts}_ui-testing`;
 /*64----------------------------------------------------------*/
 /* Relative to `D_fe` */
 /*====================*/
@@ -101,9 +104,6 @@ export function isClick(
   return Math.abs(x_0 - x) <= extent_x &&
     Math.abs(y_0 - y) <= extent_x;
 }
-
-/** In milliseconds */
-export const ClickHold_to = 1_000;
 /*64----------------------------------------------------------*/
 
 /** in millisecond */

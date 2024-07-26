@@ -18,7 +18,7 @@ import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextAccessibilityManager } from "./text_accessibility.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { approximateFraction, DEFAULT_SCALE, OutputScale, RenderingStates, roundToDivide, TextLayerMode, } from "./ui_utils.js";
+import { approximateFraction, DEFAULT_SCALE, floorToDivide, OutputScale, RenderingStates, TextLayerMode, } from "./ui_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 const DEFAULT_LAYER_PROPERTIES = 
 /*#static*/ undefined;
@@ -53,6 +53,7 @@ export class PDFPageView {
     #hasRestrictedScaling = false;
     #textLayerMode;
     #annotationMode;
+    #enableHWA = false;
     #previousRotation;
     #renderingState = RenderingStates.INITIAL;
     get renderingState() {
@@ -109,6 +110,7 @@ export class PDFPageView {
         this.maxCanvasPixels = options.maxCanvasPixels ??
             AppOptions.maxCanvasPixels;
         this.pageColors = options.pageColors;
+        this.#enableHWA = options.enableHWA || false;
         this.eventBus = options.eventBus;
         this.renderingQueue = options.renderingQueue;
         this.l10n = options.l10n;
@@ -746,7 +748,10 @@ export class PDFPageView {
         };
         canvasWrapper.append(canvas);
         this.canvas = canvas;
-        const ctx = canvas.getContext("2d", { alpha: false });
+        const ctx = canvas.getContext("2d", {
+            alpha: false,
+            willReadFrequently: !this.#enableHWA,
+        });
         const outputScale = (this.outputScale = new OutputScale());
         if ((PDFJSDev || GENERIC) && this.maxCanvasPixels === 0) {
             const invScale = 1 / this.scale;
@@ -770,11 +775,11 @@ export class PDFPageView {
         }
         const sfx = approximateFraction(outputScale.sx);
         const sfy = approximateFraction(outputScale.sy);
-        canvas.width = roundToDivide(width * outputScale.sx, sfx[0]);
-        canvas.height = roundToDivide(height * outputScale.sy, sfy[0]);
+        canvas.width = floorToDivide(width * outputScale.sx, sfx[0]);
+        canvas.height = floorToDivide(height * outputScale.sy, sfy[0]);
         const { style } = canvas;
-        style.width = roundToDivide(width, sfx[1]) + "px";
-        style.height = roundToDivide(height, sfy[1]) + "px";
+        style.width = floorToDivide(width, sfx[1]) + "px";
+        style.height = floorToDivide(height, sfy[1]) + "px";
         // Add the viewport so it's known what it was originally drawn with.
         this.#viewportMap.set(canvas, viewport);
         // Rendering area

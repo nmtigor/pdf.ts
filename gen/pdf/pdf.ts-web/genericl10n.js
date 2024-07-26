@@ -100,7 +100,7 @@ export class GenericL10n extends L10n {
             if (bundle) {
                 yield bundle;
             }
-            if (lang === "en-US") {
+            else if (lang === "en-US") {
                 yield this.#createBundleFallback(lang);
             }
         }

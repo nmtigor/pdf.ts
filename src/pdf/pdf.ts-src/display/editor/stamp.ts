@@ -23,8 +23,8 @@
 
 import type { OC2D } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
-import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { IL10n } from "@fe-pdf.ts-web/interfaces.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import { AnnotationEditorType, shadow } from "../../shared/util.ts";
 import type {
   AccessibilityData,
@@ -184,6 +184,7 @@ export class StampEditor extends AnnotationEditor {
     }
     input.type = "file";
     input.accept = StampEditor.supportedTypesStr;
+    const signal = this._uiManager._signal;
     this.#bitmapPromise = new Promise<void>((resolve) => {
       input.on("change", async () => {
         this.#bitmapPromise = undefined;
@@ -200,11 +201,11 @@ export class StampEditor extends AnnotationEditor {
           input.remove();
         }
         resolve();
-      });
+      }, { signal });
       input.on("cancel", () => {
         this.remove();
         resolve();
-      });
+      }, { signal });
     }).finally(() => this.#getBitmapDone());
     /*#static*/ if (PDFJSDev || !TESTING) {
       input.click();
@@ -470,7 +471,7 @@ export class StampEditor extends AnnotationEditor {
           },
         })
         .then((response) => {
-          const altText = response?.output || "";
+          const altText = (response as any)?.output || "";
           if (this.parent && altText && !this.hasAltText()) {
             this.altTextData = { altText, decorative: false };
           }
@@ -542,6 +543,11 @@ export class StampEditor extends AnnotationEditor {
    * Create the resize observer.
    */
   #createObserver() {
+    if (!this._uiManager._signal) {
+      // This method is called after the canvas has been created but the canvas
+      // creation is async, so it's possible that the viewer has been closed.
+      return;
+    }
     this.#observer = new ResizeObserver((entries) => {
       const rect = entries[0].contentRect;
       if (rect.width && rect.height) {
@@ -549,6 +555,10 @@ export class StampEditor extends AnnotationEditor {
       }
     });
     this.#observer.observe(this.div!);
+    this._uiManager._signal.on("abort", () => {
+      this.#observer?.disconnect();
+      this.#observer = undefined;
+    }, { once: true });
   }
 
   static override deserialize(

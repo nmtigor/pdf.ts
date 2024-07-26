@@ -20,6 +20,8 @@ export const D_ft_pdfts = `${D_fe_test}pdf.ts`;
 export const D_cy = `${D_fe}_ui-testing`;
 /*49-------------------------------------------*/
 export const D_pdfts = "pdf.ts";
+/*49-------------------------------------------*/
+export const D_pdfcy = `${D_pdfts}_ui-testing`;
 /*64----------------------------------------------------------*/
 /* Relative to `D_fe` */
 /*====================*/
@@ -77,8 +79,6 @@ export function isClick(x, y, x_0, y_0, extent_x = ClickExtent) {
     return Math.abs(x_0 - x) <= extent_x &&
         Math.abs(y_0 - y) <= extent_x;
 }
-/** In milliseconds */
-export const ClickHold_to = 1000;
 /*64----------------------------------------------------------*/
 /** in millisecond */
 export const HoldDuration = 1000;
