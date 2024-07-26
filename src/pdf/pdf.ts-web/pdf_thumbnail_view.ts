@@ -85,6 +85,11 @@ interface PDFThumbnailViewOptions {
    * mode.
    */
   pageColors: PageColors | undefined;
+
+  /**
+   * Enables hardware acceleration for rendering. The default value is `false`.
+   */
+  enableHWA?: boolean;
 }
 
 export class TempImageFactory {
@@ -128,6 +133,7 @@ export class PDFThumbnailView implements IVisibleView {
   pdfPageRotate;
   _optionalContentConfigPromise;
   pageColors;
+  enableHWA;
 
   eventBus;
   linkService;
@@ -156,17 +162,16 @@ export class PDFThumbnailView implements IVisibleView {
     linkService,
     renderingQueue,
     pageColors,
+    enableHWA,
   }: PDFThumbnailViewOptions) {
     this.id = id;
     this.renderingId = "thumbnail" + id;
-    // this.pageLabel = null;
 
-    // this.pdfPage = null;
-    // this.rotation = 0;
     this.viewport = defaultViewport;
     this.pdfPageRotate = defaultViewport.rotation;
     this._optionalContentConfigPromise = optionalContentConfigPromise;
     this.pageColors = pageColors || undefined;
+    this.enableHWA = enableHWA || false;
 
     this.eventBus = eventBus;
     this.linkService = linkService;
@@ -258,11 +263,14 @@ export class PDFThumbnailView implements IVisibleView {
     this.resume = undefined;
   }
 
-  #getPageDrawContext(upscaleFactor = 1) {
+  #getPageDrawContext(upscaleFactor = 1, enableHWA = this.enableHWA) {
     // Keep the no-thumbnail outline visible, i.e. `data-loaded === false`,
     // until rendering/image conversion is complete, to avoid display issues.
     const canvas = html("canvas");
-    const ctx = canvas.getContext("2d", { alpha: false })!;
+    const ctx = canvas.getContext("2d", {
+      alpha: false,
+      willReadFrequently: !enableHWA,
+    })!;
     const outputScale = new OutputScale();
 
     canvas.width = (upscaleFactor * this.canvasWidth * outputScale.sx) | 0;
@@ -409,7 +417,7 @@ export class PDFThumbnailView implements IVisibleView {
   }
 
   #reduceImage(img: HTMLCanvasElement) {
-    const { ctx, canvas } = this.#getPageDrawContext();
+    const { ctx, canvas } = this.#getPageDrawContext(1, true);
 
     if (img.width <= 2 * canvas.width) {
       ctx.drawImage(

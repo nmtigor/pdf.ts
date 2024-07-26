@@ -23,8 +23,8 @@
 
 import { assertEquals } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import type { TestServer } from "@fe-pdf.ts-test/test_utils.ts";
-import { createTemporaryDenoServer } from "@fe-pdf.ts-test/test_utils.ts";
+import type { TestServer } from "@fe-pdf.ts-test/unittest_utils.ts";
+import { createTemporaryDenoServer } from "@fe-pdf.ts-test/unittest_utils.ts";
 import { AbortException } from "../shared/util.ts";
 import { DocumentInitP } from "./api.ts";
 import { PDFFetchStream, PDFFetchStreamRangeReader } from "./fetch_stream.ts";

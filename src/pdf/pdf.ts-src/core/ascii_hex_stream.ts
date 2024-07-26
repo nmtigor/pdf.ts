@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { fail } from "@fe-lib/util/trace.ts";
 import { BaseStream } from "./base_stream.ts";
 import { DecodeStream } from "./decode_stream.ts";
 /*80--------------------------------------------------------------------------*/
@@ -84,6 +85,16 @@ export class AsciiHexStream extends DecodeStream {
     }
     this.firstDigit = firstDigit;
     this.bufferLength = bufferLength;
+  }
+
+  /** @implement */
+  async asyncGetBytes() {
+    return fail("Not implemented");
+  }
+
+  /** @implement */
+  decodeImage() {
+    return fail("Not implemented");
   }
 }
 /*80--------------------------------------------------------------------------*/

@@ -21,11 +21,11 @@
  * limitations under the License.
  */
 
-import type { C2D, Ratio } from "@fe-lib/alias.ts";
-import { GENERIC, MOZCENTRAL, PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { Locale } from "@fe-lib/Locale.ts";
+import type { C2D, Ratio } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import { GENERIC, MOZCENTRAL, PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { matrix_t } from "../shared/util.ts";
 import { AbortException, Util, warn } from "../shared/util.ts";
 import type {
@@ -144,6 +144,7 @@ export class TextLayer {
 
   static #ascentCache = new Map<string, Ratio>();
   static #canvasContexts = new Map<Locale | "", C2D>();
+  static #minFontSize: number | undefined;
   static #pendingTextLayers = new Set<TextLayer>();
 
   constructor({ textContentSource, container, viewport }: TextLayerP_) {
@@ -170,6 +171,8 @@ export class TextLayer {
     this.#transform = [1, 0, 0, -1, -pageX, pageY + pageHeight] as matrix_t;
     this.#pageWidth = pageWidth;
     this.#pageHeight = pageHeight;
+
+    TextLayer.#ensureMinFontSizeComputed();
 
     setLayerDimensions(container, viewport);
 
@@ -268,7 +271,7 @@ export class TextLayer {
     if (this.#disableProcessItems) {
       return;
     }
-    this.#layoutTextParams.ctx ||= TextLayer.#getCtx(this.#lang);
+    this.#layoutTextParams.ctx ??= TextLayer.#getCtx(this.#lang);
 
     const textDivs = this.#textDivs,
       textContentItemsStr = this.#textContentItemsStr;
@@ -354,7 +357,13 @@ export class TextLayer {
       divStyle.left = `${scaleFactorStr}${left.toFixed(2)}px)`;
       divStyle.top = `${scaleFactorStr}${top.toFixed(2)}px)`;
     }
-    divStyle.fontSize = `${scaleFactorStr}${fontHeight.toFixed(2)}px)`;
+    // We multiply the font size by #minFontSize, and then #layout will
+    // scale the element by 1/#minFontSize. This allows us to effectively
+    // ignore the minimum font size enforced by the browser, so that the text
+    // layer <span>s can always match the size of the text in the canvas.
+    divStyle.fontSize = `${scaleFactorStr}${
+      (TextLayer.#minFontSize! * fontHeight).toFixed(2)
+    }px)`;
     divStyle.fontFamily = fontFamily;
 
     textDivProperties.fontSize = fontHeight;
@@ -417,7 +426,12 @@ export class TextLayer {
     const { div, properties, ctx, prevFontSize, prevFontFamily } =
       params as Required<LayoutP_>;
     const { style } = div;
+
     let transform = "";
+    if (TextLayer.#minFontSize! > 1) {
+      transform = `scale(${1 / TextLayer.#minFontSize!})`;
+    }
+
     if (properties.canvasWidth !== 0 && properties.hasText) {
       const { fontFamily } = style;
       const { canvasWidth, fontSize } = properties;
@@ -432,7 +446,9 @@ export class TextLayer {
       const { width } = ctx.measureText(div.textContent!);
 
       if (width > 0) {
-        transform = `scaleX(${(canvasWidth * this.#scale) / width})`;
+        transform = `scaleX(${
+          (canvasWidth * this.#scale) / width
+        }) ${transform}`;
       }
     }
     if (properties.angle !== 0) {
@@ -476,10 +492,34 @@ export class TextLayer {
       canvas.className = "hiddenCanvasElement";
       canvas.lang = lang;
       document.body.append(canvas);
-      canvasContext = canvas.getContext("2d", { alpha: false })!;
+      canvasContext = canvas.getContext("2d", {
+        alpha: false,
+        willReadFrequently: true,
+      })!;
       this.#canvasContexts.set(lang, canvasContext);
     }
     return canvasContext;
+  }
+
+  /**
+   * Compute the minimum font size enforced by the browser.
+   */
+  static #ensureMinFontSizeComputed() {
+    if (this.#minFontSize !== undefined) {
+      return;
+    }
+    const div = html("div").assignStylo({
+      opacity: 0,
+      lineHeight: 1,
+      fontSize: "1px",
+    });
+    div.textContent = "X";
+    document.body.append(div);
+    // In `display:block` elements contain a single line of text,
+    // the height matches the line height (which, when set to 1,
+    // matches the actual font size).
+    this.#minFontSize = div.getBoundingClientRect().height;
+    div.remove();
   }
 
   static #getAscent(fontFamily: string, lang: Locale | undefined) {

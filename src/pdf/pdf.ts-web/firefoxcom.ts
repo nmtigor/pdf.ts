@@ -27,7 +27,8 @@ import { GECKOVIEW, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
 import { isPdfFile, PDFDataRangeTransport } from "../pdf.ts-src/pdf.ts";
 import type { FindControlState, PDFViewerApplication } from "./app.ts";
 import type { UserOptions } from "./app_options.ts";
-import type { EventMap } from "./event_utils.ts";
+import type { EventMap, EventName } from "./event_utils.ts";
+import type { GlobalEvent } from "./external_services.ts";
 import { BaseExternalServices } from "./external_services.ts";
 import type {
   CreateSandboxP,
@@ -75,7 +76,91 @@ export function initCom(app: PDFViewerApplication) {
   viewerApp = app;
 }
 
+type RequestMap_ = {
+  abortLoading: {
+    data: undefined;
+    ret: undefined;
+  };
+  createSandbox: {
+    data: CreateSandboxP;
+    ret: boolean;
+  };
+  destroySandbox: {
+    data: undefined;
+    ret: undefined;
+  };
+  dispatchEventInSandbox: {
+    data: EventInSandBox;
+    ret: undefined;
+  };
+  dispatchGlobalEvent: {
+    data: GlobalEvent<EventName>;
+    ret: undefined;
+  };
+  download: {
+    data: {
+      blobUrl: string | undefined;
+      originalUrl: string;
+      filename: string;
+      isAttachment?: boolean;
+      options?: object;
+    };
+    ret: undefined;
+  };
+  getGlobalEventNames: {
+    data: undefined;
+    ret: Set<EventName> | undefined;
+  };
+  getLocaleProperties: {
+    data: undefined;
+    ret: L10nCtorP;
+  };
+  getNimbusExperimentData: {
+    data: undefined;
+    ret: string;
+  };
+  getPreferences: {
+    data: { prefs: UserOptions };
+    ret: { browserPrefs?: UserOptions; prefs: UserOptions };
+  };
+  initPassiveLoading: {
+    data: undefined;
+    ret: undefined;
+  };
+  mlGuess: {
+    data: unknown;
+    ret: unknown;
+  };
+  reportTelemetry: {
+    data: EventMap["reporttelemetry"]["details"];
+    ret: undefined;
+  };
+  requestDataRange: {
+    data: {
+      begin: number;
+      end: number;
+    };
+    ret: undefined;
+  };
+  updateEditorStates: {
+    data: EventMap["annotationeditorstateschanged"];
+    ret: undefined;
+  };
+  updateFindControlState: {
+    data: FindControlState;
+    ret: undefined;
+  };
+  updateFindMatchesCount: {
+    data: MatchesCount;
+    ret: undefined;
+  };
+};
+type RequestAction_ = keyof RequestMap_;
+type RequestData_<RA extends RequestAction_> = RequestMap_[RA]["data"];
+type RequestRet_<RA extends RequestAction_> = RequestMap_[RA]["ret"];
+
 export class FirefoxCom {
+  //kkkk TOCLEANUP
   // /**
   //  * Creates an event that the extension is listening for and will
   //  * synchronously respond to.
@@ -115,13 +200,13 @@ export class FirefoxCom {
    * asynchronously respond to.
    * @param action The action to trigger.
    * @param data The data to send.
-   * @return {Promise<any>} A promise that is resolved with the response data.
+   * @return A promise that is resolved with the response data.
    */
-  static requestAsync<D extends Record<string, any> | string>(
-    action: string,
-    data?: D,
-  ) {
-    return new Promise<D>((resolve) => {
+  static requestAsync<RA extends RequestAction_>(
+    action: RA,
+    data?: RequestMap_[RA]["data"],
+  ): Promise<RequestRet_<RA>> {
+    return new Promise<RequestRet_<RA>>((resolve) => {
       this.request(action, data, resolve);
     });
   }
@@ -132,17 +217,17 @@ export class FirefoxCom {
    * @param action The action to trigger.
    * @param data The data to send.
    */
-  static request<D extends Record<string, any> | string>(
-    action: string,
-    data?: D,
-    callback?: (response: D) => void,
-  ) {
+  static request<RA extends RequestAction_>(
+    action: RA,
+    data?: RequestData_<RA>,
+    callback?: (response: RequestData_<RA>) => void,
+  ): void {
     type Detail_ = {
       action: string;
-      data?: D | undefined;
+      data?: RequestData_<RA>;
       sync?: false;
       responseExpected: boolean;
-      response?: D;
+      response?: RequestData_<RA>;
     };
     const request = textnode("");
     if (callback) {
@@ -150,7 +235,7 @@ export class FirefoxCom {
         "pdf.js.response",
         (event) => {
           const response = (event as CustomEvent<Detail_>).detail.response!;
-          (event.target as Text).remove();
+          (event.target as ChildNode).remove();
 
           callback(response);
         },
@@ -175,15 +260,6 @@ export class FirefoxCom {
 
 export class DownloadManager implements IDownloadManager {
   #openBlobUrls = new WeakMap();
-
-  /** @implement */
-  downloadUrl(url: string, filename: string, options: object = {}) {
-    FirefoxCom.request("download", {
-      originalUrl: url,
-      filename,
-      options,
-    });
-  }
 
   /** @implement */
   downloadData(
@@ -246,8 +322,16 @@ export class DownloadManager implements IDownloadManager {
   }
 
   /** @implement */
-  download(blob: Blob, url: string, filename: string, options: object = {}) {
-    const blobUrl = URL.createObjectURL(blob);
+  download(
+    data: BlobPart,
+    url: string,
+    filename: string,
+    options: object = {},
+  ) {
+    // const blobUrl = URL.createObjectURL(data);
+    const blobUrl = data
+      ? URL.createObjectURL(new Blob([data], { type: "application/pdf" }))
+      : undefined;
 
     FirefoxCom.request("download", {
       blobUrl,
@@ -265,6 +349,7 @@ export class Preferences extends BasePreferences {
   }
 }
 
+//kkkk TOCLEANUP
 // class MozL10n implements IL10n {
 //   mozL10n;
 
@@ -438,7 +523,7 @@ class FirefoxComDataRangeTransport extends PDFDataRangeTransport {
 
   // NOTE: This method is currently not invoked in the Firefox PDF Viewer.
   override abort() {
-    FirefoxCom.request("abortLoading", undefined);
+    FirefoxCom.request("abortLoading");
   }
 }
 
@@ -458,7 +543,7 @@ class FirefoxScripting implements IScripting {
 
   /** @implement */
   async destroySandbox() {
-    FirefoxCom.request("destroySandbox", undefined);
+    FirefoxCom.request("destroySandbox");
   }
 }
 
@@ -469,7 +554,7 @@ export type NimbusExperimentData = {
 
 export class MLManager {
   guess(data: unknown) {
-    return FirefoxCom.requestAsync("mlGuess", data as any);
+    return FirefoxCom.requestAsync("mlGuess", data);
   }
 }
 
@@ -539,7 +624,7 @@ export class ExternalServices extends BaseExternalServices {
           break;
       }
     });
-    FirefoxCom.request("initPassiveLoading", undefined);
+    FirefoxCom.request("initPassiveLoading");
   }
 
   override reportTelemetry(data: EventMap["reporttelemetry"]["details"]) {
@@ -552,7 +637,7 @@ export class ExternalServices extends BaseExternalServices {
 
   override async createL10n() {
     const [localeProperties] = await Promise.all([
-      FirefoxCom.requestAsync<L10nCtorP>("getLocaleProperties", undefined),
+      FirefoxCom.requestAsync("getLocaleProperties"),
       // document.l10n.ready, //kkkk bug?
     ]);
     return new L10n(localeProperties, document.l10n);
@@ -602,14 +687,19 @@ export class ExternalServices extends BaseExternalServices {
     /*#static*/ if (!GECKOVIEW) {
       return undefined;
     }
-    const nimbusData = await FirefoxCom.requestAsync<string>(
-      "getNimbusExperimentData",
-      undefined,
-    );
+    const nimbusData = await FirefoxCom.requestAsync("getNimbusExperimentData");
     // return nimbusData && JSON.parse(nimbusData) as NimbusExperimentData;
     return nimbusData
       ? JSON.parse(nimbusData) as NimbusExperimentData
       : undefined;
+  }
+
+  override async getGlobalEventNames() {
+    return FirefoxCom.requestAsync("getGlobalEventNames");
+  }
+
+  override dispatchGlobalEvent<EN extends EventName>(event: GlobalEvent<EN>) {
+    FirefoxCom.request("dispatchGlobalEvent", event);
   }
 }
 

@@ -942,7 +942,9 @@ function createOS2Table(
 
   const bbox = properties.bbox || [0, 0, 0, 0];
   const unitsPerEm = override.unitsPerEm ||
-    1 / (properties.fontMatrix || FONT_IDENTITY_MATRIX)[0];
+    (properties.fontMatrix
+      ? 1 / Math.max(...properties.fontMatrix.slice(0, 4).map(Math.abs))
+      : 1000);
 
   // if the font units differ to the PDF glyph space units
   // then scale up the values
@@ -3429,7 +3431,9 @@ export class Font extends FontExpotDataEx {
       properties.seacMap = seacMap;
     }
 
-    const unitsPerEm = 1 / (properties.fontMatrix || FONT_IDENTITY_MATRIX)[0];
+    const unitsPerEm = properties.fontMatrix
+      ? 1 / Math.max(...properties.fontMatrix.slice(0, 4).map(Math.abs))
+      : 1000;
 
     const builder = new OpenTypeFileBuilder("\x4F\x54\x54\x4F");
     // PostScript Font Program

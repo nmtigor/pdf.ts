@@ -3,7 +3,7 @@ tools.
 
 It is
 
-- based on [pdf.js-4.3.136](https://github.com/mozilla/pdf.js/tree/v4.3.136),
+- based on [pdf.js-4.4.168](https://github.com/mozilla/pdf.js/tree/v4.4.168),
 
 - **transpiled using
   TypeScript-5.2.2[@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
@@ -46,4 +46,4 @@ It is
 ### Current States
 
 - `GENERIC` on browsers
-- unittest: 1058 / 1116
+- unittest: 1059 / 1117

@@ -71,6 +71,16 @@ interface PDFThumbnailViewerOptions {
    * mode.
    */
   pageColors: PageColors | undefined;
+
+  /**
+   * The AbortSignal for the window events.
+   */
+  abortSignal?: AbortSignal;
+
+  /**
+   * Enables hardware acceleration for rendering. The default value is `false`.
+   */
+  enableHWA?: boolean;
 }
 
 /**
@@ -82,6 +92,7 @@ export class PDFThumbnailViewer {
   linkService;
   renderingQueue;
   pageColors;
+  enableHWA;
 
   scroll;
 
@@ -129,14 +140,22 @@ export class PDFThumbnailViewer {
     linkService,
     renderingQueue,
     pageColors,
+    abortSignal,
+    enableHWA,
   }: PDFThumbnailViewerOptions) {
     this.container = container;
     this.eventBus = eventBus;
     this.linkService = linkService;
     this.renderingQueue = renderingQueue;
     this.pageColors = pageColors || undefined;
+    this.enableHWA = enableHWA || false;
 
-    this.scroll = watchScroll(this.container, this.#scrollUpdated);
+    // this.scroll = watchScroll(this.container, this.#scrollUpdated);
+    this.scroll = watchScroll(
+      this.container,
+      this.#scrollUpdated.bind(this),
+      abortSignal,
+    );
     this.#resetView();
   }
 
@@ -242,6 +261,7 @@ export class PDFThumbnailViewer {
             linkService: this.linkService,
             renderingQueue: this.renderingQueue,
             pageColors: this.pageColors,
+            enableHWA: this.enableHWA,
           });
           this._thumbnails.push(thumbnail);
         }

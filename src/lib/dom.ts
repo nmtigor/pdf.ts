@@ -96,6 +96,13 @@ declare global {
       listener: EventHandler<E>,
       options?: AddEventListenerOptions | boolean,
     ): void;
+    /**
+     * For `{ passive: true }`, ref. https://chromestatus.com/feature/5745543795965952
+     */
+    onWheel(
+      listener: EventHandler<"wheel">,
+      options?: AddEventListenerOptions | boolean,
+    ): void;
     off<E extends EventName>(
       type: E,
       listener: EventHandler<E>,
@@ -107,6 +114,13 @@ declare global {
 if (globalThis.EventTarget) {
   EventTarget.prototype.on = function (this, type, listener, options?) {
     return this.addEventListener(type, listener as any, options);
+  };
+  EventTarget.prototype.onWheel = function (this, listener, options?) {
+    return this.addEventListener(
+      "wheel",
+      listener as any,
+      Object.assign({ passive: true }, options),
+    );
   };
   EventTarget.prototype.off = function (this, type, listener, options?) {
     return this.removeEventListener(type, listener as any, options);

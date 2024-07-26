@@ -23,6 +23,10 @@ export const linesOf = (text_x: string) =>
 export const isWhitespace = (_x: string) => /^\s+$/.test(_x);
 /*80--------------------------------------------------------------------------*/
 
+export const stopPropagation = (evt_x: Event) => {
+  evt_x.stopPropagation();
+};
+
 /**
  * Event handler to suppress context menu.
  *
@@ -62,4 +66,6 @@ export const decodeABV = textDecoder.decode.bind(textDecoder);
  * @param ms time in milliseconds
  */
 export const wait = (ms = 0) => new Promise<void>((r) => setTimeout(r, ms));
+
+export const g_abortr = new AbortController();
 /*80--------------------------------------------------------------------------*/

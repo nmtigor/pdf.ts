@@ -21,15 +21,15 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertObjectMatch } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
-import type { TestServer } from "../pdf.ts-test/test_utils.ts";
+import type { TestServer } from "../pdf.ts-test/unittest_utils.ts";
 import {
   CMAP_URL,
   createTemporaryDenoServer,
   getPDF,
-} from "../pdf.ts-test/test_utils.ts";
+} from "../pdf.ts-test/unittest_utils.ts";
 import { EventBus, type EventMap } from "./event_utils.ts";
 import type { FindCtrlState } from "./pdf_find_controller.ts";
 import { FindState, PDFFindController } from "./pdf_find_controller.ts";
@@ -1009,7 +1009,7 @@ describe("pdf_find_controller", () => {
     });
   });
 
-  it("performs a search in a text with some f ligatures", async function () {
+  it("performs a search in a text with some f ligatures", async () => {
     await using inited = await initPdfFindController(
       tempServer,
       "copy_paste_ligatures.pdf",
@@ -1030,6 +1030,39 @@ describe("pdf_find_controller", () => {
       pageMatches: [[5, 6, 6, 7, 8, 9, 9, 10, 10]],
       pageMatchesLength: [[1, 1, 1, 1, 1, 1, 1, 1, 1]],
     });
+  });
+
+  it("dispatches updatefindcontrolstate with correct properties", async () => {
+    const testOnFind = ({ eventBus }: { eventBus: EventBus }) =>
+      new Promise<void>(function (this: any, resolve) {
+        const eventState = {
+          source: this,
+          type: "",
+          query: "Foo",
+          caseSensitive: true,
+          entireWord: true,
+          findPrevious: false,
+          matchDiacritics: false,
+        } as FindCtrlState & { source: any };
+        eventBus.dispatch("find", eventState);
+
+        eventBus.on(
+          "updatefindcontrolstate",
+          (evt: EventMap["updatefindcontrolstate"]) => {
+            assertObjectMatch(evt, {
+              state: FindState.NOT_FOUND,
+              previous: false,
+              entireWord: true,
+              matchesCount: { current: 0, total: 0 },
+              rawQuery: "Foo",
+            });
+            resolve();
+          },
+        );
+      });
+
+    const { eventBus } = await initPdfFindController(tempServer);
+    await testOnFind({ eventBus });
   });
 });
 /*80--------------------------------------------------------------------------*/

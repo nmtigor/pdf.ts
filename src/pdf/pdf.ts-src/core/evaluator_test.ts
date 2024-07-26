@@ -23,7 +23,7 @@
 
 import { assert, assertEquals, fail } from "@std/assert";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory, XRefMock } from "@fe-pdf.ts-test/test_utils.ts";
+import { createIdFactory, XRefMock } from "@fe-pdf.ts-test/unittest_utils.ts";
 import { FormatError, OPS } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { PartialEvaluator } from "./evaluator.ts";

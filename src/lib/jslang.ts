@@ -661,6 +661,31 @@ Math.clamp = (min_x: number, val_x: number, max_x: number) =>
 // }
 /*80--------------------------------------------------------------------------*/
 
+declare global {
+  interface ReadableStream<R = any> {
+    [Symbol.asyncIterator](): AsyncIterableIterator<R>;
+  }
+}
+
+/**
+ * Ref. https://stackoverflow.com/a/77377871
+ */
+ReadableStream.prototype[Symbol.asyncIterator] ??= async function* <R = any>(
+  this: ReadableStream<R>,
+) {
+  const reader = this.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      yield value;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+};
+/*80--------------------------------------------------------------------------*/
+
 /**
  * class X extends mix( Y, Z )
  * ! Should always companion with an interface declaration

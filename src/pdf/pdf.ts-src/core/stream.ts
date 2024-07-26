@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { fail } from "@fe-lib/util/trace.ts";
 import { stringToBytes } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { Dict } from "./primitives.ts";
@@ -82,6 +83,11 @@ export class Stream extends BaseStream {
     }
     this.pos = end;
     return bytes.subarray(pos, end);
+  }
+
+  /** @implement */
+  async asyncGetBytes() {
+    return fail("Not implemented");
   }
 
   /** @implement */

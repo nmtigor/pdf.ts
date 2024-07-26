@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import { XRefMock } from "@fe-pdf.ts-test/test_utils.ts";
+import { XRefMock } from "@fe-pdf.ts-test/unittest_utils.ts";
 import {
   assert,
   assertEquals,

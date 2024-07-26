@@ -22,7 +22,7 @@
  */
 
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
-import { assert } from "@fe-lib/util/trace.ts";
+import { assert, fail } from "@fe-lib/util/trace.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { ReadValue } from "../interfaces.ts";
 import type { MessageHandler, Thread } from "../shared/message_handler.ts";

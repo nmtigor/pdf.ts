@@ -10,6 +10,7 @@ import { resolve } from "@std/path";
 /*80--------------------------------------------------------------------------*/
 
 const AD_fe = resolve(new URL(Deno.mainModule).pathname, "../../..");
+// console.log("🚀 ~ AD_fe:", AD_fe)
 
 const parsedArgs = parseArgs(Deno.args);
 let port: uint;

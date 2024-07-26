@@ -21,7 +21,7 @@
  * limitations under the License.
  */
 
-import ModuleLoader from "@fe-3rd/quickjs-2022-05-02/quickjs-eval.js";
+import ModuleLoader from "@fe-3rd/quickjs/quickjs-eval.js";
 import { TESTING } from "@fe-src/global.ts";
 import type { EventInSandBox } from "@fe-pdf.ts-web/interfaces.ts";
 import { SandboxSupportBase } from "./pdf.sandbox.external.ts";

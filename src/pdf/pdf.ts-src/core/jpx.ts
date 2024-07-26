@@ -21,10 +21,11 @@
  * limitations under the License.
  */
 
-import { IMAGE_DECODERS } from "@fe-src/global.ts";
 import OpenJPEG from "@fe-3rd/openjpeg/openjpeg.js";
+import { IMAGE_DECODERS } from "@fe-src/global.ts";
 import { BaseException, warn } from "../shared/util.ts";
 import { Stream } from "./stream.ts";
+import type { DecoderOptions } from "./image.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class JpxError extends BaseException {
@@ -34,15 +35,16 @@ export class JpxError extends BaseException {
 }
 
 type Module_ = {
-  decode: (data: unknown, ignoreColorSpace: boolean) => unknown;
+  decode: (data: unknown, decoderOptions: Partial<DecoderOptions>) => unknown;
 };
 
 export class JpxImage {
   static #module: Module_ | undefined;
 
-  static decode(data: unknown, ignoreColorSpace = false) {
+  static decode(data: unknown, decoderOptions?: Partial<DecoderOptions>) {
+    decoderOptions ||= {};
     this.#module ||= OpenJPEG({ warn }) as Module_;
-    const imageData = this.#module.decode(data, ignoreColorSpace);
+    const imageData = this.#module.decode(data, decoderOptions);
     if (typeof imageData === "string") {
       throw new JpxError(imageData);
     }

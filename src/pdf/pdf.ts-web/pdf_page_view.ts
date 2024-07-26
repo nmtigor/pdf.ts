@@ -69,9 +69,9 @@ import { TextLayerBuilder } from "./text_layer_builder.ts";
 import {
   approximateFraction,
   DEFAULT_SCALE,
+  floorToDivide,
   OutputScale,
   RenderingStates,
-  roundToDivide,
   TextLayerMode,
 } from "./ui_utils.ts";
 import { XfaLayerBuilder } from "./xfa_layer_builder.ts";
@@ -165,6 +165,11 @@ interface PDFPageViewOptions {
    * The object that is used to lookup the necessary layer-properties.
    */
   layerProperties?: LayerProps;
+
+  /**
+   * Enables hardware acceleration for rendering. The default value is `false`.
+   */
+  enableHWA?: boolean;
 }
 
 //kkkk TOCLEANUP
@@ -272,6 +277,7 @@ export class PDFPageView implements IVisibleView {
   #hasRestrictedScaling = false;
   #textLayerMode;
   #annotationMode;
+  #enableHWA = false;
   #previousRotation: unknown | undefined;
 
   #renderingState = RenderingStates.INITIAL;
@@ -351,6 +357,7 @@ export class PDFPageView implements IVisibleView {
     this.maxCanvasPixels = options.maxCanvasPixels ??
       AppOptions.maxCanvasPixels;
     this.pageColors = options.pageColors;
+    this.#enableHWA = options.enableHWA || false;
 
     this.eventBus = options.eventBus;
     this.renderingQueue = options.renderingQueue;
@@ -1147,7 +1154,10 @@ export class PDFPageView implements IVisibleView {
     canvasWrapper.append(canvas);
     this.canvas = canvas;
 
-    const ctx = canvas.getContext("2d", { alpha: false })!;
+    const ctx = canvas.getContext("2d", {
+      alpha: false,
+      willReadFrequently: !this.#enableHWA,
+    })!;
     const outputScale = (this.outputScale = new OutputScale());
 
     if ((PDFJSDev || GENERIC) && this.maxCanvasPixels === 0) {
@@ -1171,11 +1181,11 @@ export class PDFPageView implements IVisibleView {
     const sfx = approximateFraction(outputScale.sx);
     const sfy = approximateFraction(outputScale.sy);
 
-    canvas.width = roundToDivide(width * outputScale.sx, sfx[0]);
-    canvas.height = roundToDivide(height * outputScale.sy, sfy[0]);
+    canvas.width = floorToDivide(width * outputScale.sx, sfx[0]);
+    canvas.height = floorToDivide(height * outputScale.sy, sfy[0]);
     const { style } = canvas;
-    style.width = roundToDivide(width, sfx[1]) + "px";
-    style.height = roundToDivide(height, sfy[1]) + "px";
+    style.width = floorToDivide(width, sfx[1]) + "px";
+    style.height = floorToDivide(height, sfy[1]) + "px";
 
     // Add the viewport so it's known what it was originally drawn with.
     this.#viewportMap.set(canvas, viewport);

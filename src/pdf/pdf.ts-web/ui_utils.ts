@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import type { uint } from "@fe-lib/alias.ts";
 import { LIB } from "@fe-src/global.ts";
 import type { IVisibleView } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
@@ -193,6 +194,7 @@ export function scrollIntoView(
 export function watchScroll(
   viewAreaElement: HTMLDivElement,
   callback: (state?: unknown) => void,
+  abortSignal?: AbortSignal,
 ) {
   const debounceScroll = (evt: unknown) => {
     if (rAF) {
@@ -229,7 +231,16 @@ export function watchScroll(
   };
 
   let rAF: number | undefined;
-  viewAreaElement.on("scroll", debounceScroll, true);
+  viewAreaElement.on("scroll", debounceScroll, {
+    // useCapture: true,
+    capture: true,
+    signal: abortSignal!,
+  });
+  abortSignal?.on(
+    "abort",
+    () => window.cancelAnimationFrame(rAF!),
+    { once: true },
+  );
   return state;
 }
 
@@ -297,7 +308,8 @@ export function binarySearchFirstItem<T>(
  * of 8).
  * @param x Positive float number.
  * @return Estimated fraction: the first array item is a numerator,
- *  the second one is a denominator.
+ *  the second one is a denominator.\
+ *  They are both natural numbers.
  */
 export function approximateFraction(x: number): [number, number] {
   // Fast paths for int numbers or their inversions.
@@ -344,9 +356,12 @@ export function approximateFraction(x: number): [number, number] {
   return result;
 }
 
-export function roundToDivide(x: number, div: number) {
-  const r = x % div;
-  return r === 0 ? x : Math.round(x - r + div);
+/**
+ * @param x A positive number to round to a multiple of `div`.
+ * @param div A natural number.
+ */
+export function floorToDivide(x: uint, div: uint) {
+  return x - (x % div);
 }
 
 interface _GetPageSizeInchesP {

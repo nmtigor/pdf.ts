@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { fail } from "@fe-lib/util/trace.ts";
 import type { BaseStream } from "./base_stream.ts";
 import { DecodeStream } from "./decode_stream.ts";
 /*80--------------------------------------------------------------------------*/
@@ -71,6 +72,16 @@ export class DecryptStream extends DecodeStream {
       buffer = this.ensureBuffer(newLength);
     buffer.set(chunk, bufferLength);
     this.bufferLength = newLength;
+  }
+
+  /** @implement */
+  async asyncGetBytes() {
+    return fail("Not implemented");
+  }
+
+  /** @implement */
+  decodeImage() {
+    return fail("Not implemented");
   }
 }
 /*80--------------------------------------------------------------------------*/

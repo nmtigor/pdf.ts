@@ -23,13 +23,13 @@ if (AD_fe_test !== Deno.cwd()) {
 }
 
 const parsedArgs = parseArgs(Deno.args);
-const PF_tsc = parsedArgs["tsc"] ??
+const P_tsc = parsedArgs["tsc"] ??
   resolve(AD_pr, "../typescript/TypeScript/bin/tsc");
-// console.log("🚀 ~ PF_tsc:", PF_tsc);
+// console.log("🚀 ~ P_tsc:", P_tsc);
 /*64----------------------------------------------------------*/
 
 let success = true;
-const build_ = build.bind(undefined, PF_tsc);
+const build_ = build.bind(undefined, P_tsc);
 
 success &&= (() => {
   if (!build_(AD_fe, undefined, 20)) return false;

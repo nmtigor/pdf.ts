@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import type { EventName } from "./event_utils.ts";
 import type { dot2d_t, int } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import "@fe-lib/jslang.ts";
@@ -66,7 +67,7 @@ import { AnnotationEditorParams } from "./annotation_editor_params.ts";
 import { AppOptions, OptionKind, ViewOnLoad } from "./app_options.ts";
 import { CaretBrowsingMode } from "./caret_browsing.ts";
 import { PDFBug } from "./debugger.ts";
-import { AutomationEventBus, EventBus, type EventMap } from "./event_utils.ts";
+import { EventBus, type EventMap, FirefoxEventBus } from "./event_utils.ts";
 import type { NimbusExperimentData } from "./firefoxcom.ts";
 import type { IDownloadManager, IL10n } from "./interfaces.ts";
 import { OverlayManager } from "./overlay_manager.ts";
@@ -145,14 +146,15 @@ const { Preferences } = /*#static*/ CHROME
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
 
-export interface FindControlState {
+export type FindControlState = {
   result: FindState;
   findPrevious?: boolean | undefined;
+  entireWord: boolean | undefined;
   matchesCount: MatchesCount;
   rawQuery: string | string[] | RegExpMatchArray | null;
-}
+};
 
-export interface PassiveLoadingCbs {
+export type PassiveLoadingCbs = {
   onOpenWithTransport(_x: PDFDataRangeTransport): void;
   onOpenWithData(
     data: ArrayBuffer,
@@ -161,7 +163,7 @@ export interface PassiveLoadingCbs {
   onOpenWithURL(url: string, length?: number, originalUrl?: string): void;
   onError(err?: ErrorMoreInfo): void;
   onProgress(loaded: number, total: number): void;
-}
+};
 
 //kkkk TOCLEANUP
 // type TelemetryType =
@@ -313,12 +315,14 @@ export class PDFViewerApplication {
   isViewerEmbedded = window.parent !== window;
   url = "";
   baseUrl = "";
+  _allowedGlobalEventsPromise: Promise<Set<EventName> | undefined> | undefined;
   _downloadUrl = "";
   //kkkk TOCLEANUP
   // _boundEvents: Record<string, ((...args: any[]) => void) | undefined> = Object
   //   .create(null);
   _eventBusAbortController: AbortController | undefined;
   _windowAbortController: AbortController | undefined;
+  _globalAbortController = new AbortController();
   documentInfo: DocumentInfo | undefined;
   metadata: Metadata | undefined;
   #contentDispositionFilename: string | undefined;
@@ -367,6 +371,10 @@ export class PDFViewerApplication {
     // initialize the `L10n`-instance as soon as possible.
     /*#static*/ if (!GENERIC) {
       l10nPromise = this.externalServices.createL10n();
+      /*#static*/ if (MOZCENTRAL) {
+        this._allowedGlobalEventsPromise = this.externalServices
+          .getGlobalEventNames();
+      }
     }
     this.appConfig = appConfig;
 
@@ -550,15 +558,29 @@ export class PDFViewerApplication {
           params.get("supportscaretbrowsingmode") === "true",
         );
       }
+      if (params.has("spreadmodeonload")) {
+        AppOptions.set(
+          "spreadModeOnLoad",
+          parseInt(params.get("spreadmodeonload")!),
+        );
+      }
     }
   }
 
   async #initializeViewerComponents() {
     const { appConfig, externalServices, l10n } = this;
 
-    const eventBus = AppOptions.isInAutomation
-      ? new AutomationEventBus()
-      : new EventBus();
+    let eventBus;
+    /*#static*/ if (MOZCENTRAL) {
+      eventBus = new FirefoxEventBus(
+        await this._allowedGlobalEventsPromise,
+        externalServices,
+        AppOptions.isInAutomation,
+      );
+      this._allowedGlobalEventsPromise = undefined;
+    } else {
+      eventBus = new EventBus();
+    }
     this.eventBus = eventBus;
 
     this.overlayManager = new OverlayManager();
@@ -613,6 +635,7 @@ export class PDFViewerApplication {
       )
       : undefined;
 
+    const enableHWA = AppOptions.enableHWA;
     const pdfViewer = new PDFViewer({
       container,
       viewer,
@@ -635,6 +658,8 @@ export class PDFViewerApplication {
       enablePermissions: AppOptions.enablePermissions,
       pageColors,
       mlManager: this.mlManager,
+      abortSignal: this._globalAbortController.signal,
+      enableHWA,
     });
     this.pdfViewer = pdfViewer;
 
@@ -649,6 +674,8 @@ export class PDFViewerApplication {
         renderingQueue: pdfRenderingQueue,
         linkService: pdfLinkService,
         pageColors,
+        abortSignal: this._globalAbortController.signal,
+        enableHWA,
       });
       pdfRenderingQueue.setThumbnailViewer(this.pdfThumbnailViewer);
     }
@@ -837,18 +864,22 @@ export class PDFViewerApplication {
 
       // Enable dragging-and-dropping a new PDF file onto the viewerContainer.
       appConfig.mainContainer.on("dragover", (evt) => {
-        evt.preventDefault();
-
-        evt.dataTransfer!.dropEffect =
-          evt.dataTransfer!.effectAllowed === "copy" ? "copy" : "move";
+        for (const item of evt.dataTransfer!.items) {
+          if (item.type === "application/pdf") {
+            evt.dataTransfer!.dropEffect =
+              evt.dataTransfer!.effectAllowed === "copy" ? "copy" : "move";
+            evt.preventDefault();
+            evt.stopPropagation();
+            return;
+          }
+        }
       });
       appConfig.mainContainer.on("drop", function (this: HTMLDivElement, evt) {
-        evt.preventDefault();
-
-        const { files } = evt.dataTransfer!;
-        if (!files || files.length === 0) {
+        if (evt.dataTransfer!.files?.[0].type !== "application/pdf") {
           return;
         }
+        evt.preventDefault();
+        evt.stopPropagation();
         eventBus.dispatch("fileinputchange", {
           source: this,
           fileInput: evt.dataTransfer,
@@ -1112,7 +1143,7 @@ export class PDFViewerApplication {
     if (!this.pdfLoadingTask) {
       return;
     }
-    /*#static*/ if (PDFJSDev || GENERIC) {
+    /*#static*/ if (PDFJSDev || GENERIC && !TESTING) {
       if (
         this.pdfDocument?.annotationStorage.size! > 0 &&
         this._annotationStorageModified
@@ -1275,27 +1306,22 @@ export class PDFViewerApplication {
     );
   }
 
-  #ensureDownloadComplete() {
-    if (this.pdfDocument && this.downloadComplete) return;
-
-    throw new Error("PDF document not downloaded.");
-  }
-
   async download(options = {}) {
-    const url = this._downloadUrl,
-      filename = this._docFilename;
+    let data: BlobPart;
     try {
-      this.#ensureDownloadComplete();
-
-      const data = await this.pdfDocument!.getData();
-      const blob = new Blob([data], { type: "application/pdf" });
-
-      await this.downloadManager.download(blob, url, filename, options);
+      if (this.downloadComplete) {
+        data = await this.pdfDocument!.getData();
+      }
     } catch {
       // When the PDF document isn't ready, or the PDF file is still
       // downloading, simply download using the URL.
-      await this.downloadManager.downloadUrl(url, filename, options);
     }
+    this.downloadManager.download(
+      data!,
+      this._downloadUrl,
+      this._docFilename,
+      options,
+    );
   }
 
   async save(options = {}) {
@@ -1305,20 +1331,18 @@ export class PDFViewerApplication {
     this._saveInProgress = true;
     await this.pdfScriptingManager.dispatchWillSave();
 
-    const url = this._downloadUrl,
-      filename = this._docFilename;
     try {
-      this.#ensureDownloadComplete();
-
       const data = await this.pdfDocument!.saveDocument();
-      const blob = new Blob([data], { type: "application/pdf" });
-
-      await this.downloadManager.download(blob, url, filename, options);
-    } catch (reason: any) {
-      // When the PDF document isn't ready, or the PDF file is still
-      // downloading, simply fallback to a "regular" download.
+      this.downloadManager.download(
+        data,
+        this._downloadUrl,
+        this._docFilename,
+        options,
+      );
+    } catch (reason) {
+      // When the PDF document isn't ready, fallback to a "regular" download.
       console.error(
-        `Error when saving the document: ${reason.message}`,
+        `Error when saving the document: ${(reason as any).message}`,
       );
       await this.download(options);
     } finally {
@@ -1337,12 +1361,19 @@ export class PDFViewerApplication {
     }
   }
 
-  downloadOrSave(options = {}) {
-    if (this.pdfDocument?.annotationStorage.size! > 0) {
-      this.save(options);
-    } else {
-      this.download(options);
-    }
+  async downloadOrSave(options = {}) {
+    // In the Firefox case, this method MUST always trigger a download.
+    // When the user is closing a modified and unsaved document, we display a
+    // prompt asking for saving or not. In case they save, we must wait for
+    // saving to complete before closing the tab.
+    // So in case this function does not trigger a download, we must trigger a
+    // a message and change PdfjsChild.sys.mjs to take it into account.
+    const { classList } = this.appConfig.appContainer;
+    classList.add("wait");
+    await (this.pdfDocument?.annotationStorage.size! > 0
+      ? this.save(options)
+      : this.download(options));
+    classList.remove("wait");
   }
 
   /**
@@ -2277,6 +2308,21 @@ export class PDFViewerApplication {
     this._windowAbortController = undefined;
   }
 
+  /**
+   * @ignore
+   */
+  async testingClose() {
+    this.unbindEvents();
+    this.unbindWindowEvents();
+
+    this._globalAbortController?.abort();
+    this._globalAbortController = undefined as any;
+
+    this.findBar?.close();
+
+    await Promise.all([this.l10n?.destroy(), this.close()]);
+  }
+
   _accumulateTicks(
     ticks: number,
     prop: "_wheelUnusedTicks" | "_touchUnusedTicks",
@@ -2699,6 +2745,7 @@ function webViewerUpdateFindMatchesCount(
 function webViewerUpdateFindControlState({
   state,
   previous,
+  entireWord,
   matchesCount,
   rawQuery,
 }: EventMap["updatefindcontrolstate"]) {
@@ -2706,6 +2753,7 @@ function webViewerUpdateFindControlState({
     viewerApp.externalServices.updateFindControlState({
       result: state,
       findPrevious: previous,
+      entireWord,
       matchesCount,
       rawQuery,
     });

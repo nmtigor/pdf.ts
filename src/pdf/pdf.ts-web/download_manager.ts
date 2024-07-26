@@ -58,14 +58,15 @@ export class DownloadManager implements IDownloadManager {
 
   onerror?: (err: any) => void;
 
-  /** @implement */
-  downloadUrl(url: string, filename: string, _options?: object) {
-    if (!createValidAbsoluteUrl(url, "http://example.com")) {
-      console.error(`downloadUrl - not a valid URL: ${url}`);
-      return; // restricted/invalid URL
-    }
-    download(url + "#pdfjs.action=download", filename);
-  }
+  //kkkk TOCLEANUP
+  // /** @implement */
+  // downloadUrl(url: string, filename: string, _options?: object) {
+  //   if (!createValidAbsoluteUrl(url, "http://example.com")) {
+  //     console.error(`downloadUrl - not a valid URL: ${url}`);
+  //     return; // restricted/invalid URL
+  //   }
+  //   download(url + "#pdfjs.action=download", filename);
+  // }
 
   /** @implement */
   downloadData(
@@ -133,8 +134,19 @@ export class DownloadManager implements IDownloadManager {
   }
 
   /** @implement */
-  download(blob: Blob, url: string, filename: string, _options?: object) {
-    const blobUrl = URL.createObjectURL(blob);
+  download(data: BlobPart, url: string, filename: string, _options?: object) {
+    let blobUrl;
+    if (data) {
+      blobUrl = URL.createObjectURL(
+        new Blob([data], { type: "application/pdf" }),
+      );
+    } else {
+      if (!createValidAbsoluteUrl(url, "http://example.com")) {
+        console.error(`download - not a valid URL: ${url}`);
+        return;
+      }
+      blobUrl = url + "#pdfjs.action=download";
+    }
     download(blobUrl, filename);
   }
 }

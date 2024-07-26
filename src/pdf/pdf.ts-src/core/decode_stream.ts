@@ -21,8 +21,10 @@
  * limitations under the License.
  */
 
+import type { uint } from "@fe-lib/alias.ts";
 import { fail } from "@fe-lib/util/trace.ts";
 import { BaseStream } from "./base_stream.ts";
+import type { DecoderOptions } from "./image.ts";
 import type { Dict } from "./primitives.ts";
 import { Stream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
@@ -47,10 +49,7 @@ export abstract class DecodeStream extends BaseStream {
   get length() {
     return fail("Abstract getter `length` accessed");
   }
-  /**
-   * @implement
-   * @final
-   */
+  /** @final @implement */
   get isEmpty() {
     while (!this.eof && this.bufferLength === 0) {
       this.readBlock();
@@ -60,6 +59,7 @@ export abstract class DecodeStream extends BaseStream {
 
   minBufferLength = 512;
 
+  stream?: BaseStream;
   str?: BaseStream;
 
   constructor(maybeMinBufferLength?: number) {
@@ -75,7 +75,7 @@ export abstract class DecodeStream extends BaseStream {
     }
   }
 
-  protected abstract readBlock(ignoreColorSpace?: boolean): void;
+  protected abstract readBlock(decoderOptions?: DecoderOptions): void;
 
   ensureBuffer(requested: number) {
     const buffer = this.buffer;
@@ -91,10 +91,7 @@ export abstract class DecodeStream extends BaseStream {
     return (this.buffer = buffer2);
   }
 
-  /**
-   * @implement
-   * @final
-   */
+  /** @final @implement */
   getByte() {
     const pos = this.pos;
     while (this.bufferLength <= pos) {
@@ -107,7 +104,7 @@ export abstract class DecodeStream extends BaseStream {
   }
 
   /** @final @implement */
-  getBytes(length?: number, ignoreColorSpace = false) {
+  getBytes(length?: number, decoderOptions?: DecoderOptions) {
     const pos = this.pos;
     let end;
 
@@ -116,7 +113,7 @@ export abstract class DecodeStream extends BaseStream {
       end = pos + length;
 
       while (!this.eof && this.bufferLength < end) {
-        this.readBlock(ignoreColorSpace);
+        this.readBlock(decoderOptions);
       }
       const bufEnd = this.bufferLength;
       if (end > bufEnd) {
@@ -124,13 +121,26 @@ export abstract class DecodeStream extends BaseStream {
       }
     } else {
       while (!this.eof) {
-        this.readBlock(ignoreColorSpace);
+        this.readBlock(decoderOptions);
       }
       end = this.bufferLength;
     }
 
     this.pos = end;
     return this.buffer.subarray(pos, end);
+  }
+
+  abstract decodeImage(
+    bytes?: Uint8Array | Uint8ClampedArray,
+    decoderOptions?: DecoderOptions,
+  ): Uint8Array | Uint8ClampedArray;
+
+  override async getImageData(length: uint, decoderOptions?: DecoderOptions) {
+    if (!this.canAsyncDecodeImageFromBuffer) {
+      return this.getBytes(length, decoderOptions);
+    }
+    const data = await this.stream!.asyncGetBytes();
+    return this.decodeImage(data, decoderOptions);
   }
 
   /** @implement */
@@ -218,6 +228,16 @@ export class StreamsSequenceStream extends DecodeStream {
     this.bufferLength = newLength;
   }
 
+  /** @implement */
+  async asyncGetBytes() {
+    return fail("Not implemented");
+  }
+
+  /** @implement */
+  decodeImage() {
+    return fail("Not implemented");
+  }
+
   override getBaseStreams() {
     const baseStreamsBuf = [];
     for (const stream of this.streams) {
@@ -232,7 +252,7 @@ export class StreamsSequenceStream extends DecodeStream {
 /*80--------------------------------------------------------------------------*/
 
 export abstract class ImageStream extends DecodeStream {
-  stream;
+  override stream;
   maybeLength;
   params;
 

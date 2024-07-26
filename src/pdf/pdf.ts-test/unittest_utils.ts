@@ -1,5 +1,7 @@
 /** 80**************************************************************************
- * @module pdf/pdf.ts-test/test_utils
+ * Ref. [[pdf.js]/test/unit/test_utils.js](https://github.com/mozilla/pdf.js/blob/master/test/unit/test_utils.js)
+ *
+ * @module pdf/pdf.ts-test/unittest_utils
  * @license Apache-2.0
  ******************************************************************************/
 

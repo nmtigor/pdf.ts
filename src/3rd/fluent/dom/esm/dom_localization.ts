@@ -155,6 +155,9 @@ export default class DOMLocalization extends Localization {
     this.pauseObserving();
     if (this.roots.size === 0) {
       this.mutationObserver = undefined;
+      if (this.windowElement && this.pendingrAF) {
+        this.windowElement.cancelAnimationFrame(this.pendingrAF);
+      }
       this.windowElement = null;
       this.pendingrAF = undefined;
       this.pendingElements.clear();
@@ -173,8 +176,6 @@ export default class DOMLocalization extends Localization {
   }
   /**
    * Pauses the `MutationObserver`.
-   *
-   * @private
    */
   pauseObserving() {
     if (!this.mutationObserver) {
@@ -185,8 +186,6 @@ export default class DOMLocalization extends Localization {
   }
   /**
    * Resumes the `MutationObserver`.
-   *
-   * @private
    */
   resumeObserving() {
     if (!this.mutationObserver) {

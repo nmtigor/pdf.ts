@@ -21,9 +21,11 @@
  * limitations under the License.
  */
 
+import { fail } from "@fe-lib/util/trace.ts";
 import { shadow } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { ImageStream } from "./decode_stream.ts";
+import type { DecoderOptions } from "./image.ts";
 import { JpxImage } from "./jpx.ts";
 import { Dict } from "./primitives.ts";
 /*80--------------------------------------------------------------------------*/
@@ -43,57 +45,34 @@ export class JpxStream extends ImageStream {
   }
 
   /** @implement */
-  // readBlock() {
-  //   if (this.eof) {
-  //     return;
-  //   }
-  //   const jpxImage = new JpxImage();
-  //   jpxImage.parse(this.bytes);
+  readBlock(decoderOptions?: DecoderOptions) {
+    this.decodeImage(undefined, decoderOptions);
+  }
 
-  //   const width = jpxImage.width!;
-  //   const height = jpxImage.height!;
-  //   const componentsCount = jpxImage.componentsCount!;
-  //   const tileCount = jpxImage.tiles!.length;
-  //   if (tileCount === 1) {
-  //     this.buffer = jpxImage.tiles![0].items;
-  //   } else {
-  //     const data = new Uint8ClampedArray(width * height * componentsCount);
+  /** @implement */
+  async asyncGetBytes() {
+    return fail("Not implemented");
+  }
 
-  //     for (let k = 0; k < tileCount; k++) {
-  //       const tileComponents = jpxImage.tiles![k];
-  //       const tileWidth = tileComponents.width;
-  //       const tileHeight = tileComponents.height;
-  //       const tileLeft = tileComponents.left;
-  //       const tileTop = tileComponents.top;
-
-  //       const src = tileComponents.items;
-  //       let srcPosition = 0;
-  //       let dataPosition = (width * tileTop + tileLeft) * componentsCount;
-  //       const imgRowSize = width * componentsCount;
-  //       const tileRowSize = tileWidth * componentsCount;
-
-  //       for (let j = 0; j < tileHeight; j++) {
-  //         const rowBytes = src.subarray(srcPosition, srcPosition + tileRowSize);
-  //         data.set(rowBytes, dataPosition);
-  //         srcPosition += tileRowSize;
-  //         dataPosition += imgRowSize;
-  //       }
-  //     }
-  //     this.buffer = data;
-  //   }
-  //   this.bufferLength = this.buffer.length;
-  //   this.eof = true;
-  // }
-  readBlock(ignoreColorSpace?: boolean) {
+  decodeImage(
+    bytes?: Uint8Array | Uint8ClampedArray,
+    decoderOptions?: DecoderOptions,
+  ) {
     if (this.eof) {
-      return;
+      return this.buffer;
     }
-
-    this.buffer = JpxImage.decode(this.bytes, ignoreColorSpace) as
+    bytes ||= this.bytes;
+    this.buffer = JpxImage.decode(bytes, decoderOptions) as
       | Uint8Array
       | Uint8ClampedArray;
     this.bufferLength = this.buffer.length;
     this.eof = true;
+
+    return this.buffer;
+  }
+
+  override get canAsyncDecodeImageFromBuffer() {
+    return this.stream.isAsync;
   }
 
   override ensureBuffer(requested: number) {

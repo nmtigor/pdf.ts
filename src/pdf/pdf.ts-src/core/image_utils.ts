@@ -72,16 +72,19 @@ abstract class BaseLocalCache<CD> {
 }
 
 export interface Image_LI_CData {
+  objId?: string;
   fn: OPS.paintImageXObject;
   args: [objId: string, width: number, height: number];
   optionalContent: MarkedContentProps | undefined;
 }
 export interface ImageMask_LI_CData {
+  objId?: string;
   fn: OPS.paintImageMaskXObject;
   args: [ImgData];
   optionalContent: MarkedContentProps | undefined;
 }
 export interface SolidColorImageMask_LI_CData {
+  objId?: string;
   fn: OPS.paintSolidColorImageMask;
   args: ImgData[];
   optionalContent: MarkedContentProps | undefined;

@@ -33,8 +33,8 @@ type Edge_1_ = [...Edge_, Edge_?];
 type Edge_2_ = [...Edge_, Edge_1_?];
 
 export interface Outlines extends Array<number[]> {
-  points?: (number[] | Float64Array)[];
-  outline: number[] | Float64Array;
+  points?: (number[] | Float32Array)[];
+  outline: number[] | Float32Array;
 }
 
 export class Outliner {

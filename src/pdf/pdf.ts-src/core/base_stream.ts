@@ -21,8 +21,10 @@
  * limitations under the License.
  */
 
+import type { uint } from "@fe-lib/alias.ts";
 import { bytesToString, shadow } from "../shared/util.ts";
 import { Dict } from "./primitives.ts";
+import type { DecoderOptions } from "./image.ts";
 /*80--------------------------------------------------------------------------*/
 
 export abstract class BaseStream {
@@ -42,7 +44,29 @@ export abstract class BaseStream {
   cacheKey?: string;
 
   abstract getByte(): number;
-  abstract getBytes(length?: number): Uint8Array | Uint8ClampedArray;
+  abstract getBytes(
+    length?: number,
+    decoderOptions?: DecoderOptions,
+  ): Uint8Array | Uint8ClampedArray;
+
+  abstract asyncGetBytes(): Promise<Uint8Array | undefined>;
+
+  /**
+   * NOTE: This method can only be used to get image-data that is guaranteed
+   *       to be fully loaded, since otherwise intermittent errors may occur;
+   *       note the `ObjectLoader` class.
+   */
+  async getImageData(length: uint, decoderOptions?: DecoderOptions) {
+    return this.getBytes(length, decoderOptions);
+  }
+
+  get isAsync() {
+    return false;
+  }
+
+  get canAsyncDecodeImageFromBuffer() {
+    return false;
+  }
 
   /** @final */
   peekByte() {

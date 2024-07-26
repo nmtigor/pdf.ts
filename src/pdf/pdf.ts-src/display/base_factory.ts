@@ -22,8 +22,8 @@
  */
 
 import type { C2D } from "@fe-lib/alias.ts";
-import { CMapCompressionType } from "../shared/util.ts";
 import { svg as createSVG } from "@fe-lib/dom.ts";
+import { CMapCompressionType } from "../shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 
 export abstract class BaseFilterFactory {
@@ -63,6 +63,12 @@ export interface CanvasEntry {
 }
 
 export abstract class BaseCanvasFactory {
+  #enableHWA = false;
+
+  constructor({ enableHWA = false } = {}) {
+    this.#enableHWA = enableHWA;
+  }
+
   /** @final */
   create(width: number, height: number): CanvasEntry {
     if (width <= 0 || height <= 0) {
@@ -71,7 +77,9 @@ export abstract class BaseCanvasFactory {
     const canvas = this._createCanvas(width, height);
     return {
       canvas,
-      context: canvas.getContext("2d")!,
+      context: canvas.getContext("2d", {
+        willReadFrequently: !this.#enableHWA,
+      })!,
     };
   }
 

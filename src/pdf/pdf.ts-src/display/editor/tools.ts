@@ -21,17 +21,16 @@
  * limitations under the License.
  */
 
-import type { OC2D } from "@fe-lib/alias.ts";
 import type { Cssc, rgb_t } from "@fe-lib/color/alias.ts";
 import type { HSElement } from "@fe-lib/dom.ts";
 import { warn } from "@fe-lib/util/trace.ts";
-import { LIB, TESTING } from "@fe-src/global.ts";
 import type { AltTextManager } from "@fe-pdf.ts-web/alt_text_manager.ts";
 import type { MLManager as MLManager_c } from "@fe-pdf.ts-web/chromecom.ts";
 import type { EventBus, EventMap } from "@fe-pdf.ts-web/event_utils.ts";
 import type { MLManager as MLManager_f } from "@fe-pdf.ts-web/firefoxcom.ts";
 import type { MLManager as MLManager_g } from "@fe-pdf.ts-web/genericcom.ts";
 import type { PageColors } from "@fe-pdf.ts-web/pdf_viewer.ts";
+import { LIB, TESTING } from "@fe-src/global.ts";
 import type { Box } from "../../alias.ts";
 import type { AnnotationEditorName } from "../../shared/util.ts";
 import {
@@ -43,6 +42,7 @@ import {
   shadow,
   Util,
 } from "../../shared/util.ts";
+import type { AnnotationElement } from "../annotation_layer.ts";
 import type { PDFDocumentProxy } from "../api.ts";
 import {
   fetchData,
@@ -58,7 +58,6 @@ import type { HighlightEditor } from "./highlight.ts";
 import { InkEditor } from "./ink.ts";
 import { StampEditor } from "./stamp.ts";
 import { HighlightToolbar } from "./toolbar.ts";
-import type { AnnotationElement } from "../annotation_layer.ts";
 /*80--------------------------------------------------------------------------*/
 
 export function bindEvents<T extends AnnotationEditor | AnnotationEditorLayer>(
@@ -135,7 +134,7 @@ class ImageManager {
     const svg =
       `data:image/svg+xml;charset=UTF-8,<svg viewBox="0 0 1 1" width="1" height="1" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" style="fill:red;"/></svg>`;
     const canvas = new OffscreenCanvas(1, 3);
-    const ctx = canvas.getContext("2d") as OC2D;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
     const image = new Image();
     image.src = svg;
     const promise = image.decode().then(() => {
@@ -598,6 +597,7 @@ type DraggingEditor_ = {
  * some action like copy/paste, undo/redo, ...
  */
 export class AnnotationEditorUIManager {
+  #abortController = new AbortController();
   #activeEditor: AnnotationEditor | undefined;
   /**
    * Get the current active editor.
@@ -732,7 +732,6 @@ export class AnnotationEditorUIManager {
   #boundOnEditingAction = this.onEditingAction.bind(this);
   #boundOnPageChanging = this.onPageChanging.bind(this);
   #boundOnScaleChanging = this.onScaleChanging.bind(this);
-  #boundSelectionChange = this.#selectionChange.bind(this);
   #boundOnRotationChanging = this.onRotationChanging.bind(this);
 
   #previousStates = {
@@ -745,6 +744,7 @@ export class AnnotationEditorUIManager {
   };
   #translation = [0, 0];
   #translationTimeoutId: number | undefined;
+  _signal;
   #container;
   #viewer;
 
@@ -900,6 +900,7 @@ export class AnnotationEditorUIManager {
     enableHighlightFloatingButton?: boolean,
     mlManager?: MLManager_c | MLManager_g | MLManager_f,
   ) {
+    this._signal = this.#abortController.signal;
     this.#container = container;
     this.#viewer = viewer;
     this.#altTextManager = altTextManager;
@@ -909,6 +910,7 @@ export class AnnotationEditorUIManager {
     this._eventBus._on("scalechanging", this.#boundOnScaleChanging);
     this._eventBus._on("rotationchanging", this.#boundOnRotationChanging);
     this.#addSelectionListener();
+    this.#addDragAndDropListeners();
     this.#addKeyboardManager();
     this.#annotationStorage = pdfDocument.annotationStorage;
     this.#filterFactory = pdfDocument.filterFactory;
@@ -929,8 +931,10 @@ export class AnnotationEditorUIManager {
   }
 
   destroy() {
-    this.#removeKeyboardManager();
-    this.#removeFocusManager();
+    this.#abortController?.abort();
+    this.#abortController = undefined as any;
+    this._signal = undefined as any;
+
     this._eventBus._off("editingaction", this.#boundOnEditingAction);
     this._eventBus._off("pagechanging", this.#boundOnPageChanging);
     this._eventBus._off("scalechanging", this.#boundOnScaleChanging);
@@ -955,7 +959,6 @@ export class AnnotationEditorUIManager {
       clearTimeout(this.#translationTimeoutId);
       this.#translationTimeoutId = undefined;
     }
-    this.#removeSelectionListener();
   }
 
   get hcmFilter() {
@@ -1167,6 +1170,7 @@ export class AnnotationEditorUIManager {
 
     this.#highlightWhenShiftUp = this.isShiftKeyDown;
     if (!this.isShiftKeyDown) {
+      const signal = this._signal;
       const pointerup = (e: PointerEvent) => {
         if (e.type === "pointerup" && e.button !== 0) {
           // Do nothing on right click.
@@ -1178,8 +1182,8 @@ export class AnnotationEditorUIManager {
           this.#onSelectEnd("main_toolbar");
         }
       };
-      window.on("pointerup", pointerup);
-      window.on("blur", pointerup as any);
+      window.on("pointerup", pointerup, { signal });
+      window.on("blur", pointerup as any, { signal });
     }
   }
 
@@ -1192,16 +1196,15 @@ export class AnnotationEditorUIManager {
   }
 
   #addSelectionListener() {
-    document.on("selectionchange", this.#boundSelectionChange);
-  }
-
-  #removeSelectionListener() {
-    document.off("selectionchange", this.#boundSelectionChange);
+    document.on("selectionchange", this.#selectionChange.bind(this), {
+      signal: this._signal,
+    });
   }
 
   #addFocusManager() {
-    window.on("focus", this.#boundFocus);
-    window.on("blur", this.#boundBlur);
+    const signal = this._signal;
+    window.on("focus", this.#boundFocus, { signal });
+    window.on("blur", this.#boundBlur, { signal });
   }
 
   #removeFocusManager() {
@@ -1240,15 +1243,16 @@ export class AnnotationEditorUIManager {
     this.#lastActiveElement = undefined;
     lastActiveElement!.on("focusin", () => {
       lastEditor._focusEventsAllowed = true;
-    }, { once: true });
+    }, { once: true, signal: this._signal });
     (lastActiveElement as HSElement).focus();
   }
 
   #addKeyboardManager() {
+    const signal = this._signal;
     // The keyboard events are caught at the container level in order to be able
     // to execute some callbacks even if the current page doesn't have focus.
-    window.on("keydown", this.#boundKeydown);
-    window.on("keyup", this.#boundKeyup);
+    window.on("keydown", this.#boundKeydown, { signal });
+    window.on("keyup", this.#boundKeyup, { signal });
   }
 
   #removeKeyboardManager() {
@@ -1257,15 +1261,22 @@ export class AnnotationEditorUIManager {
   }
 
   #addCopyPasteListeners() {
-    document.on("copy", this.#boundCopy);
-    document.on("cut", this.#boundCut);
-    document.on("paste", this.#boundPaste);
+    const signal = this._signal;
+    document.on("copy", this.#boundCopy, { signal });
+    document.on("cut", this.#boundCut, { signal });
+    document.on("paste", this.#boundPaste, { signal });
   }
 
   #removeCopyPasteListeners() {
     document.off("copy", this.#boundCopy);
     document.off("cut", this.#boundCut);
     document.off("paste", this.#boundPaste);
+  }
+
+  #addDragAndDropListeners() {
+    const signal = this._signal;
+    document.on("dragover", this.dragOver.bind(this), { signal });
+    document.on("drop", this.drop.bind(this), { signal });
   }
 
   addEditListeners() {
@@ -1276,6 +1287,33 @@ export class AnnotationEditorUIManager {
   removeEditListeners() {
     this.#removeKeyboardManager();
     this.#removeCopyPasteListeners();
+  }
+
+  dragOver(event: DragEvent) {
+    for (const { type } of event.dataTransfer!.items) {
+      for (const editorType of this.#editorTypes) {
+        if (editorType.isHandlingMimeForPasting(type)) {
+          event.dataTransfer!.dropEffect = "copy";
+          event.preventDefault();
+          return;
+        }
+      }
+    }
+  }
+
+  /**
+   * Drop callback.
+   */
+  drop(event: DragEvent) {
+    for (const item of event.dataTransfer!.items) {
+      for (const editorType of this.#editorTypes) {
+        if (editorType.isHandlingMimeForPasting(item.type)) {
+          editorType.paste(item, this.currentLayer!);
+          event.preventDefault();
+          return;
+        }
+      }
+    }
   }
 
   /**
