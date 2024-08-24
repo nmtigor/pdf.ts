@@ -22,7 +22,7 @@
  */
 
 import { assert, assertEquals, assertThrows } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { Lexer, TOKEN, Token } from "./formcalc_lexer.ts";
 import { Errors, Parser } from "./formcalc_parser.ts";
 /*80--------------------------------------------------------------------------*/

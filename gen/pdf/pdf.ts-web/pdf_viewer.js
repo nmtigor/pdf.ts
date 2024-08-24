@@ -125,6 +125,7 @@ export class PDFViewer {
     #containerTopLeft;
     #enableHWA = false;
     #enablePermissions;
+    #enableUpdatedAddImage;
     #eventAbortController;
     pageColors;
     #mlManager;
@@ -240,6 +241,7 @@ export class PDFViewer {
     get onePageRendered() {
         return this.pdfDocument ? this.#onePageRenderedCapability.promise : null;
     }
+    #onPageRenderedCallback;
     #pagesCapability;
     get pagesPromise() {
         return this.pdfDocument ? this.#pagesCapability.promise : undefined;
@@ -264,6 +266,7 @@ export class PDFViewer {
     //kkkk TOCLEANUP
     // #onVisibilityChange: (() => void) | undefined;
     #scaleTimeoutId;
+    #switchAnnotationEditorModeTimeoutId;
     pdfDocument;
     #getAllTextInProgress = false;
     #interruptCopyCondition = false;
@@ -296,7 +299,7 @@ export class PDFViewer {
         this.findController = options.findController;
         this.#altTextManager = options.altTextManager;
         if (this.findController) {
-            this.findController.onIsPageVisible = (pageNumber) => this.getVisiblePages$().ids.has(pageNumber);
+            this.findController.onIsPageVisible = (pageNumber) => this._getVisiblePages().ids.has(pageNumber);
         }
         this._scriptingManager = options.scriptingManager || undefined;
         this.#textLayerMode = options.textLayerMode ?? TextLayerMode.ENABLE;
@@ -308,6 +311,7 @@ export class PDFViewer {
             options.annotationEditorHighlightColors;
         this.#enableHighlightFloatingButton =
             options.enableHighlightFloatingButton === true;
+        this.#enableUpdatedAddImage = options.enableUpdatedAddImage === true;
         this.imageResourcesPath = options.imageResourcesPath || "";
         this.enablePrintAutoRotate = options.enablePrintAutoRotate || false;
         /*#static*/  {
@@ -499,7 +503,7 @@ export class PDFViewer {
         //    viewer is very small); fixes bug 1618955.
         if (document.visibilityState === "hidden" ||
             !this.container.offsetParent ||
-            this.getVisiblePages$().views.length === 0) {
+            this._getVisiblePages().views.length === 0) {
             return;
         }
         // Handle the window/tab becoming inactive *after* rendering has started;
@@ -673,7 +677,7 @@ export class PDFViewer {
                     console.warn("Warning: XFA-editing is not implemented.");
                 }
                 else if (isValidAnnotationEditorMode(mode)) {
-                    this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, viewer, this.#altTextManager, eventBus, pdfDocument, pageColors, this.#annotationEditorHighlightColors, this.#enableHighlightFloatingButton, this.#mlManager);
+                    this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, viewer, this.#altTextManager, eventBus, pdfDocument, pageColors, this.#annotationEditorHighlightColors, this.#enableHighlightFloatingButton, this.#enableUpdatedAddImage, this.#mlManager);
                     eventBus.dispatch("annotationeditoruimanager", {
                         source: this,
                         uiManager: this.#annotationEditorUIManager,
@@ -852,6 +856,7 @@ export class PDFViewer {
         this.viewer.removeAttribute("lang");
         this.#hiddenCopyElement?.remove();
         this.#hiddenCopyElement = undefined;
+        this.#cleanupSwitchAnnotationEditorMode();
     }
     #ensurePageViewVisible() {
         if (this._scrollMode !== ScrollMode.PAGE) {
@@ -1254,7 +1259,7 @@ export class PDFViewer {
     }
     /** @final */
     update() {
-        const visible = this.getVisiblePages$();
+        const visible = this._getVisiblePages();
         const visiblePages = visible.views, numVisiblePages = visiblePages.length;
         if (numVisiblePages === 0) {
             return;
@@ -1283,6 +1288,29 @@ export class PDFViewer {
             location: this.#location,
         });
     }
+    #switchToEditAnnotationMode() {
+        const visible = this._getVisiblePages();
+        const pagesToRefresh = [];
+        const { ids, views } = visible;
+        for (const page of views) {
+            const { view } = page;
+            if (!view.hasEditableAnnotations()) {
+                ids.delete(view.id);
+                continue;
+            }
+            pagesToRefresh.push(page);
+        }
+        if (pagesToRefresh.length === 0) {
+            return null;
+        }
+        this.renderingQueue.renderHighestPriority({
+            first: pagesToRefresh[0],
+            last: pagesToRefresh.at(-1),
+            views: pagesToRefresh,
+            ids,
+        });
+        return ids;
+    }
     containsElement(element) {
         return this.container.contains(element);
     }
@@ -1309,7 +1337,7 @@ export class PDFViewer {
             : this.container.scrollHeight > this.container.clientHeight;
     }
     /** @final */
-    getVisiblePages$() {
+    _getVisiblePages() {
         const views = this._scrollMode === ScrollMode.PAGE
             ? this.#scrollModePageState.pages
             : this._pages, horizontal = this._scrollMode === ScrollMode.HORIZONTAL, rtl = horizontal && this._isContainerRtl;
@@ -1365,7 +1393,7 @@ export class PDFViewer {
         return this.scroll.down;
     }
     forceRendering(currentlyVisiblePages) {
-        const visiblePages = currentlyVisiblePages || this.getVisiblePages$();
+        const visiblePages = currentlyVisiblePages || this._getVisiblePages();
         const scrollAhead = this.#scrollAhead(visiblePages);
         const preRenderExtra = this._spreadMode !== SpreadMode.NONE &&
             this._scrollMode !== ScrollMode.HORIZONTAL;
@@ -1577,7 +1605,7 @@ export class PDFViewer {
     _getPageAdvance(currentPageNumber, previous = false) {
         switch (this._scrollMode) {
             case ScrollMode.WRAPPED: {
-                const { views } = this.getVisiblePages$(), pageLayout = new Map();
+                const { views } = this._getVisiblePages(), pageLayout = new Map();
                 // Determine the current (visible) page layout.
                 for (const { id, y, percent, widthPercent } of views) {
                     if (percent === 0 || widthPercent < 100) {
@@ -1648,7 +1676,7 @@ export class PDFViewer {
                 else if (!previous && currentPageNumber % 2 === parity) {
                     break; // Right-hand side page.
                 }
-                const { views } = this.getVisiblePages$(), expectedId = previous ? currentPageNumber - 1 : currentPageNumber + 1;
+                const { views } = this._getVisiblePages(), expectedId = previous ? currentPageNumber - 1 : currentPageNumber + 1;
                 for (const { id, percent, widthPercent } of views) {
                     if (id !== expectedId) {
                         continue;
@@ -1747,6 +1775,16 @@ export class PDFViewer {
             this.container.offsetLeft,
         ]);
     }
+    #cleanupSwitchAnnotationEditorMode() {
+        if (this.#onPageRenderedCallback) {
+            this.eventBus._off("pagerendered", this.#onPageRenderedCallback);
+            this.#onPageRenderedCallback = undefined;
+        }
+        if (this.#switchAnnotationEditorModeTimeoutId !== undefined) {
+            clearTimeout(this.#switchAnnotationEditorModeTimeoutId);
+            this.#switchAnnotationEditorModeTimeoutId = undefined;
+        }
+    }
     get annotationEditorMode() {
         return this.#annotationEditorUIManager
             ? this.#annotationEditorMode
@@ -1765,12 +1803,44 @@ export class PDFViewer {
         if (!this.pdfDocument) {
             return;
         }
-        this.#annotationEditorMode = mode;
-        this.eventBus.dispatch("annotationeditormodechanged", {
-            source: this,
-            mode,
-        });
-        this.#annotationEditorUIManager.updateMode(mode, editId, isFromKeyboard);
+        const { eventBus } = this;
+        const updater = () => {
+            this.#cleanupSwitchAnnotationEditorMode();
+            this.#annotationEditorMode = mode;
+            this.#annotationEditorUIManager.updateMode(mode, editId, isFromKeyboard);
+            eventBus.dispatch("annotationeditormodechanged", {
+                source: this,
+                mode,
+            });
+        };
+        if (mode === AnnotationEditorType.NONE ||
+            this.#annotationEditorMode === AnnotationEditorType.NONE) {
+            const isEditing = mode !== AnnotationEditorType.NONE;
+            if (!isEditing) {
+                this.pdfDocument.annotationStorage.resetModifiedIds();
+            }
+            for (const pageView of this._pages) {
+                pageView.toggleEditingMode(isEditing);
+            }
+            // We must call #switchToEditAnnotationMode unconditionally to ensure that
+            // page is rendered if it's useful or not.
+            const idsToRefresh = this.#switchToEditAnnotationMode();
+            if (isEditing && idsToRefresh) {
+                // We're editing so we must switch to editing mode when the rendering is
+                // done.
+                this.#cleanupSwitchAnnotationEditorMode();
+                this.#onPageRenderedCallback = ({ pageNumber }) => {
+                    idsToRefresh.delete(pageNumber);
+                    if (idsToRefresh.size === 0) {
+                        this.#switchAnnotationEditorModeTimeoutId = setTimeout(updater, 0);
+                    }
+                };
+                const { signal } = this.#eventAbortController;
+                eventBus._on("pagerendered", this.#onPageRenderedCallback, { signal });
+                return;
+            }
+        }
+        updater();
     }
     // eslint-disable-next-line accessor-pairs
     set annotationEditorParams({ type, value }) {

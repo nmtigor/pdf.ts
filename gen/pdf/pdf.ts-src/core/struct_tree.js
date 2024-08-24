@@ -6,6 +6,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 import { AnnotationPrefix, stringToPDFString, warn } from "../shared/util.js";
+import { stringToAsciiOrUTF16BE } from "./core_utils.js";
 import { NumberTree } from "./name_number_tree.js";
 import { Dict, isName, Name, Ref, RefSetCache } from "./primitives.js";
 import { writeObject } from "./writer.js";
@@ -258,19 +259,19 @@ export class StructTreeRoot {
                 // console.log("🚀 ~ StructTreeRoot.#writeKids() ~ newRefs:");
                 // console.dir(newRefs);
                 if (title) {
-                    tagDict.set("T", title);
+                    tagDict.set("T", stringToAsciiOrUTF16BE(title));
                 }
                 if (lang) {
                     tagDict.set("Lang", lang);
                 }
                 if (alt) {
-                    tagDict.set("Alt", alt);
+                    tagDict.set("Alt", stringToAsciiOrUTF16BE(alt));
                 }
                 if (expanded) {
-                    tagDict.set("E", expanded);
+                    tagDict.set("E", stringToAsciiOrUTF16BE(expanded));
                 }
                 if (actualText) {
-                    tagDict.set("ActualText", actualText);
+                    tagDict.set("ActualText", stringToAsciiOrUTF16BE(actualText));
                 }
                 await this.#updateParentTag({
                     structTreeParent,

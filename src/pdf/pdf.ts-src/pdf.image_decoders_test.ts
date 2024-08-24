@@ -22,7 +22,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { Jbig2Error, Jbig2Image } from "./core/jbig2.ts";
 import { JpegError, JpegImage } from "./core/jpg.ts";
 import { JpxError, JpxImage } from "./core/jpx.ts";

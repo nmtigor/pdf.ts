@@ -14,7 +14,7 @@ import { IdentityCMap } from "./cmap.js";
 import { readUint32 } from "./core_utils.js";
 import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, WinAnsiEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
 import { FontRendererFactory } from "./font_renderer.js";
-import { FontFlags, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED, } from "./fonts_utils.js";
+import { FontFlags, getVerticalPresentationForm, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED, } from "./fonts_utils.js";
 import { GlyfTable } from "./glyf.js";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
 import { getFontBasicMetrics } from "./metrics.js";
@@ -2868,43 +2868,45 @@ export class Font extends FontExpotDataEx {
         builder.addTable("post", createPostTable(properties));
         return builder.toArray();
     }
-    //kkkk TOCLEANUP
-    // get spaceWidth() {
-    //   // trying to estimate space character width
-    //   const possibleSpaceReplacements = ["space", "minus", "one", "i", "I"];
-    //   let width;
-    //   for (const glyphName of possibleSpaceReplacements) {
-    //     // if possible, getting width by glyph name
-    //     if (glyphName in this.widths!) {
-    //       width = this.widths![glyphName];
-    //       break;
-    //     }
-    //     const glyphsUnicodeMap = getGlyphsUnicode();
-    //     const glyphUnicode = glyphsUnicodeMap[glyphName];
-    //     // finding the charcode via unicodeToCID map
-    //     let charcode: number | string = 0;
-    //     if (this.composite && this.cMap!.contains(glyphUnicode)) {
-    //       charcode = +this.cMap!.lookup(glyphUnicode)!;
-    //       if (typeof charcode === "string") {
-    //         charcode = convertCidString(glyphUnicode, charcode);
-    //       }
-    //     }
-    //     // ... via toUnicode map
-    //     if (!charcode && this.toUnicode) {
-    //       charcode = this.toUnicode.charCodeOf(glyphUnicode);
-    //     }
-    //     // setting it to unicode if negative or undefined
-    //     if ((charcode as number) <= 0) {
-    //       charcode = glyphUnicode;
-    //     }
-    //     // trying to get width via charcode
-    //     width = this.widths![charcode];
-    //     if (width) {
-    //       break; // the non-zero width found
-    //     }
-    //   }
-    //   return shadow(this, "spaceWidth", width || this.defaultWidth);
-    // }
+    /**
+     * @private
+     */
+    get _spaceWidth() {
+        // trying to estimate space character width
+        const possibleSpaceReplacements = ["space", "minus", "one", "i", "I"];
+        let width;
+        for (const glyphName of possibleSpaceReplacements) {
+            // if possible, getting width by glyph name
+            if (glyphName in this.widths) {
+                width = this.widths[glyphName];
+                break;
+            }
+            const glyphsUnicodeMap = getGlyphsUnicode();
+            const glyphUnicode = glyphsUnicodeMap[glyphName];
+            // finding the charcode via unicodeToCID map
+            let charcode = 0;
+            if (this.composite && this.cMap.contains(glyphUnicode)) {
+                charcode = this.cMap.lookup(glyphUnicode);
+                if (typeof charcode === "string") {
+                    charcode = convertCidString(glyphUnicode, charcode);
+                }
+            }
+            // ... via toUnicode map
+            if (!charcode && this.toUnicode) {
+                charcode = this.toUnicode.charCodeOf(glyphUnicode);
+            }
+            // setting it to unicode if negative or undefined
+            if (charcode <= 0) {
+                charcode = glyphUnicode;
+            }
+            // trying to get width via charcode
+            width = this.widths[charcode];
+            if (width) {
+                break; // the non-zero width found
+            }
+        }
+        return shadow(this, "_spaceWidth", width || this.defaultWidth);
+    }
     #charToGlyph(charcode, isSpace = false) {
         let glyph = this._glyphCache[charcode];
         // All `Glyph`-properties, except `isSpace` in multi-byte strings,
@@ -2941,6 +2943,12 @@ export class Font extends FontExpotDataEx {
                 // .notdef glyphs should be invisible in non-embedded Type1 fonts, so
                 // replace them with spaces.
                 fontCharCode = 0x20;
+                if (glyphName === "") {
+                    // Ensure that other relevant glyph properties are also updated
+                    // (fixes issue18059.pdf).
+                    width ||= this._spaceWidth;
+                    unicode = String.fromCharCode(fontCharCode);
+                }
             }
             fontCharCode = mapSpecialUnicodeValues(fontCharCode);
         }
@@ -2965,6 +2973,12 @@ export class Font extends FontExpotDataEx {
             }
             else {
                 warn(`charToGlyph - invalid fontCharCode: ${fontCharCode}`);
+            }
+        }
+        if (this.missingFile && this.vertical && fontChar.length === 1) {
+            const vertical = getVerticalPresentationForm()[fontChar.charCodeAt(0)];
+            if (vertical) {
+                fontChar = unicode = String.fromCharCode(vertical);
             }
         }
         glyph = new Glyph(charcode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont);

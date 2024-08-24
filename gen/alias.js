@@ -65,13 +65,14 @@ https://bitsofco.de/the-new-system-font-stack/
 */
 /*80--------------------------------------------------------------------------*/
 /* zIndex */
-/* premsys/MainWindl */
+/* Stacking context: Windl */
 export const ThemeSetting_z = 10;
 export const ToolbarResizer_z = 8;
-export const Popmenu_z = 4;
-export const Pocud_z = 2;
-/* premsys/ExplorVCo */
 export const SwipteNailLifting_z = 6;
+export const Popmenu_z = 5;
+export const Signup_z = 4;
+export const Login_z = 3;
+export const Pocusd_z = 2;
 /*80--------------------------------------------------------------------------*/
 export const ClickExtent = 2;
 export function isClick(x, y, x_0, y_0, extent_x = ClickExtent) {
@@ -147,7 +148,6 @@ export var Key;
 })(Key || (Key = {}));
 /*80--------------------------------------------------------------------------*/
 export const LOG_cssc = {
-    onReplStateChange: "#2196f3",
     selectionchange: "#cb9b8b",
     selectionchange_1: "#ff8257",
     xstate_transition: "#2196f3",

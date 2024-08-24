@@ -237,6 +237,9 @@ export class Dict {
         }
         return dict;
     }
+    delete(key) {
+        delete this.#map[key];
+    }
 }
 export class FontDict extends Dict {
     loadedName;

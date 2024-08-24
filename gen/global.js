@@ -92,6 +92,32 @@ export const global = new class {
     }
 }();
 /*80--------------------------------------------------------------------------*/
+export const g_onresize = () => {
+    /*#static*/  {
+        console.log(`%c${global.indent}>>>>>>> window.on("resize") >>>>>>>`, "color:#ffcd4a");
+    }
+    /*#static*/  {
+        console.log(`${global.dent}w:${document.documentElement.clientWidth}, h:${document.documentElement.clientHeight}`);
+        global.outdent;
+    }
+};
+export const g_onerror = (evt_x) => {
+    if (global.ghvc) {
+        global.ghvc.el.style.backgroundColor = "#61bed4";
+    }
+    /*#static*/  {
+        global.ghvc?.ci.reportError?.(evt_x.error);
+    }
+};
+export const g_onunhandledrejection = (evt_x) => {
+    if (global.ghvc) {
+        global.ghvc.el.style.backgroundColor = "#b6d361";
+    }
+    /*#static*/  {
+        global.ghvc?.ci.reportError?.(evt_x.reason);
+    }
+};
+/*80--------------------------------------------------------------------------*/
 /*
 Before runtimes support it natively...
 

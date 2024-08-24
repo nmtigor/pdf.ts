@@ -22,7 +22,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import type { dot2d_t } from "../../lib/alias.ts";
 import type { IVisibleView } from "./interfaces.ts";
 import {

@@ -490,6 +490,10 @@ export class AnnotationEditorUIManager {
     }
     /* ~ */
     #enableHighlightFloatingButton;
+    #enableUpdatedAddImage;
+    get useNewAltTextFlow() {
+        return this.#enableUpdatedAddImage;
+    }
     #highlightWhenShiftUp = false;
     #highlightToolbar;
     #mainHighlightColorPicker;
@@ -657,7 +661,7 @@ export class AnnotationEditorUIManager {
             ],
         ]));
     }
-    constructor(container, viewer, altTextManager, eventBus, pdfDocument, pageColors, highlightColors, enableHighlightFloatingButton, mlManager) {
+    constructor(container, viewer, altTextManager, eventBus, pdfDocument, pageColors, highlightColors, enableHighlightFloatingButton, enableUpdatedAddImage, mlManager) {
         this._signal = this.#abortController.signal;
         this.#container = container;
         this.#viewer = viewer;
@@ -675,6 +679,7 @@ export class AnnotationEditorUIManager {
         this.#pageColors = pageColors;
         this.#highlightColors = highlightColors;
         this.#enableHighlightFloatingButton = enableHighlightFloatingButton;
+        this.#enableUpdatedAddImage = enableUpdatedAddImage;
         this.#mlManager = mlManager;
         /*#static*/ if ("TESTING") {
             Object.defineProperty(this, "reset", {
@@ -715,6 +720,10 @@ export class AnnotationEditorUIManager {
             this.#translationTimeoutId = undefined;
         }
     }
+    /*64||||||||||||||||||||||||||||||||||||||||||||||||||||||||||*/
+    async isMLEnabledFor(name) {
+        return !!(await this.#mlManager?.isEnabledFor(name));
+    }
     get hcmFilter() {
         return shadow(this, "hcmFilter", this.#pageColors
             ? this.#filterFactory.addHCMFilter(this.#pageColors.foreground, this.#pageColors.background)
@@ -725,6 +734,24 @@ export class AnnotationEditorUIManager {
     }
     editAltText(editor) {
         this.#altTextManager?.editAltText(this, editor);
+    }
+    switchToMode(mode, callback) {
+        // Switching to a mode can be asynchronous.
+        this._eventBus.on("annotationeditormodechanged", callback, {
+            once: true,
+            signal: this._signal,
+        });
+        this._eventBus.dispatch("showannotationeditorui", {
+            source: this,
+            mode,
+        });
+    }
+    setPreference(name, value) {
+        this._eventBus.dispatch("setpreference", {
+            source: this,
+            name,
+            value,
+        });
     }
     onPageChanging({ pageNumber }) {
         this.#currentPageIndex = pageNumber - 1;
@@ -769,6 +796,18 @@ export class AnnotationEditorUIManager {
             ? anchorNode.parentElement
             : anchorNode;
     }
+    #getLayerForTextLayer(textLayer) {
+        const { currentLayer } = this;
+        if (currentLayer.hasTextLayer(textLayer)) {
+            return currentLayer;
+        }
+        for (const layer of this.#allLayers.values()) {
+            if (layer.hasTextLayer(textLayer)) {
+                return layer;
+            }
+        }
+        return undefined;
+    }
     highlightSelection(methodOfCreation = "") {
         const selection = document.getSelection();
         if (!selection || selection.isCollapsed) {
@@ -783,28 +822,27 @@ export class AnnotationEditorUIManager {
             return;
         }
         selection.empty();
-        if (this.#mode === AnnotationEditorType.NONE) {
-            this._eventBus.dispatch("showannotationeditorui", {
-                source: this,
-                mode: AnnotationEditorType.HIGHLIGHT,
+        const layer = this.#getLayerForTextLayer(textLayer);
+        const isNoneMode = this.#mode === AnnotationEditorType.NONE;
+        const callback = () => {
+            layer?.createAndAddNewEditor({ x: 0, y: 0 }, false, {
+                methodOfCreation,
+                boxes,
+                anchorNode,
+                anchorOffset,
+                focusNode,
+                focusOffset,
+                text,
             });
-            this.showAllEditors("highlight", true, 
-            /* updateButton = */ true);
-        }
-        for (const layer of this.#allLayers.values()) {
-            if (layer.hasTextLayer(textLayer)) {
-                layer.createAndAddNewEditor({ x: 0, y: 0 }, false, {
-                    methodOfCreation,
-                    boxes,
-                    anchorNode,
-                    anchorOffset,
-                    focusNode,
-                    focusOffset,
-                    text,
-                });
-                break;
+            if (isNoneMode) {
+                this.showAllEditors("highlight", true, /* updateButton = */ true);
             }
+        };
+        if (isNoneMode) {
+            this.switchToMode(AnnotationEditorType.HIGHLIGHT, callback);
+            return;
         }
+        callback();
     }
     #displayHighlightToolbar() {
         const selection = document.getSelection();
@@ -873,12 +911,17 @@ export class AnnotationEditorUIManager {
         }
         this.#highlightWhenShiftUp = this.isShiftKeyDown;
         if (!this.isShiftKeyDown) {
+            const activeLayer = this.#mode === AnnotationEditorType.HIGHLIGHT
+                ? this.#getLayerForTextLayer(textLayer)
+                : undefined;
+            activeLayer?.toggleDrawing();
             const signal = this._signal;
             const pointerup = (e) => {
                 if (e.type === "pointerup" && e.button !== 0) {
                     // Do nothing on right click.
                     return;
                 }
+                activeLayer?.toggleDrawing(true);
                 window.off("pointerup", pointerup);
                 window.off("blur", pointerup);
                 if (e.type === "pointerup") {

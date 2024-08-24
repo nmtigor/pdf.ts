@@ -13,12 +13,14 @@ export class BaseExternalServices {
     updateEditorStates(data) {
         throw new Error("Not implemented: updateEditorStates");
     }
-    async getNimbusExperimentData() {
-        return undefined;
-    }
-    async getGlobalEventNames() {
-        return undefined;
-    }
+    //kkkk TOCLEANUP
+    // async getNimbusExperimentData(): Promise<NimbusExperimentData | undefined> {
+    //   return undefined;
+    // }
+    //kkkk TOCLEANUP
+    // async getGlobalEventNames(): Promise<Set<EventName> | undefined> {
+    //   return undefined;
+    // }
     dispatchGlobalEvent(_event) { }
 }
 /*80--------------------------------------------------------------------------*/

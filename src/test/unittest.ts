@@ -3,10 +3,10 @@
  * @license MIT
  ******************************************************************************/
 
-import { build, run } from "@fe-util/util.ts";
 import { parseArgs } from "@std/cli";
 import { resolve } from "@std/path";
-import { D_fe, D_fe_test, D_gp_src, D_rp_pdfs } from "../alias.ts";
+import { build, run } from "@fe-util/util.ts";
+import { D_fe, D_fe_pdf, D_fe_test, D_gp_src, D_rp_pdfs } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 const AD_pr = resolve(new URL(Deno.mainModule).pathname, "../../../..");
@@ -43,7 +43,7 @@ success &&= (() => {
   if (
     !run(
       `deno test --allow-net --allow-read --allow-write=${AD_fe}/${D_rp_pdfs} --trace-leaks ../pdf`,
-      33,
+      40,
     )
   ) return false;
 

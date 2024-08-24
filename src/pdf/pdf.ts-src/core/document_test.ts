@@ -22,7 +22,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { createIdFactory, XRefMock } from "@fe-pdf.ts-test/unittest_utils.ts";
 import { FieldObject } from "./annotation.ts";
 import { Catalog } from "./catalog.ts";

@@ -7,7 +7,7 @@
  ******************************************************************************/
 import { MouseButton } from "../../lib/dom.js";
 import { CHROME, PDFJSDev } from "../../global.js";
-import { AppOptions, ViewOnLoad } from "./app_options.js";
+import { AppOptions, ViewOnLoad, } from "./app_options.js";
 import { BaseExternalServices } from "./external_services.js";
 import { GenericScripting } from "./generic_scripting.js";
 import { GenericL10n } from "./genericl10n.js";
@@ -295,6 +295,7 @@ function setReferer(url, callback) {
 // chrome.storage.local to chrome.storage.sync when needed.
 const storageArea = chrome.storage.sync || chrome.storage.local;
 export class Preferences extends BasePreferences {
+    /** @implement */
     async _writeToStorage(prefObj) {
         return new Promise((resolve) => {
             if (prefObj === this.defaults) {
@@ -312,7 +313,6 @@ export class Preferences extends BasePreferences {
             }
         });
     }
-    /** @implement */
     async _readFromStorage(prefObj) {
         return new Promise((resolve) => {
             const getPreferences = (defaultPrefs) => {
@@ -375,6 +375,10 @@ export class Preferences extends BasePreferences {
     }
 }
 export class MLManager {
+    eventBus;
+    isEnabledFor(_name) {
+        return false;
+    }
     async guess() {
         return undefined;
     }

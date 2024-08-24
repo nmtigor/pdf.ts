@@ -28,7 +28,7 @@ import {
   assertInstanceOf,
   assertThrows,
 } from "@std/assert";
-import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd";
 import { C2D } from "@fe-lib/alias.ts";
 import { bytesToString } from "../shared/util.ts";
 import {

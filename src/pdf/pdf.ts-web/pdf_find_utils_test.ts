@@ -22,7 +22,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { CharacterType, getCharacterType } from "./pdf_find_utils.ts";
 /*80--------------------------------------------------------------------------*/
 

@@ -919,6 +919,7 @@ export class CanvasGraphics {
         while (this.stateStack.length || this.inSMaskMode) {
             this[OPS.restore]();
         }
+        this.current.activeSMask = undefined;
         this.ctx.restore();
         if (this.transparentCanvas) {
             this.ctx = this.compositeCtx;
@@ -1963,14 +1964,15 @@ export class CanvasGraphics {
         this.current.patternFill = true;
     }
     [OPS.setStrokeRGBColor](r, g, b) {
-        const color = Util.makeHexColor(r, g, b);
-        this.ctx.strokeStyle = color;
-        this.current.strokeColor = color;
+        this.ctx.strokeStyle =
+            this.current.strokeColor =
+                Util.makeHexColor(r, g, b);
+    }
+    [OPS.setStrokeTransparent]() {
+        this.ctx.strokeStyle = this.current.strokeColor = "transparent";
     }
     [OPS.setFillRGBColor](r, g, b) {
-        const color = Util.makeHexColor(r, g, b);
-        this.ctx.fillStyle = color;
-        this.current.fillColor = color;
+        this.ctx.fillStyle = this.current.fillColor = Util.makeHexColor(r, g, b);
         this.current.patternFill = false;
     }
     _getPattern(objId, matrix) {

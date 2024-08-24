@@ -33,10 +33,12 @@ export const BASELINE_FACTOR = LINE_DESCENT_FACTOR / LINE_FACTOR;
  * how these flags are being used:
  *  - ANY, DISPLAY, and PRINT are the normal rendering intents, note the
  *    `PDFPageProxy.{render, getOperatorList, getAnnotations}`-methods.
+ *  - SAVE is used, on the worker-thread, when saving modified annotations.
  *  - ANNOTATIONS_FORMS, ANNOTATIONS_STORAGE, ANNOTATIONS_DISABLE control which
  *    annotations are rendered onto the canvas (i.e. by being included in the
  *    operatorList), note the `PDFPageProxy.{render, getOperatorList}`-methods
  *    and their `annotationMode`-option.
+ *  - IS_EDITING is used when editing is active in the viewer.
  *  - OPLIST is used with the `PDFPageProxy.getOperatorList`-method, note the
  *    `OperatorList`-constructor (on the worker-thread).
  */
@@ -50,6 +52,7 @@ export var RenderingIntentFlag;
     RenderingIntentFlag[RenderingIntentFlag["ANNOTATIONS_FORMS"] = 16] = "ANNOTATIONS_FORMS";
     RenderingIntentFlag[RenderingIntentFlag["ANNOTATIONS_STORAGE"] = 32] = "ANNOTATIONS_STORAGE";
     RenderingIntentFlag[RenderingIntentFlag["ANNOTATIONS_DISABLE"] = 64] = "ANNOTATIONS_DISABLE";
+    RenderingIntentFlag[RenderingIntentFlag["IS_EDITING"] = 128] = "IS_EDITING";
     RenderingIntentFlag[RenderingIntentFlag["OPLIST"] = 256] = "OPLIST";
 })(RenderingIntentFlag || (RenderingIntentFlag = {}));
 export var AnnotationMode;
@@ -263,7 +266,7 @@ export var CMapCompressionType;
     CMapCompressionType[CMapCompressionType["NONE"] = 0] = "NONE";
     CMapCompressionType[CMapCompressionType["BINARY"] = 1] = "BINARY";
 })(CMapCompressionType || (CMapCompressionType = {}));
-// All the possible operations for an operator list.
+/** All the possible operations for an operator list. */
 export var OPS;
 (function (OPS) {
     // Intentionally start from 1 so it is easy to spot bad operators that will be
@@ -361,7 +364,10 @@ export var OPS;
     OPS[OPS["paintImageMaskXObjectRepeat"] = 89] = "paintImageMaskXObjectRepeat";
     OPS[OPS["paintSolidColorImageMask"] = 90] = "paintSolidColorImageMask";
     OPS[OPS["constructPath"] = 91] = "constructPath";
-    OPS[OPS["group"] = 92] = "group";
+    OPS[OPS["setStrokeTransparent"] = 92] = "setStrokeTransparent";
+    OPS[OPS["setFillTransparent"] = 93] = "setFillTransparent";
+    //kkkk TOCLEANUP
+    // group = 92,
 })(OPS || (OPS = {}));
 // export type OPSValu = (typeof OPS)[OPSName];
 export var PasswordResponses;

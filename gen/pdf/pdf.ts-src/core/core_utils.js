@@ -524,6 +524,9 @@ export function getNewAnnotationsMap(annotationStorage) {
     }
     return newAnnotationsByPage.size > 0 ? newAnnotationsByPage : undefined;
 }
+export function stringToAsciiOrUTF16BE(str) {
+    return isAscii(str) ? str : stringToUTF16String(str, /* bigEndian = */ true);
+}
 export function isAscii(str) {
     return /^[\x00-\x7F]*$/.test(str);
 }

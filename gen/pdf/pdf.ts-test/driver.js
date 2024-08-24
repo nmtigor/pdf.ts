@@ -19,7 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals pdfjsLib, pdfjsViewer */
+/* globals pdfjsLib, pdfjsTestingUtils, pdfjsViewer */
 import { filter_tasks } from "./util.js";
 import { D_res_pdf, D_rp_web, D_rpe_cmap, D_rpe_sfont, D_sp_test, } from "../../alias.js";
 import { HttpStatusCode } from "../../lib/HttpStatusCode.js";
@@ -29,7 +29,8 @@ import { HTMLVuu } from "../../lib/cv.js";
 import { html, svg as createSVG } from "../../lib/dom.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import wretch from "../../3rd/wretch-2.9.0/dist/index.js";
-import { AnnotationLayer, AnnotationMode, DrawLayer, getDocument, GlobalWorkerOptions, Outliner, PixelsPerInch, shadow, TextLayer, XfaLayer, } from "../pdf.ts-src/pdf.js";
+import { AnnotationLayer, AnnotationMode, DrawLayer, getDocument, GlobalWorkerOptions, PixelsPerInch, shadow, TextLayer, XfaLayer, } from "../pdf.ts-src/pdf.js";
+import { Outliner } from "../pdf.ts-src/display/editor/outliner.js";
 import { GenericL10n } from "../pdf.ts-web/genericl10n.js";
 import { SimpleLinkService } from "../pdf.ts-web/pdf_link_service.js";
 import { parseQueryString } from "../pdf.ts-web/ui_utils.js";

@@ -153,6 +153,7 @@ interface PumpOperatorListP_ {
   intent: RenderingIntentFlag;
   cacheKey: string;
   annotationStorage: AnnotStorageRecord | undefined;
+  modifiedIds?: Set<string> | undefined;
 }
 
 export interface PageInfo {

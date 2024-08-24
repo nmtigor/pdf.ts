@@ -244,14 +244,14 @@ export interface DocumentInitP {
   /**
    * Basic authentication headers.
    */
-  httpHeaders: Record<string, string> | undefined;
+  httpHeaders?: Record<string, string> | undefined;
 
   /**
    * Indicates whether or not
    * cross-site Access-Control requests should be made using credentials such
    * as cookies or authorization headers. The default is `false`.
    */
-  withCredentials: boolean | undefined;
+  withCredentials?: boolean | undefined;
 
   /**
    * For decrypting password-protected PDFs.
@@ -281,7 +281,7 @@ export interface DocumentInitP {
    * Specify maximum number of bytes fetched
    * per range request. The default value is {@link DEFAULT_RANGE_CHUNK_SIZE}.
    */
-  rangeChunkSize: number | undefined;
+  rangeChunkSize?: number | undefined;
 
   /**
    * The worker that will be used for loading and
@@ -590,7 +590,7 @@ export function getDocument(
   const enableHWA = src.enableHWA === true;
 
   // Parameters whose default values depend on other parameters.
-  const length = rangeTransport ? rangeTransport.length : src.length ?? NaN;
+  const length = rangeTransport ? rangeTransport.length : (src.length ?? NaN);
   const useSystemFonts = typeof src.useSystemFonts === "boolean"
     ? src.useSystemFonts
     : !isNodeJS && !disableFontFace;
@@ -1659,6 +1659,11 @@ export interface RenderP {
   annotationCanvasMap?: Map<string, HTMLCanvasElement> | undefined;
 
   printAnnotationStorage?: PrintAnnotationStorage | undefined;
+
+  /**
+   * Render the page in editing mode.
+   */
+  isEditing?: boolean;
 }
 
 /**
@@ -1688,6 +1693,11 @@ interface GetOperatorListP_ {
   annotationMode?: AnnotationMode;
 
   printAnnotationStorage?: PrintAnnotationStorage;
+
+  /**
+   * Render the page in editing mode.
+   */
+  isEditing?: boolean;
 }
 
 /**
@@ -1755,6 +1765,7 @@ interface IntentArgs_ {
   cacheKey: string;
   annotationStorageSerializable: Serializable;
   isOpList?: boolean;
+  modifiedIds?: Set<string> | undefined;
 }
 
 /**
@@ -1927,6 +1938,7 @@ export class PDFPageProxy {
     annotationCanvasMap = undefined,
     pageColors = undefined,
     printAnnotationStorage = undefined,
+    isEditing = false,
   }: RenderP): RenderTask {
     this._stats?.time("Overall");
 
@@ -1934,6 +1946,7 @@ export class PDFPageProxy {
       intent,
       annotationMode,
       printAnnotationStorage,
+      isEditing,
     );
     const { renderingIntent, cacheKey } = intentArgs;
     // If there was a pending destroy, cancel it so no cleanup happens during
@@ -2067,6 +2080,7 @@ export class PDFPageProxy {
     intent = "display",
     annotationMode = AnnotationMode.ENABLE,
     printAnnotationStorage = undefined,
+    isEditing = false,
   }: GetOperatorListP_ = {}): Promise<OpListIR> {
     /*#static*/ if (!GENERIC) {
       throw new Error("Not implemented: getOperatorList");
@@ -2083,6 +2097,7 @@ export class PDFPageProxy {
       intent,
       annotationMode,
       printAnnotationStorage,
+      isEditing,
       /* isOpList = */ true,
     );
     let intentState = this._intentStates.get(intentArgs.cacheKey);
@@ -2314,9 +2329,12 @@ export class PDFPageProxy {
     }
   }
 
-  #pumpOperatorList(
-    { renderingIntent, cacheKey, annotationStorageSerializable }: IntentArgs_,
-  ) {
+  #pumpOperatorList({
+    renderingIntent,
+    cacheKey,
+    annotationStorageSerializable,
+    modifiedIds,
+  }: IntentArgs_) {
     /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         Number.isInteger(renderingIntent) && renderingIntent > 0,
@@ -2332,6 +2350,7 @@ export class PDFPageProxy {
         intent: renderingIntent,
         cacheKey,
         annotationStorage: map,
+        modifiedIds,
       },
       undefined,
       transfer,
@@ -2503,7 +2522,7 @@ interface PDFWorkerP_ {
   /**
    * The `workerPort` object.
    */
-  port?: Worker | undefined;
+  port?: Worker | null;
 
   /**
    * Controls the logging level;
@@ -3007,6 +3026,7 @@ class WorkerTransport {
     intent: Intent,
     annotationMode = AnnotationMode.ENABLE,
     printAnnotationStorage: PrintAnnotationStorage | undefined = undefined,
+    isEditing = false,
     isOpList = false,
   ): IntentArgs_ {
     let renderingIntent = RenderingIntentFlag.DISPLAY; // Default value.
@@ -3025,6 +3045,11 @@ class WorkerTransport {
         warn(`getRenderingIntent - invalid intent: ${intent}`);
     }
 
+    const annotationStorage = renderingIntent & RenderingIntentFlag.PRINT &&
+        printAnnotationStorage instanceof PrintAnnotationStorage
+      ? printAnnotationStorage
+      : this.annotationStorage;
+
     switch (annotationMode) {
       case AnnotationMode.DISABLE:
         renderingIntent += RenderingIntentFlag.ANNOTATIONS_DISABLE;
@@ -3037,25 +3062,33 @@ class WorkerTransport {
       case AnnotationMode.ENABLE_STORAGE:
         renderingIntent += RenderingIntentFlag.ANNOTATIONS_STORAGE;
 
-        const annotationStorage = renderingIntent & RenderingIntentFlag.PRINT &&
-            printAnnotationStorage instanceof PrintAnnotationStorage
-          ? printAnnotationStorage
-          : this.annotationStorage;
-
         annotationStorageSerializable = annotationStorage.serializable;
         break;
       default:
         warn(`getRenderingIntent - invalid annotationMode: ${annotationMode}`);
     }
 
+    if (isEditing) {
+      renderingIntent += RenderingIntentFlag.IS_EDITING;
+    }
     if (isOpList) {
       renderingIntent += RenderingIntentFlag.OPLIST;
     }
 
+    const { ids: modifiedIds, hash: modifiedIdsHash } =
+      annotationStorage.modifiedIds;
+
+    const cacheKeyBuf = [
+      renderingIntent,
+      annotationStorageSerializable.hash,
+      modifiedIdsHash,
+    ];
+
     return {
       renderingIntent,
-      cacheKey: `${renderingIntent}_${annotationStorageSerializable.hash}`,
+      cacheKey: cacheKeyBuf.join("_"),
       annotationStorageSerializable,
+      modifiedIds,
     };
   }
 

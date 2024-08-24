@@ -22,8 +22,9 @@
  */
 
 import { assertEquals, assertObjectMatch } from "@std/assert";
-import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import { afterAll, afterEach, beforeAll, describe, it } from "@std/testing/bdd";
 import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
+import { GlobalWorkerOptions } from "../pdf.ts-src/pdf.ts";
 import type { TestServer } from "../pdf.ts-test/unittest_utils.ts";
 import {
   CMAP_URL,
@@ -62,12 +63,12 @@ class MockLinkService extends SimpleLinkService {
 }
 
 async function initPdfFindController(
-  ts: TestServer,
+  ts_x: TestServer | undefined,
   filename?: string,
   updateMatchesCountOnProgress = true,
 ) {
-  const loadingTask = await getPDF(ts, filename || tracemonkeyFileName, {
-    cMapUrl: CMAP_URL(ts),
+  const loadingTask = await getPDF(ts_x, filename || tracemonkeyFileName, {
+    cMapUrl: CMAP_URL(ts_x),
   });
   const pdfDocument = await loadingTask.promise;
 
@@ -246,17 +247,18 @@ function testEmptySearch(
 }
 
 describe("pdf_find_controller", () => {
-  let tempServer: TestServer;
+  let tempServer: TestServer | undefined;
 
-  beforeAll(() => {
-    tempServer = createTemporaryDenoServer();
-  });
+  // beforeAll(() => {
+  //   tempServer = createTemporaryDenoServer();
+  // });
 
-  afterAll(async () => {
-    const { server } = tempServer;
-    await server.shutdown();
-    tempServer = undefined as any;
-  });
+  // afterAll(async () => {
+  //   const { server } = tempServer;
+  //   /* Intermittently, it may take a very long time. */
+  //   await server.shutdown();
+  //   tempServer = undefined as any;
+  // });
 
   it("performs a normal search", async () => {
     await using inited = await initPdfFindController(tempServer);

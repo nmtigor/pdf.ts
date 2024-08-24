@@ -1615,9 +1615,8 @@ export class PartialEvaluator {
                             localColorSpaceCache,
                         })
                             .then((colorSpace) => {
-                            if (colorSpace) {
-                                stateManager.state.fillColorSpace = colorSpace;
-                            }
+                            stateManager.state.fillColorSpace = colorSpace ||
+                                ColorSpace.singletons.gray;
                         }));
                         return;
                     }
@@ -1688,7 +1687,14 @@ export class PartialEvaluator {
                         fn = OPS.setFillRGBColor;
                         break;
                     case OPS.setStrokeColorN:
-                        cs = stateManager.state.strokeColorSpace;
+                        //kkkk TOCLEANUP
+                        // cs = stateManager.state.strokeColorSpace!;
+                        cs = stateManager.state.patternStrokeColorSpace;
+                        if (!cs) {
+                            args = [];
+                            fn = OPS.setStrokeTransparent;
+                            break;
+                        }
                         if (cs.name === "Pattern") {
                             next(self.handleColorN(operatorList, OPS.setStrokeColorN, args, cs, patterns, resources, task, localColorSpaceCache, localTilingPatternCache, localShadingPatternCache));
                             return;
@@ -3174,6 +3180,11 @@ export class PartialEvaluator {
                         map[charCode] = String.fromCodePoint(token);
                         return;
                     }
+                    // Add back omitted leading zeros on odd length tokens
+                    // (fixes issue #18099)
+                    if (token.length % 2 !== 0) {
+                        token = "\u0000" + token;
+                    }
                     const str = [];
                     for (let k = 0; k < token.length; k += 2) {
                         const w1 = (token.charCodeAt(k) << 8) |
@@ -4089,14 +4100,28 @@ class TextState {
     }
 }
 export class EvalState {
-    ctm = IDENTITY_MATRIX;
     // ctm = new Float32Array(IDENTITY_MATRIX);
+    ctm = IDENTITY_MATRIX;
     font;
     fontSize = 0;
     fontName;
     textRenderingMode = TextRenderingMode.FILL;
-    fillColorSpace = ColorSpace.singletons.gray;
-    strokeColorSpace = ColorSpace.singletons.gray;
+    _fillColorSpace = ColorSpace.singletons.gray;
+    get fillColorSpace() {
+        return this._fillColorSpace;
+    }
+    set fillColorSpace(colorSpace) {
+        this._fillColorSpace = this.patternFillColorSpace = colorSpace;
+    }
+    _strokeColorSpace = ColorSpace.singletons.gray;
+    get strokeColorSpace() {
+        return this._strokeColorSpace;
+    }
+    set strokeColorSpace(colorSpace) {
+        this._strokeColorSpace = this.patternStrokeColorSpace = colorSpace;
+    }
+    patternFillColorSpace;
+    patternStrokeColorSpace;
     clone() {
         return Object.create(this);
     }

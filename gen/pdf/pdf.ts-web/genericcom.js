@@ -29,6 +29,7 @@ import { BasePreferences } from "./preferences.js";
 /*#static*/ 
 export function initCom(app) { }
 export class Preferences extends BasePreferences {
+    /** @implement */
     async _writeToStorage(prefObj) {
         localStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
     }
@@ -38,13 +39,20 @@ export class Preferences extends BasePreferences {
     }
 }
 export class MLManager {
+    eventBus;
+    async isEnabledFor(_name) {
+        return false;
+    }
+    async deleteModel(_service) {
+        return undefined;
+    }
     async guess() {
         return undefined;
     }
 }
 export class ExternalServices extends BaseExternalServices {
     async createL10n() {
-        return new GenericL10n(AppOptions.locale);
+        return new GenericL10n(AppOptions.localeProperties?.lang);
     }
     createScripting() {
         return new GenericScripting(AppOptions.sandboxBundleSrc);

@@ -18,9 +18,9 @@
     "@esbuild": "https://deno.land/x/esbuild@v0.21.4/mod.js",
     "@fe-lib/": "../src/lib/",
     "@fe-src/": "../src/",
-    "@std/cli": "jsr:@std/cli@^0.220.1",
-    "@std/fs": "jsr:@std/fs@^0.220.1",
-    "@std/path": "jsr:@std/path@^0.220.1",
+    "@std/cli": "jsr:@std/cli@^1.0.3",
+    "@std/fs": "jsr:@std/fs@^1.0.1",
+    "@std/path": "jsr:@std/path@^1.0.2",
     "@zod": "../src/3rd/zod-3.23.8/lib/index.mjs"
   }
 }

@@ -51,6 +51,7 @@ export class PDFPageView {
     _annotationStorage;
     _optionalContentConfigPromise;
     #hasRestrictedScaling = false;
+    #isEditing = false;
     #textLayerMode;
     #annotationMode;
     #enableHWA = false;
@@ -238,6 +239,9 @@ export class PDFPageView {
     destroy() {
         this.reset();
         this.pdfPage?.cleanup();
+    }
+    hasEditableAnnotations() {
+        return !!this.annotationLayer?.hasEditableAnnotations();
     }
     get _textHighlighter() {
         return shadow(this, "_textHighlighter", new TextHighlighter({
@@ -434,6 +438,19 @@ export class PDFPageView {
             }
             this.#resetZoomLayer();
         }
+    }
+    toggleEditingMode(isEditing) {
+        if (!this.hasEditableAnnotations()) {
+            return;
+        }
+        this.#isEditing = isEditing;
+        this.reset({
+            keepZoomLayer: true,
+            keepAnnotationLayer: true,
+            keepAnnotationEditorLayer: true,
+            keepXfaLayer: true,
+            keepTextLayer: true,
+        });
     }
     /**
      * Update e.g. the scale and/or rotation of the page.
@@ -794,6 +811,7 @@ export class PDFPageView {
             optionalContentConfigPromise: this._optionalContentConfigPromise,
             annotationCanvasMap: this._annotationCanvasMap,
             pageColors,
+            isEditing: this.#isEditing,
         };
         const renderTask = (this.renderTask = pdfPage.render(renderContext));
         renderTask.onContinue = renderContinueCallback;

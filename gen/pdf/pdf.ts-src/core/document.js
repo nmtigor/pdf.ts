@@ -284,7 +284,7 @@ export class Page {
             return objectLoader.load();
         });
     }
-    getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage = undefined, }) {
+    getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage = undefined, modifiedIds, }) {
         const contentStreamPromise = this.getContentStream();
         const resourcesPromise = this.loadResources([
             "ColorSpace",
@@ -405,17 +405,18 @@ export class Page {
                 pageOpList.flush(/* lastChunk = */ true);
                 return { length: pageOpList.totalLength };
             }
-            const renderForms = !!(intent & RenderingIntentFlag.ANNOTATIONS_FORMS), intentAny = !!(intent & RenderingIntentFlag.ANY), intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY), intentPrint = !!(intent & RenderingIntentFlag.PRINT);
+            const renderForms = !!(intent & RenderingIntentFlag.ANNOTATIONS_FORMS), isEditing = !!(intent & RenderingIntentFlag.IS_EDITING), intentAny = !!(intent & RenderingIntentFlag.ANY), intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY), intentPrint = !!(intent & RenderingIntentFlag.PRINT);
             // Collect the operator list promises for the annotations. Each promise
             // is resolved with the complete operator list for a single annotation.
             const opListPromises = [];
             for (const annotation of annotations) {
                 if (intentAny ||
                     (intentDisplay &&
-                        annotation.mustBeViewed(annotationStorage, renderForms)) ||
+                        annotation.mustBeViewed(annotationStorage, renderForms) &&
+                        annotation.mustBeViewedWhenEditing(isEditing, modifiedIds)) ||
                     (intentPrint && annotation.mustBePrinted(annotationStorage))) {
                     opListPromises.push(annotation
-                        .getOperatorList(partialEvaluator, task, intent, renderForms, annotationStorage)
+                        .getOperatorList(partialEvaluator, task, intent, annotationStorage)
                         .catch((reason) => {
                         warn("getOperatorList - ignoring annotation data during " +
                             `"${task.name}" task: "${reason}".`);

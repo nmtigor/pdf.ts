@@ -687,6 +687,10 @@ export function getNewAnnotationsMap(
   return newAnnotationsByPage.size > 0 ? newAnnotationsByPage : undefined;
 }
 
+export function stringToAsciiOrUTF16BE(str: string) {
+  return isAscii(str) ? str : stringToUTF16String(str, /* bigEndian = */ true);
+}
+
 export function isAscii(str: string) {
   return /^[\x00-\x7F]*$/.test(str);
 }

@@ -8,6 +8,7 @@
 import { textnode } from "../../lib/dom.js";
 import { GECKOVIEW, MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { isPdfFile, PDFDataRangeTransport } from "../pdf.ts-src/pdf.js";
+import { AppOptions } from "./app_options.js";
 import { BaseExternalServices } from "./external_services.js";
 import { L10n } from "./l10n.js";
 import { BasePreferences } from "./preferences.js";
@@ -174,6 +175,10 @@ export class DownloadManager {
 }
 export class Preferences extends BasePreferences {
     /** @implement */
+    async _writeToStorage(prefObj) {
+        return FirefoxCom.requestAsync("setPreferences", prefObj);
+    }
+    /** @implement */
     async _readFromStorage(prefObj) {
         return FirefoxCom.requestAsync("getPreferences", prefObj);
     }
@@ -306,8 +311,57 @@ class FirefoxScripting {
     }
 }
 export class MLManager {
+    #enabled;
+    altTextLearnMoreUrl;
+    eventBus;
+    constructor(options) {
+        this.enable({ ...options, listenToProgress: false });
+    }
+    async isEnabledFor(name) {
+        return !!(await this.#enabled?.get(name));
+    }
+    deleteModel(service) {
+        return FirefoxCom.requestAsync("mlDelete", service);
+    }
     guess(data) {
         return FirefoxCom.requestAsync("mlGuess", data);
+    }
+    enable({ altTextLearnMoreUrl, enableGuessAltText, listenToProgress }) {
+        if (enableGuessAltText) {
+            this.#loadAltTextEngine(listenToProgress);
+        }
+        // The `altTextLearnMoreUrl` is used to provide a link to the user to learn
+        // more about the "alt text" feature.
+        // The link is used in the Alt Text dialog or in the Image Settings.
+        this.altTextLearnMoreUrl = altTextLearnMoreUrl;
+    }
+    async #loadAltTextEngine(listenToProgress) {
+        if (this.#enabled?.has("altText")) {
+            // We already have a promise for the "altText" service.
+            return;
+        }
+        const promise = FirefoxCom.requestAsync("loadAIEngine", {
+            service: "moz-image-to-text",
+            listenToProgress,
+        });
+        (this.#enabled ||= new Map()).set("altText", promise);
+        if (listenToProgress) {
+            const callback = (({ detail }) => {
+                this.eventBus.dispatch("loadaiengineprogress", {
+                    source: this,
+                    detail,
+                });
+                if (detail.finished) {
+                    window.removeEventListener("loadAIEngineProgress", callback);
+                }
+            });
+            window.addEventListener("loadAIEngineProgress", callback);
+            promise.then((ok) => {
+                if (!ok) {
+                    window.removeEventListener("loadAIEngineProgress", callback);
+                }
+            });
+        }
     }
 }
 export class ExternalServices extends BaseExternalServices {
@@ -374,11 +428,8 @@ export class ExternalServices extends BaseExternalServices {
         FirefoxCom.request("updateEditorStates", data);
     }
     async createL10n() {
-        const [localeProperties] = await Promise.all([
-            FirefoxCom.requestAsync("getLocaleProperties"),
-            // document.l10n.ready, //kkkk bug?
-        ]);
-        return new L10n(localeProperties, document.l10n);
+        // await document.l10n.ready; //kkkk bug?
+        return new L10n(AppOptions.localeProperties, document.l10n);
     }
     createScripting() {
         return new FirefoxScripting();
@@ -413,19 +464,20 @@ export class ExternalServices extends BaseExternalServices {
     //   const maxArea = FirefoxCom.requestSync("getCanvasMaxArea");
     //   return shadow(this, "canvasMaxAreaInBytes", maxArea);
     // }
-    async getNimbusExperimentData() {
-        /*#static*/  {
-            return undefined;
-        }
-        const nimbusData = await FirefoxCom.requestAsync("getNimbusExperimentData");
-        // return nimbusData && JSON.parse(nimbusData) as NimbusExperimentData;
-        return nimbusData
-            ? JSON.parse(nimbusData)
-            : undefined;
-    }
-    async getGlobalEventNames() {
-        return FirefoxCom.requestAsync("getGlobalEventNames");
-    }
+    //kkkk TOCLEANUP
+    // override async getNimbusExperimentData() {
+    //   /*#static*/ if (!GECKOVIEW) {
+    //     return undefined;
+    //   }
+    //   const nimbusData = await FirefoxCom.requestAsync("getNimbusExperimentData");
+    //   // return nimbusData && JSON.parse(nimbusData) as NimbusExperimentData;
+    //   return nimbusData
+    //     ? JSON.parse(nimbusData) as NimbusExperimentData
+    //     : undefined;
+    // }
+    // override async getGlobalEventNames() {
+    //   return FirefoxCom.requestAsync("getGlobalEventNames");
+    // }
     dispatchGlobalEvent(event) {
         FirefoxCom.request("dispatchGlobalEvent", event);
     }

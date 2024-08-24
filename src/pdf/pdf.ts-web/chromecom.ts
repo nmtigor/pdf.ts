@@ -26,7 +26,12 @@ import type { Locale } from "@fe-lib/Locale.ts";
 import { MouseButton } from "@fe-lib/dom.ts";
 import { CHROME, PDFJSDev } from "@fe-src/global.ts";
 import type { PDFViewerApplication } from "./app.ts";
-import { AppOptions, UserOptions, ViewOnLoad } from "./app_options.ts";
+import {
+  AppOptions,
+  UserOptionMap,
+  UserOptions,
+  ViewOnLoad,
+} from "./app_options.ts";
 import { BaseExternalServices } from "./external_services.ts";
 import { GenericScripting } from "./generic_scripting.ts";
 import { GenericL10n } from "./genericl10n.ts";
@@ -385,7 +390,8 @@ interface ManagedPrefs_ extends UserOptions {
 }
 
 export class Preferences extends BasePreferences {
-  protected override async _writeToStorage(prefObj: UserOptions) {
+  /** @implement */
+  protected  async _writeToStorage(prefObj: UserOptions) {
     return new Promise<void>((resolve) => {
       if (prefObj === this.defaults) {
         const keysToRemove = Object.keys(this.defaults);
@@ -402,8 +408,7 @@ export class Preferences extends BasePreferences {
     });
   }
 
-  /** @implement */
-  protected async _readFromStorage(prefObj: { prefs: UserOptions }) {
+  protected async _readFromStorage(prefObj: UserOptions) {
     return new Promise<{ prefs: UserOptions }>((resolve) => {
       const getPreferences = (defaultPrefs: Readonly<UserOptions>) => {
         if (chrome.runtime.lastError) {
@@ -478,6 +483,12 @@ export class Preferences extends BasePreferences {
 }
 
 export class MLManager {
+  eventBus!: unknown;
+
+  isEnabledFor(_name: "altText") {
+    return false;
+  }
+
   async guess() {
     return undefined;
   }

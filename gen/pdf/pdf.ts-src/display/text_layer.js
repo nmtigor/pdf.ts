@@ -8,9 +8,9 @@
 var _a;
 import { html } from "../../../lib/dom.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
-import { GENERIC, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.js";
+import { GENERIC, PDFJSDev, TESTING } from "../../../global.js";
 import { AbortException, Util, warn } from "../shared/util.js";
-import { deprecated, setLayerDimensions } from "./display_utils.js";
+import { setLayerDimensions } from "./display_utils.js";
 const MAX_TEXT_DIVS_TO_RENDER = 100000;
 const DEFAULT_FONT_SIZE = 30;
 const DEFAULT_FONT_ASCENT = 0.8;
@@ -373,6 +373,7 @@ export class TextLayer {
             opacity: 0,
             lineHeight: 1,
             fontSize: "1px",
+            position: "absolute",
         });
         div.textContent = "X";
         document.body.append(div);
@@ -438,31 +439,37 @@ export class TextLayer {
     }
 }
 _a = TextLayer;
-export function renderTextLayer() {
-    /*#static*/ 
-    deprecated("`renderTextLayer`, please use `TextLayer` instead.");
-    const { textContentSource, container, viewport, ...rest } = arguments[0];
-    const restKeys = Object.keys(rest);
-    if (restKeys.length > 0) {
-        warn("Ignoring `renderTextLayer` parameters: " + restKeys.join(", "));
-    }
-    const textLayer = new TextLayer({
-        textContentSource,
-        container,
-        viewport,
-    });
-    const { textDivs, textContentItemsStr } = textLayer;
-    const promise = textLayer.render();
-    // eslint-disable-next-line consistent-return
-    return {
-        promise,
-        textDivs,
-        textContentItemsStr,
-    };
-}
-export function updateTextLayer() {
-    /*#static*/ 
-    deprecated("`updateTextLayer`, please use `TextLayer` instead.");
-}
+//kkkk TOCLEANUP
+// export function renderTextLayer() {
+//   /*#static*/ if (MOZCENTRAL) {
+//     return;
+//   }
+//   deprecated("`renderTextLayer`, please use `TextLayer` instead.");
+//   const { textContentSource, container, viewport, ...rest } = arguments[0];
+//   const restKeys = Object.keys(rest);
+//   if (restKeys.length > 0) {
+//     warn("Ignoring `renderTextLayer` parameters: " + restKeys.join(", "));
+//   }
+//   const textLayer = new TextLayer({
+//     textContentSource,
+//     container,
+//     viewport,
+//   });
+//   const { textDivs, textContentItemsStr } = textLayer;
+//   const promise = textLayer.render();
+//   // eslint-disable-next-line consistent-return
+//   return {
+//     promise,
+//     textDivs,
+//     textContentItemsStr,
+//   };
+// }
+//kkkk TOCLEANUP
+// export function updateTextLayer() {
+//   /*#static*/ if (MOZCENTRAL) {
+//     return;
+//   }
+//   deprecated("`updateTextLayer`, please use `TextLayer` instead.");
+// }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=text_layer.js.map

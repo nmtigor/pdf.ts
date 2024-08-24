@@ -34,7 +34,6 @@ import {
 import { assert, fail } from "@fe-lib/util/trace.ts";
 import type {
   IDownloadManager,
-  IL10n,
   IPDFLinkService,
 } from "@fe-pdf.ts-web/interfaces.ts";
 import type { TextAccessibilityManager } from "@fe-pdf.ts-web/text_accessibility.ts";
@@ -268,6 +267,10 @@ export class AnnotationElement {
 
   static _hasPopupData({ titleObj, contentsObj, richText }: AnnotationData) {
     return !!(titleObj?.str || contentsObj?.str || richText?.str);
+  }
+
+  get _isEditable() {
+    return this.data.isEditable;
   }
 
   get hasPopupData() {
@@ -825,10 +828,6 @@ export class AnnotationElement {
     } else {
       triggers.classList.add("highlightArea");
     }
-  }
-
-  get _isEditable() {
-    return false;
   }
 
   protected editOnDoubleClick$() {
@@ -2273,6 +2272,11 @@ interface PopupElementCtorP_ {
 }
 
 class PopupElement {
+  #boundKeyDown = this.#keyDown.bind(this);
+  #boundHide = this.#hide.bind(this);
+  #boundShow = this.#show.bind(this);
+  #boundToggle = this.#toggle.bind(this);
+
   #color;
   #container;
   #contentsObj: BidiText | undefined;
@@ -2325,15 +2329,15 @@ class PopupElement {
     this.trigger = elements.flatMap((e) => e.getElementsToTriggerPopup());
     // Attach the event listeners to the trigger element.
     for (const element of this.trigger) {
-      element.on("click", this.#toggle);
-      element.on("mouseenter", this.#show);
-      element.on("mouseleave", this.#hide);
+      element.on("click", this.#boundToggle);
+      element.on("mouseenter", this.#boundShow);
+      element.on("mouseleave", this.#boundHide);
       element.classList.add("popupTriggerArea");
     }
 
     // Attach the event listener to toggle the popup with the keyboard.
     for (const element of elements) {
-      element.container?.on("keydown", this.#keyDown);
+      element.container?.on("keydown", this.#boundKeyDown);
     }
 
     this.#container.hidden = true;
@@ -2631,23 +2635,23 @@ class PopupElement {
   /**
    * Toggle the visibility of the popup.
    */
-  #toggle = () => {
+  #toggle () {
     this.#pinned = !this.#pinned;
     if (this.#pinned) {
       this.#show();
-      this.#container.on("click", this.#toggle);
-      this.#container.on("keydown", this.#keyDown);
+      this.#container.on("click", this.#boundToggle);
+      this.#container.on("keydown", this.#boundKeyDown);
     } else {
       this.#hide();
-      this.#container.off("click", this.#toggle);
-      this.#container.off("keydown", this.#keyDown);
+      this.#container.off("click", this.#boundToggle);
+      this.#container.off("keydown", this.#boundKeyDown);
     }
   };
 
   /**
    * Show the popup.
    */
-  #show = () => {
+  #show () {
     if (!this.#popup) {
       this.render();
     }
@@ -2664,7 +2668,7 @@ class PopupElement {
   /**
    * Hide the popup.
    */
-  #hide = () => {
+  #hide()  {
     this.#container.classList.remove("focused");
     if (this.#pinned || !this.isVisible) {
       return;
@@ -2731,10 +2735,6 @@ export class FreeTextAnnotationElement extends AnnotationElement {
     this.editOnDoubleClick$();
 
     return this.container;
-  }
-
-  override get _isEditable() {
-    return this.data.hasOwnCanvas;
   }
 }
 
@@ -3403,6 +3403,10 @@ export class AnnotationLayer {
     }
   }
 
+  hasEditableAnnotations() {
+    return this.#editableAnnotations.size > 0;
+  }
+
   #appendElement(element: HTMLDivElement, id: string) {
     const contentElement = element.firstChild as HTMLDivElement || element;
     contentElement.id = `${AnnotationPrefix}${id}`;
@@ -3479,7 +3483,7 @@ export class AnnotationLayer {
       }
       this.#appendElement(rendered as HTMLDivElement, data.id);
 
-      if (element.annotationEditorType as any > 0) {
+      if (element._isEditable) {
         this.#editableAnnotations.set(element.data.id, element);
         this._annotationEditorUIManager?.renderAnnotationElement(element);
       }

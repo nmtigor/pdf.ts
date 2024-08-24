@@ -332,7 +332,7 @@ app.post(
     const session = getSession(browser);
     // monitorBrowserTimeout(session, handleSessionTimeout);
 
-    var taskResults = session.taskResults[id];
+    const taskResults = session.taskResults[id];
     if (!taskResults[round]) {
       taskResults[round] = [];
     }

@@ -67,6 +67,7 @@ export class StampEditor extends AnnotationEditor {
     return this.#canvas;
   }
 
+  #hasMLBeenQueried = false;
   #observer: ResizeObserver | undefined;
   #resizeTimeoutId: number | undefined;
   #isSvg: boolean | undefined = false;
@@ -433,6 +434,47 @@ export class StampEditor extends AnnotationEditor {
     return bitmap;
   }
 
+  async #mlGuessAltText(
+    bitmap: ImageBitmap | HTMLImageElement,
+    width: number,
+    height: number,
+  ) {
+    if (this.#hasMLBeenQueried) {
+      return;
+    }
+    this.#hasMLBeenQueried = true;
+    const isMLEnabled = await this._uiManager.isMLEnabledFor("altText");
+    if (!isMLEnabled || this.hasAltText()) {
+      return;
+    }
+    const offscreen = new OffscreenCanvas(width, height);
+    const ctx = offscreen.getContext("2d", { willReadFrequently: true })!;
+    ctx.drawImage(
+      bitmap,
+      0,
+      0,
+      bitmap.width,
+      bitmap.height,
+      0,
+      0,
+      width,
+      height,
+    );
+    const response = await this._uiManager.mlGuess({
+      service: "moz-image-to-text",
+      request: {
+        data: ctx.getImageData(0, 0, width, height).data,
+        width,
+        height,
+        channels: 4,
+      },
+    });
+    const altText = (response as any)?.output || "";
+    if (this.parent && altText && !this.hasAltText()) {
+      this.altTextData = { altText, decorative: false };
+    }
+  }
+
   #drawBitmap(width: number, height: number) {
     width = Math.ceil(width);
     height = Math.ceil(height);
@@ -446,37 +488,8 @@ export class StampEditor extends AnnotationEditor {
       ? this.#bitmap!
       : this.#scaleBitmap(width, height)!;
 
-    if (this._uiManager.hasMLManager && !this.hasAltText()) {
-      const offscreen = new OffscreenCanvas(width, height);
-      const ctx = offscreen.getContext("2d")!;
-      ctx.drawImage(
-        bitmap,
-        0,
-        0,
-        bitmap.width,
-        bitmap.height,
-        0,
-        0,
-        width,
-        height,
-      );
-      this._uiManager
-        .mlGuess({
-          service: "image-to-text",
-          request: {
-            data: ctx.getImageData(0, 0, width, height).data,
-            width,
-            height,
-            channels: 4,
-          },
-        })
-        .then((response) => {
-          const altText = (response as any)?.output || "";
-          if (this.parent && altText && !this.hasAltText()) {
-            this.altTextData = { altText, decorative: false };
-          }
-        });
-    }
+    this.#mlGuessAltText(bitmap, width, height);
+
     const ctx = canvas.getContext("2d")!;
     ctx.filter = this._uiManager.hcmFilter;
     ctx.drawImage(

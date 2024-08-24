@@ -18,6 +18,15 @@ export class Coo {
  * Vuu ⊆ Coo
  */
 export class Vuu {
+    static #ID = 0;
+    id = ++Vuu.#ID;
+    get _type() {
+        return this.constructor.name;
+    }
+    /** @final */
+    get _type_id() {
+        return `${this._type}_${this.id}`;
+    }
     coo$;
     get coo() {
         return this.coo$;

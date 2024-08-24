@@ -160,7 +160,7 @@ export function getDocument(src_x = {}) {
     const pdfBug = src.pdfBug === true;
     const enableHWA = src.enableHWA === true;
     // Parameters whose default values depend on other parameters.
-    const length = rangeTransport ? rangeTransport.length : src.length ?? NaN;
+    const length = rangeTransport ? rangeTransport.length : (src.length ?? NaN);
     const useSystemFonts = typeof src.useSystemFonts === "boolean"
         ? src.useSystemFonts
         : !isNodeJS && !disableFontFace;
@@ -940,9 +940,9 @@ export class PDFPageProxy {
      * @return An object that contains a promise that is
      *   resolved when the page finishes rendering.
      */
-    render({ canvasContext, viewport, intent = "display", annotationMode = AnnotationMode.ENABLE, transform = undefined, background, optionalContentConfigPromise, annotationCanvasMap = undefined, pageColors = undefined, printAnnotationStorage = undefined, }) {
+    render({ canvasContext, viewport, intent = "display", annotationMode = AnnotationMode.ENABLE, transform = undefined, background, optionalContentConfigPromise, annotationCanvasMap = undefined, pageColors = undefined, printAnnotationStorage = undefined, isEditing = false, }) {
         this._stats?.time("Overall");
-        const intentArgs = this._transport.getRenderingIntent(intent, annotationMode, printAnnotationStorage);
+        const intentArgs = this._transport.getRenderingIntent(intent, annotationMode, printAnnotationStorage, isEditing);
         const { renderingIntent, cacheKey } = intentArgs;
         // If there was a pending destroy, cancel it so no cleanup happens during
         // this call to render...
@@ -1050,7 +1050,7 @@ export class PDFPageProxy {
      * @return A promise resolved with an
      *   {@link PDFOperatorList} object that represents the page's operator list.
      */
-    getOperatorList({ intent = "display", annotationMode = AnnotationMode.ENABLE, printAnnotationStorage = undefined, } = {}) {
+    getOperatorList({ intent = "display", annotationMode = AnnotationMode.ENABLE, printAnnotationStorage = undefined, isEditing = false, } = {}) {
         /*#static*/ 
         function operatorListChanged() {
             if (intentState.operatorList.lastChunk) {
@@ -1058,7 +1058,7 @@ export class PDFPageProxy {
                 intentState.renderTasks.delete(opListTask);
             }
         }
-        const intentArgs = this._transport.getRenderingIntent(intent, annotationMode, printAnnotationStorage, 
+        const intentArgs = this._transport.getRenderingIntent(intent, annotationMode, printAnnotationStorage, isEditing, 
         /* isOpList = */ true);
         let intentState = this._intentStates.get(intentArgs.cacheKey);
         if (!intentState) {
@@ -1249,7 +1249,7 @@ export class PDFPageProxy {
             this.#tryCleanup(/* delayed = */ true);
         }
     }
-    #pumpOperatorList({ renderingIntent, cacheKey, annotationStorageSerializable }) {
+    #pumpOperatorList({ renderingIntent, cacheKey, annotationStorageSerializable, modifiedIds, }) {
         /*#static*/  {
             assert(Number.isInteger(renderingIntent) && renderingIntent > 0, '#pumpOperatorList: Expected valid "renderingIntent" argument.');
         }
@@ -1259,6 +1259,7 @@ export class PDFPageProxy {
             intent: renderingIntent,
             cacheKey,
             annotationStorage: map,
+            modifiedIds,
         }, undefined, transfer);
         const reader = readableStream.getReader();
         const intentState = this._intentStates.get(cacheKey);
@@ -1764,7 +1765,7 @@ class WorkerTransport {
     get annotationStorage() {
         return shadow(this, "annotationStorage", new AnnotationStorage());
     }
-    getRenderingIntent(intent, annotationMode = AnnotationMode.ENABLE, printAnnotationStorage = undefined, isOpList = false) {
+    getRenderingIntent(intent, annotationMode = AnnotationMode.ENABLE, printAnnotationStorage = undefined, isEditing = false, isOpList = false) {
         let renderingIntent = RenderingIntentFlag.DISPLAY; // Default value.
         let annotationStorageSerializable = SerializableEmpty;
         switch (intent) {
@@ -1779,6 +1780,10 @@ class WorkerTransport {
             default:
                 warn(`getRenderingIntent - invalid intent: ${intent}`);
         }
+        const annotationStorage = renderingIntent & RenderingIntentFlag.PRINT &&
+            printAnnotationStorage instanceof PrintAnnotationStorage
+            ? printAnnotationStorage
+            : this.annotationStorage;
         switch (annotationMode) {
             case AnnotationMode.DISABLE:
                 renderingIntent += RenderingIntentFlag.ANNOTATIONS_DISABLE;
@@ -1790,22 +1795,28 @@ class WorkerTransport {
                 break;
             case AnnotationMode.ENABLE_STORAGE:
                 renderingIntent += RenderingIntentFlag.ANNOTATIONS_STORAGE;
-                const annotationStorage = renderingIntent & RenderingIntentFlag.PRINT &&
-                    printAnnotationStorage instanceof PrintAnnotationStorage
-                    ? printAnnotationStorage
-                    : this.annotationStorage;
                 annotationStorageSerializable = annotationStorage.serializable;
                 break;
             default:
                 warn(`getRenderingIntent - invalid annotationMode: ${annotationMode}`);
         }
+        if (isEditing) {
+            renderingIntent += RenderingIntentFlag.IS_EDITING;
+        }
         if (isOpList) {
             renderingIntent += RenderingIntentFlag.OPLIST;
         }
+        const { ids: modifiedIds, hash: modifiedIdsHash } = annotationStorage.modifiedIds;
+        const cacheKeyBuf = [
+            renderingIntent,
+            annotationStorageSerializable.hash,
+            modifiedIdsHash,
+        ];
         return {
             renderingIntent,
-            cacheKey: `${renderingIntent}_${annotationStorageSerializable.hash}`,
+            cacheKey: cacheKeyBuf.join("_"),
             annotationStorageSerializable,
+            modifiedIds,
         };
     }
     destroy() {

@@ -36,8 +36,8 @@ import {
   beforeEach,
   describe,
   it,
-} from "@std/testing/bdd.ts";
-import { assertSpyCall, assertSpyCalls, spy } from "@std/testing/mock.ts";
+} from "@std/testing/bdd";
+import { assertSpyCall, assertSpyCalls, spy } from "@std/testing/mock";
 import {
   Cmd,
   Dict,

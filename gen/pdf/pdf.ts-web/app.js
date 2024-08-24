@@ -45,7 +45,6 @@ const { PDFPrintServiceFactory } = /*#static*/ await import("./pdf_print_service
 const { Preferences } = /*#static*/ await import("./genericcom.js");
 /*80--------------------------------------------------------------------------*/
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
-const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
 export class PDFViewerApplication {
     initialBookmark = document.location.hash.substring(1);
     initialRotation;
@@ -76,15 +75,16 @@ export class PDFViewerApplication {
     pdfAttachmentViewer;
     pdfLayerViewer;
     pdfSidebar;
-    preferences;
+    preferences = new Preferences();
     l10n;
     annotationEditorParams;
     isInitialViewSet = false;
-    downloadComplete = false;
     isViewerEmbedded = window.parent !== window;
     url = "";
     baseUrl = "";
-    _allowedGlobalEventsPromise;
+    //kkkk TOCLEANUP
+    // _allowedGlobalEventsPromise: Promise<Set<EventName> | undefined> | undefined;
+    mlManager;
     _downloadUrl = "";
     //kkkk TOCLEANUP
     // _boundEvents: Record<string, ((...args: any[]) => void) | undefined> = Object
@@ -109,7 +109,8 @@ export class PDFViewerApplication {
     _printAnnotationStoragePromise;
     _touchInfo;
     _isCtrlKeyDown = false;
-    _nimbusDataPromise;
+    //kkkk TOCLEANUP
+    // _nimbusDataPromise?: Promise<NimbusExperimentData | undefined>;
     _caretBrowsing;
     _isScrolling = false;
     disableAutoFetchLoadingBarTimeout;
@@ -126,14 +127,7 @@ export class PDFViewerApplication {
      * Called once when the document is loaded.
      */
     async initialize(appConfig) {
-        let l10nPromise;
-        // In the (various) extension builds, where the locale is set automatically,
-        // initialize the `L10n`-instance as soon as possible.
-        /*#static*/ 
         this.appConfig = appConfig;
-        if (PDFJSDev ? window.isGECKOVIEW : GECKOVIEW) {
-            this._nimbusDataPromise = this.externalServices.getNimbusExperimentData();
-        }
         // Ensure that `Preferences`, and indirectly `AppOptions`, have initialized
         // before creating e.g. the various viewer components.
         try {
@@ -161,10 +155,7 @@ export class PDFViewerApplication {
         }
         // Ensure that the `L10n`-instance has been initialized before creating
         // e.g. the various viewer components.
-        /*#static*/  {
-            l10nPromise = this.externalServices.createL10n();
-        }
-        this.l10n = (await l10nPromise);
+        this.l10n = await this.externalServices.createL10n();
         document.getElementsByTagName("html")[0].dir = this.l10n.getDirection();
         // Connect Fluent, when necessary, and translate what we already have.
         /*#static*/  {
@@ -261,7 +252,10 @@ export class PDFViewerApplication {
         // It is not possible to change locale for the (various) extension builds.
         /*#static*/  {
             if (params.has("locale")) {
-                AppOptions.set("locale", params.get("locale"));
+                // AppOptions.set("locale", params.get("locale"));
+                AppOptions.set("localeProperties", {
+                    lang: params.get("locale"),
+                });
             }
         }
         // Set some specific preferences for tests.
@@ -328,6 +322,7 @@ export class PDFViewerApplication {
             annotationEditorMode,
             annotationEditorHighlightColors: AppOptions.highlightEditorColors,
             enableHighlightFloatingButton: AppOptions.enableHighlightFloatingButton,
+            enableUpdatedAddImage: AppOptions.enableUpdatedAddImage,
             imageResourcesPath: AppOptions.imageResourcesPath,
             enablePrintAutoRotate: AppOptions.enablePrintAutoRotate,
             maxCanvasPixels: AppOptions.maxCanvasPixels,
@@ -367,9 +362,6 @@ export class PDFViewerApplication {
         }
         if (appConfig.annotationEditorParams) {
             if (annotationEditorMode !== AnnotationEditorType.DISABLE) {
-                if (AppOptions.enableStampEditor) {
-                    appConfig.toolbar?.editorStampButton?.classList.remove("hidden");
-                }
                 const editorHighlightButton = appConfig.toolbar?.editorHighlightButton;
                 if (editorHighlightButton && AppOptions.enableHighlightEditor) {
                     editorHighlightButton.hidden = false;
@@ -397,10 +389,11 @@ export class PDFViewerApplication {
         }
         if (appConfig.toolbar) {
             if (PDFJSDev ? window.isGECKOVIEW : GECKOVIEW) {
-                this.toolbar = new GeckoviewToolbar(appConfig.toolbar, eventBus, await this._nimbusDataPromise);
+                const nimbusData = JSON.parse(AppOptions.nimbusDataStr || "null");
+                this.toolbar = new GeckoviewToolbar(appConfig.toolbar, eventBus, nimbusData);
             }
             else {
-                this.toolbar = new Toolbar(appConfig.toolbar, eventBus);
+                this.toolbar = new Toolbar(appConfig.toolbar, eventBus, AppOptions.toolbarDensity);
             }
         }
         if (appConfig.secondaryToolbar) {
@@ -462,7 +455,6 @@ export class PDFViewerApplication {
         }
     }
     async run(config) {
-        this.preferences = new Preferences();
         await this.initialize(config);
         const { appConfig, eventBus } = this;
         const file = /*#static*/ (() => {
@@ -541,9 +533,14 @@ export class PDFViewerApplication {
     get externalServices() {
         return shadow(this, "externalServices", new ExternalServices());
     }
-    get mlManager() {
-        return shadow(this, "mlManager", AppOptions.enableML === true ? new MLManager() : undefined);
-    }
+    //kkkk TOCLEANUP
+    // get mlManager() {
+    //   return shadow(
+    //     this,
+    //     "mlManager",
+    //     AppOptions.enableML === true ? new MLManager() : undefined,
+    //   );
+    // }
     get initialized() {
         return this.#initializedCapability.settled;
     }
@@ -652,18 +649,20 @@ export class PDFViewerApplication {
         if (isDataScheme(url)) {
             this._hideViewBookmark();
         }
+        else {
+            /*#static*/ 
+        }
         let title = getPdfFilenameFromUrl(url, "");
         if (!title) {
             try {
-                title = decodeURIComponent(getFilenameFromUrl(url)) || url;
+                // title = decodeURIComponent(getFilenameFromUrl(url)) || url;
+                title = decodeURIComponent(getFilenameFromUrl(url));
             }
             catch {
-                // decodeURIComponent may throw URIError,
-                // fall back to using the unprocessed url in that case
-                title = url;
+                // decodeURIComponent may throw URIError.
             }
         }
-        this.setTitle(title);
+        this.setTitle(title || url); // Always fallback to the raw URL.
     }
     setTitle(title = this._title) {
         this._title = title;
@@ -728,7 +727,6 @@ export class PDFViewerApplication {
         this.pdfLinkService.externalLinkEnabled = true;
         this.store = undefined;
         this.isInitialViewSet = false;
-        this.downloadComplete = false;
         this.url = "";
         this.baseUrl = "";
         this._downloadUrl = "";
@@ -780,16 +778,6 @@ export class PDFViewerApplication {
                 this.setTitleUsingUrl(args.originalUrl || args.url, 
                 /* downloadUrl = */ args.url);
             }
-        // Always set `docBaseUrl` in development mode, and in the (various)
-        // extension builds.
-        /*#static*/  {
-            AppOptions.set("docBaseUrl", document.URL.split("#", 1)[0]);
-        }
-        // On Android, there is almost no chance to have the font we want so we
-        // don't use the system fonts in this case.
-        if (PDFJSDev ? window.isGECKOVIEW : GECKOVIEW) {
-            args.useSystemFonts = false;
-        }
         // Set the necessary API parameters, using all the available options.
         const apiParams = AppOptions.getAll(OptionKind.API);
         const loadingTask = getDocument({
@@ -831,13 +819,10 @@ export class PDFViewerApplication {
     async download(options = {}) {
         let data;
         try {
-            if (this.downloadComplete) {
-                data = await this.pdfDocument.getData();
-            }
+            data = await this.pdfDocument.getData();
         }
         catch {
-            // When the PDF document isn't ready, or the PDF file is still
-            // downloading, simply download using the URL.
+            // When the PDF document isn't ready, simply download using the URL.
         }
         this.downloadManager.download(data, this._downloadUrl, this._docFilename, options);
     }
@@ -927,17 +912,12 @@ export class PDFViewerApplication {
         return message;
     }
     progress(level) {
-        if (!this.loadingBar || this.downloadComplete) {
-            // Don't accidentally show the loading bar again when the entire file has
-            // already been fetched (only an issue when disableAutoFetch is enabled).
-            return;
-        }
         const percent = Math.round(level * 100);
         // When we transition from full request to range requests, it's possible
         // that we discard some of the loaded data. This can cause the loading
         // bar to move backwards. So prevent this by only updating the bar if it
         // increases.
-        if (percent <= this.loadingBar.percent) {
+        if (!this.loadingBar || percent <= this.loadingBar.percent) {
             return;
         }
         this.loadingBar.percent = percent;
@@ -955,7 +935,6 @@ export class PDFViewerApplication {
         this.pdfDocument = pdfDocument;
         pdfDocument.getDownloadInfo().then(({ length }) => {
             this._contentLength = length; // Ensure that the correct length is used.
-            this.downloadComplete = true;
             this.loadingBar?.hide();
             firstPagePromise.then(() => {
                 this.eventBus.dispatch("documentloaded", { source: this });
@@ -1324,7 +1303,7 @@ export class PDFViewerApplication {
             }
         };
         annotationStorage.onResetModified = () => {
-            window.removeEventListener("beforeunload", beforeUnload);
+            window.off("beforeunload", beforeUnload);
             /*#static*/  {
                 delete this._annotationStorageModified;
             }
@@ -1528,7 +1507,6 @@ export class PDFViewerApplication {
             mediaQueryList.addEventListener("change", addWindowResolutionChange, { once: true, signal });
         }
         addWindowResolutionChange();
-        window.on("visibilitychange", webViewerVisibilityChange, { signal });
         window.on("wheel", webViewerWheel, { passive: false, signal });
         window.on("touchstart", webViewerTouchStart, { passive: false, signal });
         window.on("touchmove", webViewerTouchMove, { passive: false, signal });
@@ -2004,21 +1982,6 @@ function webViewerPageChanging({ pageNumber, pageLabel }) {
 function webViewerResolutionChange(evt) {
     viewerApp.pdfViewer.refresh();
 }
-function webViewerVisibilityChange(evt) {
-    if (document.visibilityState === "visible") {
-        // Ignore mouse wheel zooming during tab switches (bug 1503412).
-        setZoomDisabledTimeout();
-    }
-}
-let zoomDisabledTimeout;
-function setZoomDisabledTimeout() {
-    if (zoomDisabledTimeout) {
-        clearTimeout(zoomDisabledTimeout);
-    }
-    zoomDisabledTimeout = setTimeout(() => {
-        zoomDisabledTimeout = undefined;
-    }, WHEEL_ZOOM_DISABLED_TIMEOUT);
-}
 function webViewerWheel(evt) {
     const { pdfViewer, supportsMouseWheelZoomCtrlKey, supportsMouseWheelZoomMetaKey, supportsPinchToZoom, } = viewerApp;
     if (pdfViewer.isInPresentationMode) {
@@ -2053,7 +2016,6 @@ function webViewerWheel(evt) {
         evt.preventDefault();
         // NOTE: this check must be placed *after* preventDefault.
         if (viewerApp._isScrolling ||
-            zoomDisabledTimeout ||
             document.visibilityState === "hidden" ||
             viewerApp.overlayManager.active) {
             return;
@@ -2528,6 +2490,9 @@ function webViewerAnnotationEditorStatesChanged(data) {
 }
 function webViewerReportTelemetry({ details }) {
     viewerApp.externalServices.reportTelemetry(details);
+}
+function webViewerSetPreference({ name, value }) {
+    viewerApp.preferences.set(name, value);
 }
 //kkkk TOCLEANUP
 // /* Abstract factory for the print service. */

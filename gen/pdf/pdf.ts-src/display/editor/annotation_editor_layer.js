@@ -147,6 +147,9 @@ export class AnnotationEditorLayer {
     addCommands(params) {
         this.#uiManager.addCommands(params);
     }
+    toggleDrawing(enabled = false) {
+        this.div.classList.toggle("drawing", !enabled);
+    }
     togglePointerEvents(enabled = false) {
         this.div.classList.toggle("disabled", !enabled);
     }
@@ -283,7 +286,10 @@ export class AnnotationEditorLayer {
         // Unselect all the editors in order to let the user select some text
         // without being annoyed by an editor toolbar.
         this.#uiManager.unselectAll();
-        if (event.target === this.#textLayer.div) {
+        const { target } = event;
+        if (target === this.#textLayer.div ||
+            (target.classList.contains("endOfContent") &&
+                this.#textLayer.div.contains(target))) {
             const { isMac } = FeatureTest.platform;
             if (event.button !== 0 || (event.ctrlKey && isMac)) {
                 // Do nothing on right click.
@@ -292,9 +298,11 @@ export class AnnotationEditorLayer {
             this.#uiManager.showAllEditors("highlight", true, 
             /* updateButton = */ true);
             this.#textLayer.div.classList.add("free");
+            this.toggleDrawing();
             HighlightEditor.startHighlighting(this, this.#uiManager.direction === "ltr", event);
             this.#textLayer.div.on("pointerup", () => {
                 this.#textLayer.div.classList.remove("free");
+                this.toggleDrawing(true);
             }, { once: true, signal: this.#uiManager._signal });
             event.preventDefault();
         }

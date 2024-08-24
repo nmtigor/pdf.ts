@@ -22,7 +22,7 @@
  */
 
 import { see_ui_testing } from "@fe-src/pdf/pdf.ts-test/alias.ts";
-import { describe } from "@std/testing/bdd.ts";
+import { describe } from "@std/testing/bdd";
 /*80--------------------------------------------------------------------------*/
 
 describe("textLayer", see_ui_testing);

@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { MLManager as MLManager_f } from "./firefoxcom.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { MOZCENTRAL } from "@fe-src/global.ts";
 import type {
@@ -76,6 +77,7 @@ import type {
   SpreadMode,
 } from "./ui_utils.ts";
 import type { BaseExternalServices } from "./external_services.ts";
+import type { OptionName, OptionValue, ToolbarDensity } from "./app_options.ts";
 /*80--------------------------------------------------------------------------*/
 
 export const enum WaitOnType {
@@ -265,6 +267,10 @@ export type EventMap = {
   localized: {
     source: PDFViewerApplication;
   };
+  loadaiengineprogress: {
+    source: MLManager_f;
+    detail: { finished: boolean };
+  };
   metadataloaded: {
     source: PDFViewerApplication;
   };
@@ -395,6 +401,11 @@ export type EventMap = {
     source: Toolbar;
     value: string;
   };
+  setpreference: {
+    source: AnnotationEditorUIManager;
+    name: OptionName;
+    value: OptionValue;
+  };
   showannotationeditorui: {
     source: AnnotationEditorUIManager;
     mode: AnnotationEditorType;
@@ -453,6 +464,9 @@ export type EventMap = {
   togglelayerstree: {};
   toggleoutlinetree: {
     source: PDFSidebar;
+  };
+  toolbardensity: {
+    value: ToolbarDensity;
   };
   toolbarreset: {
     source: Toolbar;

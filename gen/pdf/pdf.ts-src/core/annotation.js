@@ -12,7 +12,7 @@ import { BaseStream } from "./base_stream.js";
 import { bidi } from "./bidi.js";
 import { Catalog } from "./catalog.js";
 import { ColorSpace } from "./colorspace.js";
-import { collectActions, escapeString, getInheritableProperty, getRotationMatrix, isAscii, isNumberArray, lookupMatrix, lookupNormalRect, lookupRect, numberToString, stringToUTF16String, } from "./core_utils.js";
+import { collectActions, escapeString, getInheritableProperty, getRotationMatrix, isNumberArray, lookupMatrix, lookupNormalRect, lookupRect, numberToString, stringToAsciiOrUTF16BE, stringToUTF16String, } from "./core_utils.js";
 import { createDefaultAppearance, FakeUnicodeFont, getPdfColor, parseAppearanceStream, parseDefaultAppearance, } from "./default_appearance.js";
 import { FileSpec } from "./file_spec.js";
 import { JpegStream } from "./jpeg_stream.js";
@@ -644,6 +644,7 @@ export class Annotation {
             hasOwnCanvas: false,
             noRotate: !!(this.flags & AnnotationFlag.NOROTATE),
             noHTML: isLocked && isContentLocked,
+            isEditable: false,
         };
         if (params.collectFields) {
             // Fields can act as container for other fields and have
@@ -850,7 +851,7 @@ export class Annotation {
             return objectLoader.load().then(() => resources);
         });
     }
-    async getOperatorList(evaluator, task, intent, renderForms, annotationStorage) {
+    async getOperatorList(evaluator, task, intent, annotationStorage) {
         const { hasOwnCanvas, id, rect } = this.data;
         let appearance = this.appearance;
         const isUsingOwnCanvas = !!(hasOwnCanvas && intent & RenderingIntentFlag.DISPLAY);
@@ -1357,18 +1358,29 @@ export class MarkupAnnotation extends Annotation {
         this._streams.push(this.appearance, appearanceStream);
     }
     static async createNewAnnotation(xref, annotation, dependencies, params) {
-        const annotationRef = (annotation.ref ||= xref.getNewTemporaryRef());
+        let oldAnnotation;
+        if (annotation.ref) {
+            oldAnnotation = (await xref.fetchIfRefAsync(annotation.ref))
+                .clone();
+        }
+        else {
+            annotation.ref = xref.getNewTemporaryRef();
+        }
+        const annotationRef = annotation.ref;
         const ap = await this.createNewAppearanceStream(annotation, xref, params);
         const buffer = [];
         let annotationDict;
         if (ap) {
             const apRef = xref.getNewTemporaryRef();
-            annotationDict = this.createNewDict(annotation, xref, { apRef });
+            annotationDict = this.createNewDict(annotation, xref, {
+                apRef,
+                oldAnnotation,
+            });
             await writeObject(apRef, ap, buffer, xref);
             dependencies.push({ ref: apRef, data: buffer.join("") });
         }
         else {
-            annotationDict = this.createNewDict(annotation, xref, {});
+            annotationDict = this.createNewDict(annotation, xref, { oldAnnotation });
         }
         if (Number.isInteger(annotation.parentTreeId)) {
             annotationDict.set("StructParent", annotation.parentTreeId);
@@ -1513,6 +1525,9 @@ export class WidgetAnnotation extends Annotation {
         return (super.mustBeViewed(annotationStorage, renderForms) &&
             !this._hasFlag(this.flags, AnnotationFlag.NOVIEW));
     }
+    mustBeViewedWhenEditing(isEditing, modifiedIds) {
+        return isEditing ? !this.data.isEditable : !modifiedIds?.has(this.data.id);
+    }
     getRotationMatrix(annotationStorage) {
         let rotation = annotationStorage?.get(this.data.id)?.rotation;
         if (rotation === undefined) {
@@ -1550,10 +1565,10 @@ export class WidgetAnnotation extends Annotation {
         }
         return str;
     }
-    async getOperatorList(evaluator, task, intent, renderForms, annotationStorage) {
+    async getOperatorList(evaluator, task, intent, annotationStorage) {
         // Do not render form elements on the canvas when interactive forms are
         // enabled. The display layer is responsible for rendering them instead.
-        if (renderForms &&
+        if (intent & RenderingIntentFlag.ANNOTATIONS_FORMS &&
             !(this instanceof SignatureWidgetAnnotation) &&
             !this.data.noHTML &&
             !this.data.hasOwnCanvas) {
@@ -1564,11 +1579,11 @@ export class WidgetAnnotation extends Annotation {
             };
         }
         if (!this._hasText) {
-            return super.getOperatorList(evaluator, task, intent, renderForms, annotationStorage);
+            return super.getOperatorList(evaluator, task, intent, annotationStorage);
         }
         const content = await this.getAppearance$(evaluator, task, intent, annotationStorage);
         if (this.appearance && content === undefined) {
-            return super.getOperatorList(evaluator, task, intent, renderForms, annotationStorage);
+            return super.getOperatorList(evaluator, task, intent, annotationStorage);
         }
         const opList = new OperatorList();
         // Even if there is an appearance stream, ignore it. This is the
@@ -1680,8 +1695,9 @@ export class WidgetAnnotation extends Annotation {
             path: this.data.fieldName,
             value: value,
         };
-        const encoder = (val) => isAscii(val) ? val : stringToUTF16String(val, /* bigEndian = */ true);
-        dict.set("V", Array.isArray(value) ? value.map(encoder) : encoder(value));
+        dict.set("V", Array.isArray(value)
+            ? value.map(stringToAsciiOrUTF16BE)
+            : stringToAsciiOrUTF16BE(value));
         this.amendSavedDict(annotationStorage, dict);
         const maybeMK = this._getMKDict(rotation);
         if (maybeMK) {
@@ -2229,12 +2245,14 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
             this.data.noHTML = false;
             this._processPushButton(params);
         }
-        else
+        else {
             warn("Invalid field flags for button widget annotation");
+        }
     }
-    async getOperatorList(evaluator, task, intent, renderForms, annotationStorage) {
+    async getOperatorList(evaluator, task, intent, annotationStorage) {
         if (this.data.pushButton) {
-            return super.getOperatorList(evaluator, task, intent, false, // we use normalAppearance to render the button
+            return super.getOperatorList(evaluator, task, intent, 
+            // false, // we use normalAppearance to render the button //kkkk bugs? ✅
             annotationStorage);
         }
         let value;
@@ -2247,7 +2265,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
         if (value === undefined && this.appearance) {
             // Nothing in the annotationStorage.
             // But we've a default appearance so use it.
-            return super.getOperatorList(evaluator, task, intent, renderForms, annotationStorage);
+            return super.getOperatorList(evaluator, task, intent, annotationStorage);
         }
         if (value == undefined) {
             // There is no default appearance so use the one derived
@@ -2266,7 +2284,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
                 appearance.dict.set("Matrix", this.getRotationMatrix(annotationStorage));
             }
             this.appearance = appearance;
-            const operatorList = super.getOperatorList(evaluator, task, intent, renderForms, annotationStorage);
+            const operatorList = super.getOperatorList(evaluator, task, intent, annotationStorage);
             this.appearance = savedAppearance;
             appearance.dict.set("Matrix", savedMatrix);
             return operatorList;
@@ -2950,7 +2968,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
         // It uses its own canvas in order to be hidden if edited.
         // But if it has the noHTML flag, it means that we don't want to be able
         // to modify it so we can just draw it on the main canvas.
-        this.data.hasOwnCanvas = !this.data.noHTML;
+        this.data.hasOwnCanvas = this.data.noRotate;
+        this.data.isEditable = !this.data.noHTML;
         // We want to be able to add mouse listeners to the annotation.
         this.data.noHTML = false;
         const { evaluatorOptions, xref } = params;
@@ -2986,25 +3005,30 @@ class FreeTextAnnotation extends MarkupAnnotation {
     get hasTextContent() {
         return this._hasAppearance;
     }
-    static createNewDict(annotation, xref, { apRef, ap }) {
+    static createNewDict(annotation, xref, { apRef, ap, oldAnnotation }) {
         const { color, fontSize, rect, rotation, user, value } = annotation;
-        const freetext = new Dict(xref);
+        const freetext = oldAnnotation || new Dict(xref);
         freetext.set("Type", Name.get("Annot"));
         freetext.set("Subtype", Name.get("FreeText"));
+        if (oldAnnotation) {
+            freetext.set("M", `D:${getModificationDate()}`);
+            // TODO: We should try to generate a new RC from the content we've.
+            // For now we can just remove it to avoid any issues.
+            freetext.delete("RC");
+        }
+        else {
+            freetext.set("CreationDate", `D:${getModificationDate()}`);
+        }
         freetext.set("CreationDate", `D:${getModificationDate()}`);
         freetext.set("Rect", rect);
         const da = `/Helv ${fontSize} Tf ${getPdfColor(color, /* isFill */ true)}`;
         freetext.set("DA", da);
-        freetext.set("Contents", isAscii(value)
-            ? value
-            : stringToUTF16String(value, /* bigEndian = */ true));
+        freetext.set("Contents", stringToAsciiOrUTF16BE(value));
         freetext.set("F", 4);
         freetext.set("Border", [0, 0, 0]);
         freetext.set("Rotate", rotation);
         if (user) {
-            freetext.set("T", isAscii(user)
-                ? user
-                : stringToUTF16String(user, /* bigEndian = */ true));
+            freetext.set("T", stringToAsciiOrUTF16BE(user));
         }
         if (apRef || ap) {
             const n = new Dict(xref);
@@ -3614,9 +3638,7 @@ class HighlightAnnotation extends MarkupAnnotation {
         // Opacity.
         highlight.set("CA", opacity);
         if (user) {
-            highlight.set("T", isAscii(user)
-                ? user
-                : stringToUTF16String(user, /* bigEndian = */ true));
+            highlight.set("T", stringToAsciiOrUTF16BE(user));
         }
         if (apRef || ap) {
             const n = new Dict(xref);
@@ -3852,9 +3874,7 @@ class StampAnnotation extends MarkupAnnotation {
         stamp.set("Border", [0, 0, 0]);
         stamp.set("Rotate", rotation);
         if (user) {
-            stamp.set("T", isAscii(user)
-                ? user
-                : stringToUTF16String(user, /* bigEndian = */ true));
+            stamp.set("T", stringToAsciiOrUTF16BE(user));
         }
         if (apRef || ap) {
             const n = new Dict(xref);

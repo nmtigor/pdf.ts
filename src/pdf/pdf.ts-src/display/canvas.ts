@@ -23,9 +23,9 @@
 
 import type { C2D, dot2d_t, Func, rect_t } from "@fe-lib/alias.ts";
 import { fail } from "@fe-lib/util/trace.ts";
-import { MOZCENTRAL } from "@fe-src/global.ts";
 import type { Stepper } from "@fe-pdf.ts-web/debugger.ts";
 import type { PageColors } from "@fe-pdf.ts-web/pdf_viewer.ts";
+import { MOZCENTRAL } from "@fe-src/global.ts";
 import type {
   ImgData,
   MarkedContentProps,
@@ -1281,6 +1281,7 @@ export class CanvasGraphics {
       this[OPS.restore]();
     }
 
+    this.current.activeSMask = undefined;
     this.ctx.restore();
 
     if (this.transparentCanvas) {
@@ -2673,14 +2674,15 @@ export class CanvasGraphics {
     this.current.patternFill = true;
   }
   [OPS.setStrokeRGBColor](r: number, g: number, b: number) {
-    const color = Util.makeHexColor(r, g, b);
-    this.ctx.strokeStyle = color;
-    this.current.strokeColor = color;
+    this.ctx.strokeStyle =
+      this.current.strokeColor =
+        Util.makeHexColor(r, g, b);
+  }
+  [OPS.setStrokeTransparent]() {
+    this.ctx.strokeStyle = this.current.strokeColor = "transparent";
   }
   [OPS.setFillRGBColor](r: number, g: number, b: number) {
-    const color = Util.makeHexColor(r, g, b);
-    this.ctx.fillStyle = color;
-    this.current.fillColor = color;
+    this.ctx.fillStyle = this.current.fillColor = Util.makeHexColor(r, g, b);
     this.current.patternFill = false;
   }
 

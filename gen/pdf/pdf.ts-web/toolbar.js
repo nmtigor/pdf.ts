@@ -21,6 +21,7 @@
  */
 import { noContextMenu } from "../../lib/util/general.js";
 import { AnnotationEditorType, ColorPicker } from "../pdf.ts-src/pdf.js";
+import { ToolbarDensity } from "./app_options.js";
 import { DEFAULT_SCALE, DEFAULT_SCALE_VALUE, MAX_SCALE, MIN_SCALE, toggleCheckedBtn, } from "./ui_utils.js";
 export class Toolbar {
     #opts;
@@ -34,7 +35,14 @@ export class Toolbar {
     pagesCount;
     pageScaleValue;
     pageScale;
-    constructor(options, eventBus) {
+    /**
+     * @const @param toolbarDensity - The toolbar density value.
+     *   The possible values are:
+     *    - 0 (default) - The regular toolbar size.
+     *    - 1 (compact) - The small toolbar size.
+     *    - 2 (touch) - The large toolbar size.
+     */
+    constructor(options, eventBus, toolbarDensity = ToolbarDensity.normal) {
         this.#opts = options;
         this.eventBus = eventBus;
         const buttons = [
@@ -120,8 +128,11 @@ export class Toolbar {
                     break;
             }
         });
+        eventBus._on("toolbardensity", this.#updateToolbarDensity.bind(this));
+        this.#updateToolbarDensity({ value: toolbarDensity });
         this.reset();
     }
+    #updateToolbarDensity(_x) { }
     #setAnnotationEditorUIManager(uiManager, parentContainer) {
         const colorPicker = new ColorPicker({ uiManager });
         uiManager.setMainHighlightColorPicker(colorPicker);

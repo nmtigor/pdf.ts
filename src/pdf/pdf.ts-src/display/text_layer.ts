@@ -25,7 +25,7 @@ import type { Locale } from "@fe-lib/Locale.ts";
 import type { C2D, Ratio } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
-import { GENERIC, MOZCENTRAL, PDFJSDev, TESTING } from "@fe-src/global.ts";
+import { GENERIC, PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { matrix_t } from "../shared/util.ts";
 import { AbortException, Util, warn } from "../shared/util.ts";
 import type {
@@ -35,7 +35,7 @@ import type {
   TextStyle,
 } from "./api.ts";
 import type { PageViewport } from "./display_utils.ts";
-import { deprecated, setLayerDimensions } from "./display_utils.ts";
+import { setLayerDimensions } from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 type TextLayerP_ = {
@@ -512,6 +512,7 @@ export class TextLayer {
       opacity: 0,
       lineHeight: 1,
       fontSize: "1px",
+      position: "absolute",
     });
     div.textContent = "X";
     document.body.append(div);
@@ -590,39 +591,41 @@ export class TextLayer {
   }
 }
 
-export function renderTextLayer() {
-  /*#static*/ if (MOZCENTRAL) {
-    return;
-  }
-  deprecated("`renderTextLayer`, please use `TextLayer` instead.");
+//kkkk TOCLEANUP
+// export function renderTextLayer() {
+//   /*#static*/ if (MOZCENTRAL) {
+//     return;
+//   }
+//   deprecated("`renderTextLayer`, please use `TextLayer` instead.");
 
-  const { textContentSource, container, viewport, ...rest } = arguments[0];
-  const restKeys = Object.keys(rest);
-  if (restKeys.length > 0) {
-    warn("Ignoring `renderTextLayer` parameters: " + restKeys.join(", "));
-  }
+//   const { textContentSource, container, viewport, ...rest } = arguments[0];
+//   const restKeys = Object.keys(rest);
+//   if (restKeys.length > 0) {
+//     warn("Ignoring `renderTextLayer` parameters: " + restKeys.join(", "));
+//   }
 
-  const textLayer = new TextLayer({
-    textContentSource,
-    container,
-    viewport,
-  });
+//   const textLayer = new TextLayer({
+//     textContentSource,
+//     container,
+//     viewport,
+//   });
 
-  const { textDivs, textContentItemsStr } = textLayer;
-  const promise = textLayer.render();
+//   const { textDivs, textContentItemsStr } = textLayer;
+//   const promise = textLayer.render();
 
-  // eslint-disable-next-line consistent-return
-  return {
-    promise,
-    textDivs,
-    textContentItemsStr,
-  };
-}
+//   // eslint-disable-next-line consistent-return
+//   return {
+//     promise,
+//     textDivs,
+//     textContentItemsStr,
+//   };
+// }
 
-export function updateTextLayer() {
-  /*#static*/ if (MOZCENTRAL) {
-    return;
-  }
-  deprecated("`updateTextLayer`, please use `TextLayer` instead.");
-}
+//kkkk TOCLEANUP
+// export function updateTextLayer() {
+//   /*#static*/ if (MOZCENTRAL) {
+//     return;
+//   }
+//   deprecated("`updateTextLayer`, please use `TextLayer` instead.");
+// }
 /*80--------------------------------------------------------------------------*/

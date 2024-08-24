@@ -2,7 +2,7 @@
  * @module lib/util/trace
  * @license Apache-2.0
  ******************************************************************************/
-import { global, TESTING } from "../../global.js";
+import { global, INOUT, TESTING } from "../../global.js";
 /*80--------------------------------------------------------------------------*/
 /**
  * @const @param assertion
@@ -120,6 +120,17 @@ export const traceOut = (_x) => {
             ? function (...args) {
                 const ret = tgt_x.call(this, ...args);
                 global.outdent;
+                return ret;
+            }
+            : tgt_x;
+    };
+};
+export const out = (_x) => {
+    return (tgt_x, ctx_x) => {
+        return INOUT
+            ? function (...args) {
+                const ret = tgt_x.call(this, ...args);
+                _x(ret, this);
                 return ret;
             }
             : tgt_x;

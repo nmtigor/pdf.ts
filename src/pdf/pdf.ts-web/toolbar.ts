@@ -21,10 +21,11 @@
  * limitations under the License.
  */
 
-import { noContextMenu } from "@fe-lib/util/general.ts";
+import { noContextMenu } from "@fe-lib/util/general.ts"; 
 import type { AnnotationEditorUIManager } from "../pdf.ts-src/pdf.ts";
 import { AnnotationEditorType, ColorPicker } from "../pdf.ts-src/pdf.ts";
 import { Button } from "./alias.ts";
+import { ToolbarDensity } from "./app_options.ts";
 import type { EventBus, EventMap } from "./event_utils.ts";
 import {
   DEFAULT_SCALE,
@@ -61,7 +62,18 @@ export class Toolbar {
   pageScaleValue!: string;
   pageScale!: number;
 
-  constructor(options: ViewerConfiguration["toolbar"], eventBus: EventBus) {
+  /**
+   * @const @param toolbarDensity - The toolbar density value.
+   *   The possible values are:
+   *    - 0 (default) - The regular toolbar size.
+   *    - 1 (compact) - The small toolbar size.
+   *    - 2 (touch) - The large toolbar size.
+   */
+  constructor(
+    options: ViewerConfiguration["toolbar"],
+    eventBus: EventBus,
+    toolbarDensity = ToolbarDensity.normal,
+  ) {
     this.#opts = options;
     this.eventBus = eventBus;
     const buttons: Button[] = [
@@ -157,8 +169,13 @@ export class Toolbar {
       }
     });
 
+    eventBus._on("toolbardensity", this.#updateToolbarDensity.bind(this));
+    this.#updateToolbarDensity({ value: toolbarDensity });
+
     this.reset();
   }
+
+  #updateToolbarDensity(_x: { value: ToolbarDensity }) {}
 
   #setAnnotationEditorUIManager(
     uiManager: AnnotationEditorUIManager,

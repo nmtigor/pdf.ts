@@ -29,7 +29,7 @@ import {
   beforeEach,
   describe,
   it,
-} from "@std/testing/bdd.ts";
+} from "@std/testing/bdd";
 import {
   CFF,
   CFFCharset,

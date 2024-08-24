@@ -28,6 +28,7 @@ import type {
 } from "../display/annotation_layer.ts";
 import type { StructTreeNode } from "../display/api.ts";
 import { AnnotationPrefix, stringToPDFString, warn } from "../shared/util.ts";
+import { stringToAsciiOrUTF16BE } from "./core_utils.ts";
 import { NumberTree } from "./name_number_tree.ts";
 import type { BasePdfManager } from "./pdf_manager.ts";
 import type { Obj } from "./primitives.ts";
@@ -396,19 +397,19 @@ export class StructTreeRoot {
         // console.dir(newRefs);
 
         if (title) {
-          tagDict.set("T", title);
+          tagDict.set("T", stringToAsciiOrUTF16BE(title));
         }
         if (lang) {
           tagDict.set("Lang", lang);
         }
         if (alt) {
-          tagDict.set("Alt", alt);
+          tagDict.set("Alt", stringToAsciiOrUTF16BE(alt));
         }
         if (expanded) {
-          tagDict.set("E", expanded);
+          tagDict.set("E", stringToAsciiOrUTF16BE(expanded));
         }
         if (actualText) {
-          tagDict.set("ActualText", actualText);
+          tagDict.set("ActualText", stringToAsciiOrUTF16BE(actualText));
         }
 
         await this.#updateParentTag({

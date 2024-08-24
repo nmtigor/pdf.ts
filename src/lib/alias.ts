@@ -160,7 +160,7 @@ export type SetLayoutP = {
 /*80--------------------------------------------------------------------------*/
 /* zIndex */
 
-/* lib/Scronr */
+/* Stacking context: Scronr */
 export const Scrod_z = 10;
 export const Scrobar_z = 10;
 /*80--------------------------------------------------------------------------*/

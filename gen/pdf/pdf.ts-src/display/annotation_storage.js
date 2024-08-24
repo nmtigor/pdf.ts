@@ -7,16 +7,15 @@
  ******************************************************************************/
 import { fail } from "../../../lib/util/trace.js";
 import { MurmurHash3_64 } from "../shared/murmurhash3.js";
-import { objectFromMap } from "../shared/util.js";
+import { objectFromMap, shadow } from "../shared/util.js";
 import { AnnotationEditor } from "./editor/editor.js";
-export const SerializableEmpty = Object.freeze({
-    hash: "",
-});
+export const SerializableEmpty = Object.freeze({ hash: "" });
 /**
  * Key/value storage for annotation data in forms.
  */
 export class AnnotationStorage {
     #modified = false;
+    #modifiedIds;
     #storage = new Map();
     get size() {
         return this.#storage.size;
@@ -189,6 +188,27 @@ export class AnnotationStorage {
         }
         return stats;
     }
+    resetModifiedIds() {
+        this.#modifiedIds = undefined;
+    }
+    get modifiedIds() {
+        if (this.#modifiedIds) {
+            return this.#modifiedIds;
+        }
+        const ids = [];
+        for (const value of this.#storage.values()) {
+            if (!(value instanceof AnnotationEditor) ||
+                !value.annotationElementId ||
+                !value.serialize()) {
+                continue;
+            }
+            ids.push(value.annotationElementId);
+        }
+        return (this.#modifiedIds = {
+            ids: new Set(ids),
+            hash: ids.join(","),
+        });
+    }
 }
 /**
  * A special `AnnotationStorage` for use during printing, where the serializable
@@ -214,6 +234,12 @@ export class PrintAnnotationStorage extends AnnotationStorage {
      */
     get serializable() {
         return this.#serializable;
+    }
+    get modifiedIds() {
+        return shadow(this, "modifiedIds", {
+            ids: new Set(),
+            hash: "",
+        });
     }
 }
 /*80--------------------------------------------------------------------------*/

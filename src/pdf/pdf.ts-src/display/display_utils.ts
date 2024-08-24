@@ -70,6 +70,7 @@ type DOMFilterFactoryCtorP_ = {
  * does the magic for us.
  */
 export class DOMFilterFactory extends BaseFilterFactory {
+  #baseUrl: string | undefined;
   #_cache: Map<number[][] | Uint8Array | string, string> | undefined;
   #_defs: SVGDefsElement | undefined;
   #docId;
@@ -155,6 +156,23 @@ export class DOMFilterFactory extends BaseFilterFactory {
     return [bufferR.join(","), bufferG.join(","), bufferB.join(",")];
   }
 
+  #createUrl(id: string) {
+    if (this.#baseUrl === undefined) {
+      // Unless a `<base>`-element is present a relative URL should work.
+      this.#baseUrl = "";
+
+      const url = this.#document.URL;
+      if (url !== this.#document.baseURI) {
+        if (isDataScheme(url)) {
+          warn('#createUrl: ignore "data:"-URL for performance reasons.');
+        } else {
+          this.#baseUrl = url.split("#", 1)[0];
+        }
+      }
+    }
+    return `url(${this.#baseUrl}#${id})`;
+  }
+
   override addFilter(maps?: number[][]): string {
     if (!maps) {
       return "none";
@@ -180,7 +198,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
     //  https://www.w3.org/TR/SVG11/filters.html#feComponentTransferElement
 
     const id = `g_${this.#docId}_transfer_map_${this.#id++}`;
-    const url = `url(#${id})`;
+    const url = this.#createUrl(id);
     this.#cache.set(maps, url);
     this.#cache.set(key, url);
 
@@ -266,7 +284,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
       filter,
     );
 
-    info.url = `url(#${id})`;
+    info.url = this.#createUrl(id);
     return info.url;
   }
 
@@ -288,7 +306,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
     }
 
     const id = `g_${this.#docId}_alpha_map_${this.#id++}`;
-    const url = `url(#${id})`;
+    const url = this.#createUrl(id);
     this.#cache.set(map, url);
     this.#cache.set(key, url);
 
@@ -321,7 +339,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
     }
 
     const id = `g_${this.#docId}_luminosity_map_${this.#id++}`;
-    const url = `url(#${id})`;
+    const url = this.#createUrl(id);
     this.#cache.set(map!, url);
     this.#cache.set(key, url);
 
@@ -429,7 +447,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
       filter,
     );
 
-    info.url = `url(#${id})`;
+    info.url = this.#createUrl(id);
     return info.url;
   }
 

@@ -26,6 +26,7 @@ export class PixelsPerInch {
  * does the magic for us.
  */
 export class DOMFilterFactory extends BaseFilterFactory {
+    #baseUrl;
     #_cache;
     #_defs;
     #docId;
@@ -96,6 +97,22 @@ export class DOMFilterFactory extends BaseFilterFactory {
         }
         return [bufferR.join(","), bufferG.join(","), bufferB.join(",")];
     }
+    #createUrl(id) {
+        if (this.#baseUrl === undefined) {
+            // Unless a `<base>`-element is present a relative URL should work.
+            this.#baseUrl = "";
+            const url = this.#document.URL;
+            if (url !== this.#document.baseURI) {
+                if (isDataScheme(url)) {
+                    warn('#createUrl: ignore "data:"-URL for performance reasons.');
+                }
+                else {
+                    this.#baseUrl = url.split("#", 1)[0];
+                }
+            }
+        }
+        return `url(${this.#baseUrl}#${id})`;
+    }
     addFilter(maps) {
         if (!maps) {
             return "none";
@@ -116,7 +133,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
         // We create a SVG filter: feComponentTransferElement
         //  https://www.w3.org/TR/SVG11/filters.html#feComponentTransferElement
         const id = `g_${this.#docId}_transfer_map_${this.#id++}`;
-        const url = `url(#${id})`;
+        const url = this.#createUrl(id);
         this.#cache.set(maps, url);
         this.#cache.set(key, url);
         const filter = this.#createFilter(id);
@@ -185,7 +202,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
             return arr.join(",");
         };
         this.#addTransferMapConversion(getSteps(0, 5), getSteps(1, 5), getSteps(2, 5), filter);
-        info.url = `url(#${id})`;
+        info.url = this.#createUrl(id);
         return info.url;
     }
     addAlphaFilter(map) {
@@ -203,7 +220,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
             return value;
         }
         const id = `g_${this.#docId}_alpha_map_${this.#id++}`;
-        const url = `url(#${id})`;
+        const url = this.#createUrl(id);
         this.#cache.set(map, url);
         this.#cache.set(key, url);
         const filter = this.#createFilter(id);
@@ -231,7 +248,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
             return value;
         }
         const id = `g_${this.#docId}_luminosity_map_${this.#id++}`;
-        const url = `url(#${id})`;
+        const url = this.#createUrl(id);
         this.#cache.set(map, url);
         this.#cache.set(key, url);
         const filter = this.#createFilter(id);
@@ -312,7 +329,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
         const filter = (info.filter = this.#createFilter(id));
         this.#addGrayConversion(filter);
         this.#addTransferMapConversion(getSteps(newFgRGB[0], newBgRGB[0], 5), getSteps(newFgRGB[1], newBgRGB[1], 5), getSteps(newFgRGB[2], newBgRGB[2], 5), filter);
-        info.url = `url(#${id})`;
+        info.url = this.#createUrl(id);
         return info.url;
     }
     destroy(keepHCM = false) {

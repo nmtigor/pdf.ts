@@ -27,7 +27,8 @@ import { GECKOVIEW, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
 import { isPdfFile, PDFDataRangeTransport } from "../pdf.ts-src/pdf.ts";
 import type { FindControlState, PDFViewerApplication } from "./app.ts";
 import type { UserOptions } from "./app_options.ts";
-import type { EventMap, EventName } from "./event_utils.ts";
+import { AppOptions } from "./app_options.ts";
+import type { EventMap, EventName, FirefoxEventBus } from "./event_utils.ts";
 import type { GlobalEvent } from "./external_services.ts";
 import { BaseExternalServices } from "./external_services.ts";
 import type {
@@ -120,12 +121,23 @@ type RequestMap_ = {
     ret: string;
   };
   getPreferences: {
-    data: { prefs: UserOptions };
+    data: UserOptions;
     ret: { browserPrefs?: UserOptions; prefs: UserOptions };
   };
   initPassiveLoading: {
     data: undefined;
     ret: undefined;
+  };
+  loadAIEngine: {
+    data: {
+      service: "moz-image-to-text";
+      listenToProgress: unknown;
+    };
+    ret: unknown;
+  };
+  mlDelete: {
+    data: unknown;
+    ret: unknown;
   };
   mlGuess: {
     data: unknown;
@@ -141,6 +153,10 @@ type RequestMap_ = {
       end: number;
     };
     ret: undefined;
+  };
+  setPreferences: {
+    data: UserOptions;
+    ret: Promise<void>;
   };
   updateEditorStates: {
     data: EventMap["annotationeditorstateschanged"];
@@ -344,7 +360,12 @@ export class DownloadManager implements IDownloadManager {
 
 export class Preferences extends BasePreferences {
   /** @implement */
-  protected async _readFromStorage(prefObj: { prefs: UserOptions }) {
+  override async _writeToStorage(prefObj: UserOptions) {
+    return FirefoxCom.requestAsync("setPreferences", prefObj);
+  }
+
+  /** @implement */
+  protected async _readFromStorage(prefObj: UserOptions) {
     return FirefoxCom.requestAsync("getPreferences", prefObj);
   }
 }
@@ -552,9 +573,75 @@ export type NimbusExperimentData = {
   "open-in-app-button"?: unknown;
 };
 
+type EnableP_ = {
+  enableGuessAltText: boolean;
+  altTextLearnMoreUrl: string;
+  listenToProgress: boolean;
+};
+
 export class MLManager {
-  guess(data: unknown) {
+  #enabled: Map<string, Promise<unknown>> | undefined;
+
+  altTextLearnMoreUrl!: string;
+  eventBus!: FirefoxEventBus;
+
+  constructor(
+    options: { enableGuessAltText: boolean; altTextLearnMoreUrl: string },
+  ) {
+    this.enable({ ...options, listenToProgress: false });
+  }
+
+  async isEnabledFor(name: "altText") {
+    return !!(await this.#enabled?.get(name));
+  }
+
+  deleteModel(service: unknown): Promise<unknown> {
+    return FirefoxCom.requestAsync("mlDelete", service);
+  }
+
+  guess(data: unknown): Promise<unknown> {
     return FirefoxCom.requestAsync("mlGuess", data);
+  }
+
+  enable(
+    { altTextLearnMoreUrl, enableGuessAltText, listenToProgress }: EnableP_,
+  ) {
+    if (enableGuessAltText) {
+      this.#loadAltTextEngine(listenToProgress);
+    }
+    // The `altTextLearnMoreUrl` is used to provide a link to the user to learn
+    // more about the "alt text" feature.
+    // The link is used in the Alt Text dialog or in the Image Settings.
+    this.altTextLearnMoreUrl = altTextLearnMoreUrl;
+  }
+
+  async #loadAltTextEngine(listenToProgress: boolean) {
+    if (this.#enabled?.has("altText")) {
+      // We already have a promise for the "altText" service.
+      return;
+    }
+    const promise = FirefoxCom.requestAsync("loadAIEngine", {
+      service: "moz-image-to-text",
+      listenToProgress,
+    });
+    (this.#enabled ||= new Map()).set("altText", promise);
+    if (listenToProgress) {
+      const callback = (({ detail }: CustomEvent<{ finished: boolean }>) => {
+        this.eventBus.dispatch("loadaiengineprogress", {
+          source: this,
+          detail,
+        });
+        if (detail.finished) {
+          window.removeEventListener("loadAIEngineProgress", callback);
+        }
+      }) as EventListener;
+      window.addEventListener("loadAIEngineProgress", callback);
+      promise.then((ok) => {
+        if (!ok) {
+          window.removeEventListener("loadAIEngineProgress", callback);
+        }
+      });
+    }
   }
 }
 
@@ -636,11 +723,8 @@ export class ExternalServices extends BaseExternalServices {
   }
 
   override async createL10n() {
-    const [localeProperties] = await Promise.all([
-      FirefoxCom.requestAsync("getLocaleProperties"),
-      // document.l10n.ready, //kkkk bug?
-    ]);
-    return new L10n(localeProperties, document.l10n);
+    // await document.l10n.ready; //kkkk bug?
+    return new L10n(AppOptions.localeProperties!, document.l10n);
   }
 
   override createScripting() {
@@ -683,20 +767,21 @@ export class ExternalServices extends BaseExternalServices {
   //   return shadow(this, "canvasMaxAreaInBytes", maxArea);
   // }
 
-  override async getNimbusExperimentData() {
-    /*#static*/ if (!GECKOVIEW) {
-      return undefined;
-    }
-    const nimbusData = await FirefoxCom.requestAsync("getNimbusExperimentData");
-    // return nimbusData && JSON.parse(nimbusData) as NimbusExperimentData;
-    return nimbusData
-      ? JSON.parse(nimbusData) as NimbusExperimentData
-      : undefined;
-  }
+  //kkkk TOCLEANUP
+  // override async getNimbusExperimentData() {
+  //   /*#static*/ if (!GECKOVIEW) {
+  //     return undefined;
+  //   }
+  //   const nimbusData = await FirefoxCom.requestAsync("getNimbusExperimentData");
+  //   // return nimbusData && JSON.parse(nimbusData) as NimbusExperimentData;
+  //   return nimbusData
+  //     ? JSON.parse(nimbusData) as NimbusExperimentData
+  //     : undefined;
+  // }
 
-  override async getGlobalEventNames() {
-    return FirefoxCom.requestAsync("getGlobalEventNames");
-  }
+  // override async getGlobalEventNames() {
+  //   return FirefoxCom.requestAsync("getGlobalEventNames");
+  // }
 
   override dispatchGlobalEvent<EN extends EventName>(event: GlobalEvent<EN>) {
     FirefoxCom.request("dispatchGlobalEvent", event);

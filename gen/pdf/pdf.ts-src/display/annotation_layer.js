@@ -129,6 +129,9 @@ export class AnnotationElement {
     static _hasPopupData({ titleObj, contentsObj, richText }) {
         return !!(titleObj?.str || contentsObj?.str || richText?.str);
     }
+    get _isEditable() {
+        return this.data.isEditable;
+    }
     get hasPopupData() {
         return AnnotationElement._hasPopupData(this.data);
     }
@@ -599,9 +602,6 @@ export class AnnotationElement {
         else {
             triggers.classList.add("highlightArea");
         }
-    }
-    get _isEditable() {
-        return false;
     }
     editOnDoubleClick$() {
         if (!this._isEditable) {
@@ -1764,6 +1764,10 @@ class PopupAnnotationElement extends AnnotationElement {
     }
 }
 class PopupElement {
+    #boundKeyDown = this.#keyDown.bind(this);
+    #boundHide = this.#hide.bind(this);
+    #boundShow = this.#show.bind(this);
+    #boundToggle = this.#toggle.bind(this);
     #color;
     #container;
     #contentsObj;
@@ -1797,14 +1801,14 @@ class PopupElement {
         this.trigger = elements.flatMap((e) => e.getElementsToTriggerPopup());
         // Attach the event listeners to the trigger element.
         for (const element of this.trigger) {
-            element.on("click", this.#toggle);
-            element.on("mouseenter", this.#show);
-            element.on("mouseleave", this.#hide);
+            element.on("click", this.#boundToggle);
+            element.on("mouseenter", this.#boundShow);
+            element.on("mouseleave", this.#boundHide);
             element.classList.add("popupTriggerArea");
         }
         // Attach the event listener to toggle the popup with the keyboard.
         for (const element of elements) {
-            element.container?.on("keydown", this.#keyDown);
+            element.container?.on("keydown", this.#boundKeyDown);
         }
         this.#container.hidden = true;
         if (open) {
@@ -2044,23 +2048,24 @@ class PopupElement {
     /**
      * Toggle the visibility of the popup.
      */
-    #toggle = () => {
+    #toggle() {
         this.#pinned = !this.#pinned;
         if (this.#pinned) {
             this.#show();
-            this.#container.on("click", this.#toggle);
-            this.#container.on("keydown", this.#keyDown);
+            this.#container.on("click", this.#boundToggle);
+            this.#container.on("keydown", this.#boundKeyDown);
         }
         else {
             this.#hide();
-            this.#container.off("click", this.#toggle);
-            this.#container.off("keydown", this.#keyDown);
+            this.#container.off("click", this.#boundToggle);
+            this.#container.off("keydown", this.#boundKeyDown);
         }
-    };
+    }
+    ;
     /**
      * Show the popup.
      */
-    #show = () => {
+    #show() {
         if (!this.#popup) {
             this.render();
         }
@@ -2073,11 +2078,12 @@ class PopupElement {
         else if (this.#pinned) {
             this.#container.classList.add("focused");
         }
-    };
+    }
+    ;
     /**
      * Hide the popup.
      */
-    #hide = () => {
+    #hide() {
         this.#container.classList.remove("focused");
         if (this.#pinned || !this.isVisible) {
             return;
@@ -2085,7 +2091,8 @@ class PopupElement {
         this.#container.hidden = true;
         this.#container.style
             .zIndex = parseInt(this.#container.style.zIndex) - 1000;
-    };
+    }
+    ;
     forceHide() {
         this.#wasVisible = this.isVisible;
         if (!this.#wasVisible) {
@@ -2134,9 +2141,6 @@ export class FreeTextAnnotationElement extends AnnotationElement {
         }
         this.editOnDoubleClick$();
         return this.container;
-    }
-    get _isEditable() {
-        return this.data.hasOwnCanvas;
     }
 }
 class LineAnnotationElement extends AnnotationElement {
@@ -2576,6 +2580,9 @@ export class AnnotationLayer {
         this._annotationEditorUIManager = annotationEditorUIManager;
         /*#static*/ 
     }
+    hasEditableAnnotations() {
+        return this.#editableAnnotations.size > 0;
+    }
     #appendElement(element, id) {
         const contentElement = element.firstChild || element;
         contentElement.id = `${AnnotationPrefix}${id}`;
@@ -2642,7 +2649,7 @@ export class AnnotationLayer {
                 rendered.style.visibility = "hidden";
             }
             this.#appendElement(rendered, data.id);
-            if (element.annotationEditorType > 0) {
+            if (element._isEditable) {
                 this.#editableAnnotations.set(element.data.id, element);
                 this._annotationEditorUIManager?.renderAnnotationElement(element);
             }

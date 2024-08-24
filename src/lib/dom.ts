@@ -30,15 +30,25 @@ declare global {
     canceled: boolean;
 
     /**
-     * When `Poprect` is shown, `pocudVu` is not `null`. At this moment, right-
+     * When `Poprect` is shown, `pocusdVu` is not `null`. At this moment, right-
      * click another place, the `Poprect` would probably be updated, rather than
-     * reset. `targetPocudVu` is to prevent this from happening, because newly
-     * created `PointerEvent` does not have `targetPocudVu`.
+     * reset. `targetPocusdVu` is to prevent this from happening, because newly
+     * created `PointerEvent` does not have `targetPocusdVu`.
      *
-     * Update `Poprect` only when setPocudVu()` is called hence `targetPocudVu`
+     * Update `Poprect` only when setPocusdVu()` is called hence `targetPocusdVu`
      * is set. Otherwise, reset `Poprect`.
      */
-    targetPocudVu?: Vuu;
+    targetPocusdVu?: Vuu;
+
+    /**
+     * For "pointerup" by `MouseButton.Main`, to prevent `DragPopmenu` from
+     * `idleHide()`.
+     * 
+     * Do not `stopPropagation()` in advance because "pointerup" by 
+     * `MouseButton.Main` requires bubble up to top in general to `off()` some
+     * global event listeners. (see uses of `global.ghvc!.off()`)
+     */
+    isDrag?: boolean;
   }
 
   interface WheelEvent {

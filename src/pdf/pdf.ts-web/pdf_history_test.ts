@@ -22,7 +22,7 @@
  */
 
 import { assertEquals, assertNotStrictEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { type ExplicitDest } from "../pdf.ts-src/pdf.ts";
 import { isDestArraysEqual, isDestHashesEqual } from "./pdf_history.ts";
 /*80--------------------------------------------------------------------------*/

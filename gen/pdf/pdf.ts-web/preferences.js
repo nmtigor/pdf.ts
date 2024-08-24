@@ -19,69 +19,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, MOZCENTRAL, PDFJSDev } from "../../global.js";
+import { CHROME, GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { AppOptions, OptionKind } from "./app_options.js";
+/*80--------------------------------------------------------------------------*/
 /**
  * BasePreferences - Abstract base class for storing persistent settings.
  *   Used for settings that should be applied to all opened documents,
  *   or every time the viewer is loaded.
  */
 export class BasePreferences {
-    #browserDefaults = Object.freeze(
-    /*#static*/ AppOptions.getAll(OptionKind.BROWSER, /* defaultOnly = */ true));
     #defaults = Object.freeze(
     /*#static*/ AppOptions.getAll(OptionKind.PREFERENCE, /* defaultOnly = */ true));
     defaults;
-    #prefs = Object.create(null);
     #initializedPromise;
+    get initializedPromise() {
+        return this.#initializedPromise;
+    }
     constructor() {
         /*#static*/ 
-        this.#initializedPromise = this._readFromStorage({ prefs: this.#defaults })
+        this.#initializedPromise = this._readFromStorage(this.#defaults)
             .then(({ browserPrefs, prefs }) => {
-            const options = Object.create(null);
-            for (const [name, val] of Object.entries(this.#browserDefaults)) {
-                const prefVal = browserPrefs?.[name];
-                options[name] = typeof prefVal === typeof val ? prefVal : val;
+            /*#static*/  {
+                if (AppOptions._checkDisablePreferences()) {
+                    return;
+                }
             }
-            for (const [name, val] of Object.entries(this.#defaults)) {
-                const prefVal = prefs?.[name];
-                // Ignore preferences whose types don't match the default values.
-                options[name] =
-                    this.#prefs[name] =
-                        typeof prefVal === typeof val ? prefVal : val;
-            }
-            AppOptions.setAll(options, /* init = */ true);
-            /*#static*/ 
+            AppOptions.setAll({ ...browserPrefs, ...prefs }, /* prefs = */ true);
         });
-    }
-    /**
-     * Stub function for writing preferences to storage.
-     * @param prefObj The preferences that should be written to storage.
-     * @return A promise that is resolved when the preference values
-     *    have been written.
-     */
-    _writeToStorage(prefObj) {
-        throw new Error("Not implemented: _writeToStorage");
-    }
-    #updatePref({ name, value }) {
-        /*#static*/  {
-            throw new Error("Not implemented: #updatePref");
-        }
-        if (name in this.#browserDefaults) {
-            if (typeof value !== typeof this.#browserDefaults[name]) {
-                return; // Invalid preference value.
-            }
-        }
-        else if (name in this.#defaults) {
-            if (typeof value !== typeof this.#defaults[name]) {
-                return; // Invalid preference value.
-            }
-            this.#prefs[name] = value;
-        }
-        else {
-            return; // Invalid preference.
-        }
-        AppOptions.set(name, value);
+        /*#static*/ 
     }
     /**
      * Reset the preferences to their default values and update storage.
@@ -91,16 +56,8 @@ export class BasePreferences {
     async reset() {
         /*#static*/ 
         await this.#initializedPromise;
-        const oldPrefs = structuredClone(this.#prefs);
-        this.#prefs = Object.create(null);
-        try {
-            await this._writeToStorage(this.#defaults);
-        }
-        catch (reason) {
-            // Revert all preference values, since writing to storage failed.
-            this.#prefs = oldPrefs;
-            throw reason;
-        }
+        AppOptions.setAll(this.#defaults, /* prefs = */ true);
+        await this._writeToStorage(this.#defaults);
     }
     /**
      * Set the value of a preference.
@@ -110,36 +67,10 @@ export class BasePreferences {
      *  provided that the preference exists and the types match.
      */
     async set(name, value) {
-        /*#static*/ 
         await this.#initializedPromise;
-        const defaultValue = this.#defaults[name], oldPrefs = structuredClone(this.#prefs);
-        if (defaultValue === undefined) {
-            throw new Error(`Set preference: "${name}" is undefined.`);
-        }
-        else if (value === undefined) {
-            throw new Error("Set preference: no value is specified.");
-        }
-        const valueType = typeof value, defaultType = typeof defaultValue;
-        if (valueType !== defaultType) {
-            if (valueType === "number" && defaultType === "string") {
-                value = value.toString();
-            }
-            else {
-                throw new Error(`Set preference: "${value}" is a ${valueType}, expected a ${defaultType}.`);
-            }
-        }
-        else if (valueType === "number" && !Number.isInteger(value)) {
-            throw new Error(`Set preference: "${value}" must be an integer.`);
-        }
-        this.#prefs[name] = value;
-        try {
-            await this._writeToStorage(this.#prefs);
-        }
-        catch (reason) {
-            // Revert all preference values, since writing to storage failed.
-            this.#prefs = oldPrefs;
-            throw reason;
-        }
+        AppOptions.setAll({ [name]: value }, /* prefs = */ true);
+        await this._writeToStorage(
+        /*#static*/ AppOptions.getAll(OptionKind.PREFERENCE));
     }
     /**
      * Get the value of a preference.
@@ -150,14 +81,7 @@ export class BasePreferences {
     async get(name) {
         /*#static*/ 
         await this.#initializedPromise;
-        const defaultValue = this.#defaults[name];
-        if (defaultValue === undefined) {
-            throw new Error(`Get preference: "${name}" is undefined.`);
-        }
-        return this.#prefs[name] ?? defaultValue;
-    }
-    get initializedPromise() {
-        return this.#initializedPromise;
+        return AppOptions[name];
     }
 }
 /*80--------------------------------------------------------------------------*/
