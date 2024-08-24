@@ -29,7 +29,7 @@ import {
   assertThrows,
   fail,
 } from "@std/assert";
-import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd";
 import type { TestServer } from "@fe-pdf.ts-test/unittest_utils.ts";
 import {
   CMAP_URL,
@@ -44,12 +44,12 @@ import { D_rpe_cmap } from "@fe-src/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("cmap", () => {
-  let tempServer: TestServer;
+  let tempServer: TestServer | undefined;
 
   let fetchBuiltInCMap: (name: string) => Promise<CMapData>;
 
   beforeAll(() => {
-    tempServer = createTemporaryDenoServer();
+    // tempServer = createTemporaryDenoServer();
 
     // Allow CMap testing in Node.js, e.g. for Travis.
     const CMapReaderFactory = new DefaultCMapReaderFactory({
@@ -62,9 +62,9 @@ describe("cmap", () => {
   afterAll(async () => {
     fetchBuiltInCMap = undefined as any;
 
-    const { server } = tempServer;
-    await server.shutdown();
-    tempServer = undefined as any;
+    // const { server } = tempServer;
+    // await server.shutdown();
+    // tempServer = undefined as any;
   });
 
   it("parses beginbfchar", async () => {

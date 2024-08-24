@@ -22,7 +22,7 @@
  */
 
 import { assert, assertEquals, assertThrows } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { FormatError } from "../shared/util.ts";
 import { Lexer, Linearization, Parser } from "./parser.ts";
 import { Cmd, EOF, Name } from "./primitives.ts";

@@ -140,6 +140,7 @@ interface PageGetOperatorListP_ {
   intent: RenderingIntentFlag;
   cacheKey: string;
   annotationStorage: AnnotStorageRecord | undefined;
+  modifiedIds?: Set<string> | undefined;
 }
 
 interface ExtractTextContentP_ {
@@ -516,6 +517,7 @@ export class Page {
     intent,
     cacheKey,
     annotationStorage = undefined,
+    modifiedIds,
   }: PageGetOperatorListP_) {
     const contentStreamPromise = this.getContentStream();
     const resourcesPromise = this.loadResources([
@@ -676,6 +678,7 @@ export class Page {
         return { length: pageOpList.totalLength };
       }
       const renderForms = !!(intent & RenderingIntentFlag.ANNOTATIONS_FORMS),
+        isEditing = !!(intent & RenderingIntentFlag.IS_EDITING),
         intentAny = !!(intent & RenderingIntentFlag.ANY),
         intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY),
         intentPrint = !!(intent & RenderingIntentFlag.PRINT);
@@ -687,8 +690,12 @@ export class Page {
         if (
           intentAny ||
           (intentDisplay &&
-            annotation!.mustBeViewed(annotationStorage, renderForms)) ||
-          (intentPrint && annotation!.mustBePrinted(annotationStorage))
+            annotation.mustBeViewed(annotationStorage, renderForms) &&
+            (annotation as WidgetAnnotation).mustBeViewedWhenEditing(
+              isEditing,
+              modifiedIds,
+            )) ||
+          (intentPrint && annotation.mustBePrinted(annotationStorage))
         ) {
           opListPromises.push(
             annotation!
@@ -696,7 +703,6 @@ export class Page {
                 partialEvaluator,
                 task,
                 intent,
-                renderForms,
                 annotationStorage,
               )
               .catch((reason) => {

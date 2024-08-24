@@ -23,7 +23,7 @@
 
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { assertEquals, fail } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { LoopbackPort } from "../display/api.ts";
 import { MessageHandler, type Thread } from "../shared/message_handler.ts";
 import { AbortException } from "./util.ts";

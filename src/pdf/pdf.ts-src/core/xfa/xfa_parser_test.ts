@@ -22,7 +22,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { Binder } from "./bind.ts";
 import { XFAParser } from "./parser.ts";
 import { searchNode } from "./som.ts";

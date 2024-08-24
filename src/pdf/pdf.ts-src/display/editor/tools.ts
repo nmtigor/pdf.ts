@@ -58,6 +58,7 @@ import type { HighlightEditor } from "./highlight.ts";
 import { InkEditor } from "./ink.ts";
 import { StampEditor } from "./stamp.ts";
 import { HighlightToolbar } from "./toolbar.ts";
+import type { OptionName, OptionValue } from "@fe-pdf.ts-web/app_options.ts";
 /*80--------------------------------------------------------------------------*/
 
 export function bindEvents<T extends AnnotationEditor | AnnotationEditorLayer>(
@@ -704,6 +705,12 @@ export class AnnotationEditorUIManager {
   /* ~ */
 
   #enableHighlightFloatingButton;
+
+  #enableUpdatedAddImage;
+  get useNewAltTextFlow() {
+    return this.#enableUpdatedAddImage;
+  }
+
   #highlightWhenShiftUp = false;
   #highlightToolbar: HighlightToolbar | undefined;
 
@@ -895,10 +902,11 @@ export class AnnotationEditorUIManager {
     altTextManager: AltTextManager | undefined,
     eventBus: EventBus,
     pdfDocument: PDFDocumentProxy,
-    pageColors?: PageColors,
-    highlightColors?: string,
-    enableHighlightFloatingButton?: boolean,
-    mlManager?: MLManager_c | MLManager_g | MLManager_f,
+    pageColors: PageColors | undefined,
+    highlightColors: string | undefined,
+    enableHighlightFloatingButton: boolean,
+    enableUpdatedAddImage: boolean,
+    mlManager?: MLManager_c | MLManager_f | MLManager_g,
   ) {
     this._signal = this.#abortController.signal;
     this.#container = container;
@@ -917,6 +925,7 @@ export class AnnotationEditorUIManager {
     this.#pageColors = pageColors;
     this.#highlightColors = highlightColors;
     this.#enableHighlightFloatingButton = enableHighlightFloatingButton;
+    this.#enableUpdatedAddImage = enableUpdatedAddImage;
     this.#mlManager = mlManager;
 
     /*#static*/ if ("TESTING") {
@@ -960,6 +969,11 @@ export class AnnotationEditorUIManager {
       this.#translationTimeoutId = undefined;
     }
   }
+  /*64||||||||||||||||||||||||||||||||||||||||||||||||||||||||||*/
+
+  async isMLEnabledFor(name: "altText") {
+    return !!(await this.#mlManager?.isEnabledFor(name));
+  }
 
   get hcmFilter() {
     return shadow(
@@ -984,6 +998,26 @@ export class AnnotationEditorUIManager {
 
   editAltText(editor: AnnotationEditor) {
     this.#altTextManager?.editAltText(this, editor);
+  }
+
+  switchToMode(mode: AnnotationEditorType, callback: () => void) {
+    // Switching to a mode can be asynchronous.
+    this._eventBus.on("annotationeditormodechanged", callback, {
+      once: true,
+      signal: this._signal,
+    });
+    this._eventBus.dispatch("showannotationeditorui", {
+      source: this,
+      mode,
+    });
+  }
+
+  setPreference(name: OptionName, value: OptionValue) {
+    this._eventBus.dispatch("setpreference", {
+      source: this,
+      name,
+      value,
+    });
   }
 
   onPageChanging({ pageNumber }: EventMap["pagechanging"]) {
@@ -1045,6 +1079,19 @@ export class AnnotationEditorUIManager {
       : anchorNode as HTMLElement;
   }
 
+  #getLayerForTextLayer(textLayer: Element) {
+    const { currentLayer } = this;
+    if (currentLayer!.hasTextLayer(textLayer)) {
+      return currentLayer;
+    }
+    for (const layer of this.#allLayers.values()) {
+      if (layer.hasTextLayer(textLayer)) {
+        return layer;
+      }
+    }
+    return undefined;
+  }
+
   highlightSelection(methodOfCreation = "") {
     const selection = document.getSelection();
     if (!selection || selection.isCollapsed) {
@@ -1059,31 +1106,28 @@ export class AnnotationEditorUIManager {
       return;
     }
     selection.empty();
-    if (this.#mode === AnnotationEditorType.NONE) {
-      this._eventBus.dispatch("showannotationeditorui", {
-        source: this,
-        mode: AnnotationEditorType.HIGHLIGHT,
+
+    const layer = this.#getLayerForTextLayer(textLayer!);
+    const isNoneMode = this.#mode === AnnotationEditorType.NONE;
+    const callback = () => {
+      layer?.createAndAddNewEditor({ x: 0, y: 0 } as PointerEvent, false, {
+        methodOfCreation,
+        boxes,
+        anchorNode,
+        anchorOffset,
+        focusNode,
+        focusOffset,
+        text,
       });
-      this.showAllEditors(
-        "highlight",
-        true,
-        /* updateButton = */ true,
-      );
-    }
-    for (const layer of this.#allLayers.values()) {
-      if (layer.hasTextLayer(textLayer)) {
-        layer.createAndAddNewEditor({ x: 0, y: 0 } as PointerEvent, false, {
-          methodOfCreation,
-          boxes,
-          anchorNode,
-          anchorOffset,
-          focusNode,
-          focusOffset,
-          text,
-        });
-        break;
+      if (isNoneMode) {
+        this.showAllEditors("highlight", true, /* updateButton = */ true);
       }
+    };
+    if (isNoneMode) {
+      this.switchToMode(AnnotationEditorType.HIGHLIGHT, callback);
+      return;
     }
+    callback();
   }
 
   #displayHighlightToolbar() {
@@ -1147,6 +1191,7 @@ export class AnnotationEditorUIManager {
       }
       return;
     }
+
     this.#highlightToolbar?.hide();
     this.#selectedTextNode = anchorNode;
     this.#dispatchUpdateStates({
@@ -1170,12 +1215,18 @@ export class AnnotationEditorUIManager {
 
     this.#highlightWhenShiftUp = this.isShiftKeyDown;
     if (!this.isShiftKeyDown) {
+      const activeLayer = this.#mode === AnnotationEditorType.HIGHLIGHT
+        ? this.#getLayerForTextLayer(textLayer)
+        : undefined;
+      activeLayer?.toggleDrawing();
+
       const signal = this._signal;
       const pointerup = (e: PointerEvent) => {
         if (e.type === "pointerup" && e.button !== 0) {
           // Do nothing on right click.
           return;
         }
+        activeLayer?.toggleDrawing(true);
         window.off("pointerup", pointerup);
         window.off("blur", pointerup as any);
         if (e.type === "pointerup") {

@@ -23,7 +23,7 @@
 
 import { see_ui_testing } from "@fe-pdf.ts-test/alias.ts";
 import { assertEquals, assertInstanceOf, fail } from "@std/assert";
-import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd";
 import { EventBus, waitOnEventOrTimeout, WaitOnType } from "./event_utils.ts";
 /*80--------------------------------------------------------------------------*/
 

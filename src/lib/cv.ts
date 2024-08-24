@@ -60,6 +60,16 @@ declare global {
  * Vuu ⊆ Coo
  */
 export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
+  static #ID = 0;
+  readonly id = ++Vuu.#ID;
+  get _type() {
+    return this.constructor.name;
+  }
+  /** @final */
+  get _type_id() {
+    return `${this._type}_${this.id}`;
+  }
+
   protected coo$: C;
   get coo() {
     return this.coo$;
@@ -179,7 +189,7 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
     return this.el$.off(type, listener, options);
   }
 
-  assignAttro(attr_o: Record<string, string | number>): this {
+  assignAttro(attr_o: Record<string, string | number | boolean>): this {
     this.el$.assignAttro(attr_o);
     return this;
   }

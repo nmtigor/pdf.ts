@@ -779,7 +779,7 @@ export const WorkerMessageHandler = {
               undefined,
             startXRef: linearization
               ? startXRef
-              : xref.lastXRefStreamPos ?? startXRef,
+              : (xref.lastXRefStreamPos ?? startXRef),
             filename,
           };
         }
@@ -822,6 +822,7 @@ export const WorkerMessageHandler = {
             intent: data.intent,
             cacheKey: data.cacheKey,
             annotationStorage: data.annotationStorage,
+            modifiedIds: data.modifiedIds,
           })
           .then(
             (operatorListInfo) => {

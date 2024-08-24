@@ -25,7 +25,7 @@ import type { uint } from "@fe-lib/alias.ts";
 import { fail } from "@fe-lib/util/trace.ts";
 import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
 import type { AnnotationEditorName } from "../shared/util.ts";
-import { objectFromMap } from "../shared/util.ts";
+import { objectFromMap, shadow } from "../shared/util.ts";
 import type {
   AnnotStorageRecord,
   AnnotStorageValue,
@@ -34,21 +34,25 @@ import type { TFD_AnnotationEditor } from "./editor/editor.ts";
 import { AnnotationEditor } from "./editor/editor.ts";
 /*80--------------------------------------------------------------------------*/
 
+type ModifiedIds_ = {
+  ids: Set<string>;
+  hash: string;
+};
+
 export type Serializable = {
   map?: AnnotStorageRecord | undefined;
   hash: string;
   transfer?: Transferable[] | undefined;
 };
 
-export const SerializableEmpty: Serializable = Object.freeze({
-  hash: "",
-});
+export const SerializableEmpty: Serializable = Object.freeze({ hash: "" });
 
 /**
  * Key/value storage for annotation data in forms.
  */
 export class AnnotationStorage {
   #modified = false;
+  #modifiedIds: ModifiedIds_ | undefined;
 
   #storage: Map<string, AnnotStorageValue | AnnotationEditor> = new Map();
   get size() {
@@ -265,6 +269,31 @@ export class AnnotationStorage {
     }
     return stats! as Record<AnnotationEditorName, TFD_AnnotationEditor>;
   }
+
+  resetModifiedIds() {
+    this.#modifiedIds = undefined;
+  }
+
+  get modifiedIds(): ModifiedIds_ {
+    if (this.#modifiedIds) {
+      return this.#modifiedIds;
+    }
+    const ids = [];
+    for (const value of this.#storage.values()) {
+      if (
+        !(value instanceof AnnotationEditor) ||
+        !value.annotationElementId ||
+        !value.serialize()
+      ) {
+        continue;
+      }
+      ids.push(value.annotationElementId);
+    }
+    return (this.#modifiedIds = {
+      ids: new Set(ids),
+      hash: ids.join(","),
+    });
+  }
 }
 
 /**
@@ -295,6 +324,13 @@ export class PrintAnnotationStorage extends AnnotationStorage {
    */
   override get serializable() {
     return this.#serializable;
+  }
+
+  override get modifiedIds(): ModifiedIds_ {
+    return shadow(this, "modifiedIds", {
+      ids: new Set(),
+      hash: "",
+    });
   }
 }
 /*80--------------------------------------------------------------------------*/

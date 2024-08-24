@@ -13,6 +13,8 @@
 !issue1155r.pdf
 !issue2017r.pdf
 !bug1727053.pdf
+!issue18408_reduced.pdf
+!bug1907000_reduced.pdf
 !issue11913.pdf
 !issue2391-1.pdf
 !issue2391-2.pdf
@@ -56,6 +58,7 @@
 !issue17679_2.pdf
 !issue18030.pdf
 !issue18042.pdf
+!issue18059.pdf
 !issue14953.pdf
 !issue15367.pdf
 !issue15372.pdf
@@ -125,6 +128,7 @@
 !issue7891_bc0.pdf
 !issue11242_reduced.pdf
 !issue16176.pdf
+!issue16287.pdf
 !issue17064_readonly.pdf
 !issue11279.pdf
 !issue11362.pdf
@@ -652,3 +656,14 @@
 !bug1539074.pdf
 !bug1539074.1.pdf
 !issue18305.pdf
+!issue18360.pdf
+!issue18099_reduced.pdf
+!file_pdfjs_test.pdf
+
+!pdf.pdf
+!issue14562.pdf
+!issue12909.pdf
+!bug1820909.pdf
+!issue11518.pdf
+!bug1823296.pdf
+!bug1847733.pdf

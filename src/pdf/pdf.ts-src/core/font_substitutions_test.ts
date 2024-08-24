@@ -23,7 +23,7 @@
 
 import { createIdFactory } from "@fe-pdf.ts-test/unittest_utils.ts";
 import { assertMatch, assertObjectMatch } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { getFontSubstitution } from "./font_substitutions.ts";
 /*80--------------------------------------------------------------------------*/
 

@@ -22,9 +22,12 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd";
 import type { TestServer } from "@fe-pdf.ts-test/unittest_utils.ts";
-import { createTemporaryDenoServer } from "@fe-pdf.ts-test/unittest_utils.ts";
+import {
+  createTemporaryDenoServer,
+  TEST_PDFS_PATH,
+} from "@fe-pdf.ts-test/unittest_utils.ts";
 import { AbortException } from "../shared/util.ts";
 import { DocumentInitP } from "./api.ts";
 import { PDFFetchStream, PDFFetchStreamRangeReader } from "./fetch_stream.ts";
@@ -32,31 +35,31 @@ import { D_rp_pdfs } from "@fe-src/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("fetch_stream", () => {
-  let tempServer: TestServer;
+  let tempServer: TestServer | undefined;
 
   function getPdfUrl() {
     // return isNodeJS
     //   ? `http://127.0.0.1:${tempServer.port}/tracemonkey.pdf`
     //   : new URL("../pdfs/tracemonkey.pdf", window.location).href;
-    return `http://${tempServer.hostname}:${tempServer.port}/${D_rp_pdfs}/tracemonkey.pdf`;
+    return `${TEST_PDFS_PATH(tempServer)}/tracemonkey.pdf`;
   }
   const pdfLength = 1016315;
 
-  beforeAll(() => {
-    // if (isNodeJS) {
-    tempServer = createTemporaryDenoServer();
-    // }
-  });
+  // beforeAll(() => {
+  //   // if (isNodeJS) {
+  //   tempServer = createTemporaryDenoServer();
+  //   // }
+  // });
 
-  afterAll(async () => {
-    // if (isNodeJS) {
-    /* Close the server from accepting new connections after all test
-    finishes. */
-    const { server } = tempServer;
-    await server.shutdown();
-    tempServer = undefined as any;
-    // }
-  });
+  // afterAll(async () => {
+  //   // if (isNodeJS) {
+  //   /* Close the server from accepting new connections after all test
+  //   finishes. */
+  //   const { server } = tempServer;
+  //   await server.shutdown();
+  //   tempServer = undefined as any;
+  //   // }
+  // });
 
   it("read with streaming", async () => {
     const stream = new PDFFetchStream({

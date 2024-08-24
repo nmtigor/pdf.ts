@@ -291,6 +291,10 @@ export class Dict {
     }
     return dict;
   }
+
+  delete(key: string) {
+    delete this.#map[key];
+  }
 }
 
 export class FontDict extends Dict {

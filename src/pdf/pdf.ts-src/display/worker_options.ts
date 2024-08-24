@@ -21,23 +21,25 @@
  * limitations under the License.
  */
 
+import { LOG_cssc } from "@fe-src/alias.ts";
 import { AD_gh } from "@fe-src/pdf/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class GlobalWorkerOptions {
-  static #port: Worker | undefined;
-  static get workerPort(): Worker | undefined {
+  static #port: Worker | null = null;
+  static get workerPort(): Worker | null {
     return this.#port;
   }
   /**
    * @param val Defines global port for worker process.
    *   Overrides the `workerSrc` option.
    */
-  static set workerPort(val: Worker | undefined) {
+  static set workerPort(val: Worker | null) {
     if (
       !(typeof Worker !== "undefined" && val instanceof Worker) &&
-      val !== undefined
+      val !== null
     ) {
+      // console.log(`%crun here: ${val}`, `color:${LOG_cssc.runhere}`);
       throw new Error("Invalid `workerPort` type.");
     }
     this.#port = val;

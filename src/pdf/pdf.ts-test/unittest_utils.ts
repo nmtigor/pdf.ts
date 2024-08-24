@@ -11,6 +11,7 @@ import {
   D_rpe_cmap,
   D_rpe_sfont,
 } from "@fe-src/alias.ts";
+import { baseUrl } from "@fe-src/baseurl.mjs";
 import { TESTING } from "@fe-src/global.ts";
 import { assert } from "@std/assert";
 import { serveDir } from "@std/http";
@@ -32,20 +33,23 @@ import { getDocument, PDFWorker } from "../pdf.ts-src/pdf.ts";
 //   http = await __non_webpack_import__("http");
 // }
 
-export const D_base = (ts: TestServer) => `http://${ts!.hostname}:${ts!.port}`;
+export const D_base = (ts: TestServer | undefined) =>
+  ts ? `http://${ts.hostname}:${ts.port}` : baseUrl;
 
 // const TEST_PDFS_PATH = isNodeJS ? "./test/pdfs/" : "../pdfs/";
-export const TEST_PDFS_PATH = (ts: TestServer) => `${D_base(ts)}/${D_rp_pdfs}/`;
-export const TEST_IMAGES_PATH = (ts: TestServer) =>
+export const TEST_PDFS_PATH = (ts: TestServer | undefined) =>
+  `${D_base(ts)}/${D_rp_pdfs}/`;
+export const TEST_IMAGES_PATH = (ts: TestServer | undefined) =>
   `${D_base(ts)}/${D_rp_images}/`;
 
 // const CMAP_URL = isNodeJS ? "./external/bcmaps/" : "../../external/bcmaps/";
-export const CMAP_URL = (ts: TestServer) => `${D_base(ts)}/${D_rpe_cmap}/`;
+export const CMAP_URL = (ts: TestServer | undefined) =>
+  `${D_base(ts)}/${D_rpe_cmap}/`;
 
 // const STANDARD_FONT_DATA_URL = isNodeJS
 //   ? "./external/standard_fonts/"
 //   : "../../external/standard_fonts/";
-export const STANDARD_FONT_DATA_URL = (ts: TestServer) =>
+export const STANDARD_FONT_DATA_URL = (ts: TestServer | undefined) =>
   `${D_base(ts)}/${D_rpe_sfont}/`;
 
 class DOMFileReaderFactory {
@@ -94,11 +98,11 @@ export type BuildGetDocumentParamsOptions = {
   worker?: PDFWorker;
 };
 
-const urlOf_ = (ts: TestServer, filename: string) =>
+const urlOf_ = (ts: TestServer | undefined, filename: string) =>
   TEST_PDFS_PATH(ts) + filename;
 
 export function buildGetDocumentParams(
-  ts: TestServer,
+  ts_x: TestServer | undefined,
   filename: string,
   options?: BuildGetDocumentParamsOptions,
 ) {
@@ -106,8 +110,8 @@ export function buildGetDocumentParams(
   // params.url = isNodeJS
   //   ? TEST_PDFS_PATH + filename
   //   : new URL(TEST_PDFS_PATH + filename, window.location).href;
-  params.url = urlOf_(ts, filename);
-  params.standardFontDataUrl = STANDARD_FONT_DATA_URL(ts);
+  params.url = urlOf_(ts_x, filename);
+  params.standardFontDataUrl = STANDARD_FONT_DATA_URL(ts_x);
 
   for (const option in options) {
     params[option] = options[option as keyof BuildGetDocumentParamsOptions];
@@ -117,7 +121,7 @@ export function buildGetDocumentParams(
 
 /** @throw */
 export async function getPDF(
-  ts_x: TestServer,
+  ts_x: TestServer | undefined,
   filename_x: string,
   options_x?: BuildGetDocumentParamsOptions,
 ): Promise<PDFDocumentLoadingTask> {

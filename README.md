@@ -3,7 +3,7 @@ tools.
 
 It is
 
-- based on [pdf.js-4.4.168](https://github.com/mozilla/pdf.js/tree/v4.4.168),
+- based on [pdf.js-4.5.136](https://github.com/mozilla/pdf.js/tree/v4.5.136),
 
 - **transpiled using
   TypeScript-5.2.2[@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
@@ -23,6 +23,10 @@ It is
 
 ### unittest
 
+- ```bash
+  cd /path_to/pdf.ts/src/test
+  deno task server
+  ```
 - ```bash
   cd /path_to/pdf.ts/src/test
   deno run --allow-read --allow-run unittest.ts --tsc "/path_to/TypeScript/bin/tsc"
@@ -46,4 +50,4 @@ It is
 ### Current States
 
 - `GENERIC` on browsers
-- unittest: 1059 / 1117
+- unittest: 1061 / 1121 (94.6%)

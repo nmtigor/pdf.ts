@@ -22,7 +22,7 @@
  */
 
 import { assert, assertEquals, assertFalse } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { MetadataParser } from "../core/metadata_parser.ts";
 import { Metadata } from "./metadata.ts";
 /*80--------------------------------------------------------------------------*/

@@ -22,7 +22,7 @@
  */
 
 import { GENERIC } from "@fe-src/global.ts";
-import { AppOptions, type UserOptions } from "./app_options.ts";
+import { AppOptions, type UserOptionMap, UserOptions } from "./app_options.ts";
 import { BaseExternalServices } from "./external_services.ts";
 import { GenericScripting } from "./generic_scripting.ts";
 import { GenericL10n } from "./genericl10n.ts";
@@ -39,17 +39,28 @@ import type { PDFViewerApplication } from "./app.ts";
 export function initCom(app: PDFViewerApplication) {}
 
 export class Preferences extends BasePreferences {
-  protected override async _writeToStorage(prefObj: UserOptions) {
+  /** @implement */
+  protected async _writeToStorage(prefObj: UserOptions) {
     localStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
   }
 
   /** @implement */
-  protected async _readFromStorage(prefObj: { prefs: UserOptions }) {
+  protected async _readFromStorage(prefObj: UserOptions) {
     return { prefs: JSON.parse(localStorage.getItem("pdfjs.preferences")!) };
   }
 }
 
 export class MLManager {
+  eventBus!: unknown;
+
+  async isEnabledFor(_name: "altText") {
+    return false;
+  }
+
+  async deleteModel(_service: unknown): Promise<unknown> {
+    return undefined;
+  }
+
   async guess() {
     return undefined;
   }
@@ -57,7 +68,7 @@ export class MLManager {
 
 export class ExternalServices extends BaseExternalServices {
   override async createL10n() {
-    return new GenericL10n(AppOptions.locale!);
+    return new GenericL10n(AppOptions.localeProperties?.lang);
   }
 
   override createScripting() {

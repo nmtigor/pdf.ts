@@ -20,7 +20,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals pdfjsLib, pdfjsViewer */
+/* globals pdfjsLib, pdfjsTestingUtils, pdfjsViewer */
 
 import { filter_tasks } from "./util.ts";
 import {
@@ -69,12 +69,12 @@ import {
   DrawLayer,
   getDocument,
   GlobalWorkerOptions,
-  Outliner,
   PixelsPerInch,
   shadow,
   TextLayer,
   XfaLayer,
 } from "../pdf.ts-src/pdf.ts";
+import { Outliner } from "../pdf.ts-src/display/editor/outliner.ts";
 import { GenericL10n } from "../pdf.ts-web/genericl10n.ts";
 import type { IPDFLinkService } from "../pdf.ts-web/interfaces.ts";
 import { SimpleLinkService } from "../pdf.ts-web/pdf_link_service.ts";

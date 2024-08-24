@@ -52,7 +52,7 @@
       // "../pdf/pdf.ts-src/pdf.worker_test.ts",
       //
       // "../pdf/pdf.ts-src/display/annotation_storage_test.ts",
-      // "../pdf/pdf.ts-src/display/api_test.ts", //kkkk(5)
+      // "../pdf/pdf.ts-src/display/api_test.ts", //kkkk(7)
       // "../pdf/pdf.ts-src/display/display_utils_test.ts",
       // "../pdf/pdf.ts-src/display/editor/editor_test.ts",
       // "../pdf/pdf.ts-src/display/fetch_stream_test.ts",
@@ -80,16 +80,17 @@
     "@fe-pdf.ts-web/": "../pdf/pdf.ts-web/",
     "@fe-src/": "../",
     "@fe-util/": "../../util/",
-    "@hono/hono": "jsr:@hono/hono@^4.4.9",
-    "@std/": "https://deno.land/std@0.220.1/",
-    "@std/assert": "jsr:@std/assert@^0.220.1",
-    "@std/cli": "jsr:@std/cli@^0.220.1",
-    "@std/encoding": "jsr:@std/encoding@^0.220.1",
-    "@std/fs": "jsr:@std/fs@^0.220.1",
-    "@std/http": "jsr:@std/http@^0.224.5",
-    "@std/log": "jsr:@std/log@^0.220.1",
-    "@std/path": "jsr:@std/path@^0.225.2",
+    "@hono/hono": "jsr:@hono/hono@^4.5.3",
+    "@std/assert": "jsr:@std/assert@^1.0.2",
+    "@std/cli": "jsr:@std/cli@^1.0.3",
+    "@std/encoding": "jsr:@std/encoding@^1.0.1",
+    "@std/fs": "jsr:@std/fs@^1.0.1",
+    "@std/http": "jsr:@std/http@^1.0.3",
+    "@std/log": "jsr:@std/log@^0.224.5",
+    "@std/path": "jsr:@std/path@^1.0.2",
+    "@std/testing": "jsr:@std/testing@^1.0.0",
     "@wretch": "../3rd/wretch-2.9.0/dist/index.js",
+    "@xstate": "npm:xstate@^5.17.1",
     "@zod": "../3rd/zod-3.23.8/lib/index.mjs"
   },
   "tasks": {

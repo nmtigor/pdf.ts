@@ -23,7 +23,7 @@
 
 import { LIB } from "@fe-src/global.ts";
 import { assertEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { AnnotationLayer } from "./display/annotation_layer.ts";
 import {
   build,
@@ -48,13 +48,8 @@ import {
 import { DrawLayer } from "./display/draw_layer.ts";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.ts";
 import { ColorPicker } from "./display/editor/color_picker.ts";
-import { Outliner } from "./display/editor/outliner.ts";
 import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
-import {
-  renderTextLayer,
-  TextLayer,
-  updateTextLayer,
-} from "./display/text_layer.ts";
+import { TextLayer } from "./display/text_layer.ts";
 import { GlobalWorkerOptions } from "./display/worker_options.ts";
 import { XfaLayer } from "./display/xfa_layer.ts";
 import {
@@ -108,7 +103,6 @@ const expectedAPI = Object.freeze({
   // noContextMenu,
   normalizeUnicode,
   OPS,
-  Outliner,
   PasswordResponses,
   PDFDataRangeTransport,
   PDFDateString,
@@ -116,12 +110,10 @@ const expectedAPI = Object.freeze({
   PermissionFlag,
   PixelsPerInch,
   RenderingCancelledException,
-  renderTextLayer,
   setLayerDimensions,
   shadow,
   TextLayer,
   UnexpectedResponseException,
-  updateTextLayer,
   Util,
   VerbosityLevel,
   version,

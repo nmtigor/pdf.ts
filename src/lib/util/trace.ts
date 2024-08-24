@@ -3,7 +3,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { global, TESTING } from "../../global.ts";
+import { global, INOUT, TESTING } from "../../global.ts";
 import type { ts_t } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -140,14 +140,14 @@ export const reportError = async <E extends Error>(err_x: E) => {
  * @headconst @param tgt_x
  * @headconst @param ctx_x
  */
-export const bind = (tgt_x: any, ctx_x: ClassMethodDecoratorContext) => {
+export const bind = (tgt_x: unknown, ctx_x: ClassMethodDecoratorContext) => {
   const methodName = ctx_x.name;
   assert(
     !ctx_x.private,
     `'bound' cannot decorate private properties like ${methodName as string}.`,
   );
-  ctx_x.addInitializer(function () {
-    (this as any)[methodName] = (this as any)[methodName].bind(this);
+  ctx_x.addInitializer(function (this: any) {
+    this[methodName] = this[methodName].bind(this);
   });
 };
 
@@ -164,6 +164,23 @@ export const traceOut = (_x: boolean) => {
       ? function (this: This, ...args: Args): Return {
         const ret = tgt_x.call(this, ...args);
         global.outdent;
+        return ret;
+      }
+      : tgt_x;
+  };
+};
+
+export const out = <This, Return>(
+  _x: (ret_y: Return, self_y: This) => void,
+) => {
+  return <Args extends any[]>(
+    tgt_x: (this: This, ...args: Args) => Return,
+    ctx_x: ClassMethodDecoratorContext,
+  ) => {
+    return INOUT
+      ? function (this: This, ...args: Args): Return {
+        const ret = tgt_x.call(this, ...args);
+        _x(ret, this);
         return ret;
       }
       : tgt_x;

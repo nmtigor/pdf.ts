@@ -22,7 +22,7 @@
  */
 
 import { assertEquals, assertNotEquals, assertThrows } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { PostScriptCompiler, PostScriptEvaluator } from "./function.ts";
 import { PostScriptLexer, PostScriptParser } from "./ps_parser.ts";
 import { StringStream } from "./stream.ts";

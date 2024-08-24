@@ -22,7 +22,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd";
 import { XRefMock } from "@fe-pdf.ts-test/unittest_utils.ts";
 import {
   createDefaultAppearance,

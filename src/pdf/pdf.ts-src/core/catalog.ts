@@ -81,13 +81,13 @@ export type ExplicitDest =
     zoom: { name: "XYZ" },
     number | null,
     number | null,
-    number | null,
+    (number | null)?,
   ]
   | [page: DestPage, zoom: { name: "Fit" | "FitB" }]
   | [
     page: DestPage,
     zoom: { name: "FitH" | "FitBH" | "FitV" | "FitBV" },
-    number | null,
+    (number | null)?,
   ]
   | [page: DestPage, zoom: { name: "FitR" }, ...rect_t];
 export type Destination =
@@ -106,26 +106,27 @@ function isValidExplicitDest(dest: Obj | undefined): dest is ExplicitDest {
   if (!(zoom instanceof Name)) {
     return false;
   }
+  const argsLen = args.length;
   let allowNull = true;
   switch (zoom.name) {
     case "XYZ":
-      if (args.length !== 3) {
+      if (argsLen < 2 || argsLen > 3) {
         return false;
       }
       break;
     case "Fit":
     case "FitB":
-      return args.length === 0;
+      return argsLen === 0;
     case "FitH":
     case "FitBH":
     case "FitV":
     case "FitBV":
-      if (args.length !== 1) {
+      if (argsLen > 1) {
         return false;
       }
       break;
     case "FitR":
-      if (args.length !== 4) {
+      if (argsLen !== 4) {
         return false;
       }
       allowNull = false;

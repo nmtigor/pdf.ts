@@ -21,39 +21,16 @@
  * limitations under the License.
  */
 
-import { assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
-import { objectSize } from "../pdf.ts-src/shared/util.ts";
-import { AppOptions, OptionKind } from "./app_options.ts";
+import { see_ui_testing } from "@fe-pdf.ts-test/alias.ts";
+import { describe, it } from "@std/testing/bdd";
 /*80--------------------------------------------------------------------------*/
 
 describe("AppOptions", () => {
-  it("checks that getAll returns data, for every OptionKind", () => {
-    const KIND_NAMES: (keyof typeof OptionKind)[] = [
-      "BROWSER",
-      "VIEWER",
-      "API",
-      "WORKER",
-      "PREFERENCE",
-    ];
+  it("checks that getAll returns data, for every OptionKind", see_ui_testing);
 
-    for (const name of KIND_NAMES) {
-      const kind = OptionKind[name];
-      assertEquals(typeof kind, "number");
-
-      const options = AppOptions.getAll(kind);
-      assertGreater(objectSize(options), 0);
-    }
-  });
-
-  it('checks that the number of "PREFERENCE" options does *not* exceed the maximum in mozilla-central', () => {
-    // If the following constant is updated then you *MUST* make the same change
-    // in mozilla-central as well to ensure that preference-fetching works; see
-    // https://searchfox.org/mozilla-central/source/toolkit/components/pdfjs/content/PdfStreamConverter.sys.mjs
-    const MAX_NUMBER_OF_PREFS = 50;
-
-    const options = AppOptions.getAll(OptionKind.PREFERENCE);
-    assertLessOrEqual(objectSize(options), MAX_NUMBER_OF_PREFS);
-  });
+  it(
+    'checks that the number of "PREFERENCE" options does *not* exceed the maximum in mozilla-central',
+    see_ui_testing,
+  );
 });
 /*80--------------------------------------------------------------------------*/

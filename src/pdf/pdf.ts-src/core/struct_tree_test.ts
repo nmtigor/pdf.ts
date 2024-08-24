@@ -22,7 +22,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd";
 import type { TestServer } from "@fe-pdf.ts-test/unittest_utils.ts";
 import {
   buildGetDocumentParams,
@@ -49,17 +49,17 @@ function equalTrees(rootA: StructTreeNode, rootB: StructTreeNode) {
 }
 
 describe("struct tree", () => {
-  let tempServer: TestServer;
+  let tempServer: TestServer | undefined;
 
-  beforeAll(() => {
-    tempServer = createTemporaryDenoServer();
-  });
+  // beforeAll(() => {
+  //   tempServer = createTemporaryDenoServer();
+  // });
 
-  afterAll(async () => {
-    const { server } = tempServer;
-    await server.shutdown();
-    tempServer = undefined as any;
-  });
+  // afterAll(async () => {
+  //   const { server } = tempServer;
+  //   await server.shutdown();
+  //   tempServer = undefined as any;
+  // });
 
   describe("getStructTree", () => {
     it("parses basic structure", async () => {

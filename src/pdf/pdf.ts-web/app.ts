@@ -21,7 +21,6 @@
  * limitations under the License.
  */
 
-import type { EventName } from "./event_utils.ts";
 import type { dot2d_t, int } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import "@fe-lib/jslang.ts";
@@ -64,11 +63,14 @@ import {
 import type { ActionEventName } from "../pdf.ts-src/shared/util.ts";
 import { AltTextManager } from "./alt_text_manager.ts";
 import { AnnotationEditorParams } from "./annotation_editor_params.ts";
+import type { UserOptions } from "./app_options.ts";
 import { AppOptions, OptionKind, ViewOnLoad } from "./app_options.ts";
 import { CaretBrowsingMode } from "./caret_browsing.ts";
+import type { MLManager as MLManager_c } from "./chromecom.ts";
 import { PDFBug } from "./debugger.ts";
 import { EventBus, type EventMap, FirefoxEventBus } from "./event_utils.ts";
-import type { NimbusExperimentData } from "./firefoxcom.ts";
+import type { MLManager as MLManager_f } from "./firefoxcom.ts";
+import type { MLManager as MLManager_g } from "./genericcom.ts";
 import type { IDownloadManager, IL10n } from "./interfaces.ts";
 import { OverlayManager } from "./overlay_manager.ts";
 import { PasswordPrompt } from "./password_prompt.ts";
@@ -93,7 +95,6 @@ import { PDFScriptingManager } from "./pdf_scripting_manager.ts";
 import { PDFSidebar } from "./pdf_sidebar.ts";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.ts";
 import { PDFViewer } from "./pdf_viewer.ts";
-import type { BasePreferences } from "./preferences.ts";
 import { SecondaryToolbar } from "./secondary_toolbar.ts";
 import { Toolbar as GeckoviewToolbar } from "./toolbar-geckoview.ts";
 import { Toolbar } from "./toolbar.ts";
@@ -119,6 +120,7 @@ import {
 } from "./ui_utils.ts";
 import { ViewHistory } from "./view_history.ts";
 import type { ViewerConfiguration } from "./viewer.ts";
+import type { Locale } from "@fe-lib/Locale.ts";
 
 /* Ref. gulpfile.mjs of pdf.js */
 const { ExternalServices, initCom, MLManager } = /*#static*/ CHROME
@@ -144,7 +146,6 @@ const { Preferences } = /*#static*/ CHROME
 /*80--------------------------------------------------------------------------*/
 
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
-const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
 
 export type FindControlState = {
   result: FindState;
@@ -307,15 +308,16 @@ export class PDFViewerApplication {
   pdfLayerViewer?: PDFLayerViewer;
   pdfSidebar?: PDFSidebar;
 
-  preferences!: BasePreferences;
+  preferences = new Preferences();
   l10n!: IL10n;
   annotationEditorParams?: AnnotationEditorParams;
   isInitialViewSet = false;
-  downloadComplete = false;
   isViewerEmbedded = window.parent !== window;
   url = "";
   baseUrl = "";
-  _allowedGlobalEventsPromise: Promise<Set<EventName> | undefined> | undefined;
+  //kkkk TOCLEANUP
+  // _allowedGlobalEventsPromise: Promise<Set<EventName> | undefined> | undefined;
+  mlManager: MLManager_c | MLManager_f | MLManager_g | undefined;
   _downloadUrl = "";
   //kkkk TOCLEANUP
   // _boundEvents: Record<string, ((...args: any[]) => void) | undefined> = Object
@@ -344,7 +346,8 @@ export class PDFViewerApplication {
     | undefined;
   _touchInfo: TouchInfo_ | undefined;
   _isCtrlKeyDown = false;
-  _nimbusDataPromise?: Promise<NimbusExperimentData | undefined>;
+  //kkkk TOCLEANUP
+  // _nimbusDataPromise?: Promise<NimbusExperimentData | undefined>;
   _caretBrowsing: CaretBrowsingMode | undefined;
   _isScrolling = false;
 
@@ -366,21 +369,7 @@ export class PDFViewerApplication {
    * Called once when the document is loaded.
    */
   async initialize(appConfig: ViewerConfiguration) {
-    let l10nPromise;
-    // In the (various) extension builds, where the locale is set automatically,
-    // initialize the `L10n`-instance as soon as possible.
-    /*#static*/ if (!GENERIC) {
-      l10nPromise = this.externalServices.createL10n();
-      /*#static*/ if (MOZCENTRAL) {
-        this._allowedGlobalEventsPromise = this.externalServices
-          .getGlobalEventNames();
-      }
-    }
     this.appConfig = appConfig;
-
-    if (PDFJSDev ? (window as any).isGECKOVIEW : GECKOVIEW) {
-      this._nimbusDataPromise = this.externalServices.getNimbusExperimentData();
-    }
 
     // Ensure that `Preferences`, and indirectly `AppOptions`, have initialized
     // before creating e.g. the various viewer components.
@@ -406,14 +395,17 @@ export class PDFViewerApplication {
       if (mode) {
         document.documentElement.classList.add(mode);
       }
+    } else if (AppOptions.enableAltText) {
+      // We want to load the image-to-text AI engine as soon as possible.
+      this.mlManager = new MLManager({
+        enableGuessAltText: AppOptions.enableGuessAltText,
+        altTextLearnMoreUrl: AppOptions.altTextLearnMoreUrl,
+      });
     }
 
     // Ensure that the `L10n`-instance has been initialized before creating
     // e.g. the various viewer components.
-    /*#static*/ if (PDFJSDev || GENERIC) {
-      l10nPromise = this.externalServices.createL10n();
-    }
-    this.l10n = (await l10nPromise)!;
+    this.l10n = await this.externalServices.createL10n();
     document.getElementsByTagName("html")[0].dir = this.l10n.getDirection();
     // Connect Fluent, when necessary, and translate what we already have.
     /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
@@ -521,7 +513,9 @@ export class PDFViewerApplication {
       }
     }
     if (params.has("pdfbug")) {
-      AppOptions.setAll({ pdfBug: true, fontExtraProperties: true });
+      AppOptions.setAll(
+        { pdfBug: true, fontExtraProperties: true } as UserOptions,
+      );
 
       const enabled = params.get("pdfbug")!.split(",");
       try {
@@ -534,7 +528,10 @@ export class PDFViewerApplication {
     // It is not possible to change locale for the (various) extension builds.
     /*#static*/ if (PDFJSDev || GENERIC) {
       if (params.has("locale")) {
-        AppOptions.set("locale", params.get("locale"));
+        // AppOptions.set("locale", params.get("locale"));
+        AppOptions.set("localeProperties", {
+          lang: params.get("locale") as Locale,
+        });
       }
     }
 
@@ -572,12 +569,14 @@ export class PDFViewerApplication {
 
     let eventBus;
     /*#static*/ if (MOZCENTRAL) {
-      eventBus = new FirefoxEventBus(
-        await this._allowedGlobalEventsPromise,
+      eventBus = AppOptions.eventBus = new FirefoxEventBus(
+        AppOptions.allowedGlobalEvents ?? undefined,
         externalServices,
         AppOptions.isInAutomation,
       );
-      this._allowedGlobalEventsPromise = undefined;
+      if (this.mlManager) {
+        this.mlManager.eventBus = eventBus;
+      }
     } else {
       eventBus = new EventBus();
     }
@@ -652,6 +651,7 @@ export class PDFViewerApplication {
       annotationEditorMode,
       annotationEditorHighlightColors: AppOptions.highlightEditorColors,
       enableHighlightFloatingButton: AppOptions.enableHighlightFloatingButton,
+      enableUpdatedAddImage: AppOptions.enableUpdatedAddImage,
       imageResourcesPath: AppOptions.imageResourcesPath,
       enablePrintAutoRotate: AppOptions.enablePrintAutoRotate,
       maxCanvasPixels: AppOptions.maxCanvasPixels,
@@ -696,10 +696,6 @@ export class PDFViewerApplication {
 
     if (appConfig.annotationEditorParams) {
       if (annotationEditorMode !== AnnotationEditorType.DISABLE) {
-        if (AppOptions.enableStampEditor) {
-          appConfig.toolbar?.editorStampButton?.classList.remove("hidden");
-        }
-
         const editorHighlightButton = appConfig.toolbar?.editorHighlightButton;
         if (editorHighlightButton && AppOptions.enableHighlightEditor) {
           editorHighlightButton.hidden = false;
@@ -738,13 +734,20 @@ export class PDFViewerApplication {
 
     if (appConfig.toolbar) {
       if (PDFJSDev ? (window as any).isGECKOVIEW : GECKOVIEW) {
+        const nimbusData = JSON.parse(
+          AppOptions.nimbusDataStr || "null",
+        );
         this.toolbar = new GeckoviewToolbar(
           appConfig.toolbar as any,
           eventBus,
-          await this._nimbusDataPromise,
+          nimbusData,
         );
       } else {
-        this.toolbar = new Toolbar(appConfig.toolbar, eventBus);
+        this.toolbar = new Toolbar(
+          appConfig.toolbar,
+          eventBus,
+          AppOptions.toolbarDensity,
+        );
       }
     }
 
@@ -825,7 +828,6 @@ export class PDFViewerApplication {
   }
 
   async run(config: ViewerConfiguration) {
-    this.preferences = new Preferences();
     await this.initialize(config);
 
     const { appConfig, eventBus } = this;
@@ -930,13 +932,14 @@ export class PDFViewerApplication {
     return shadow(this, "externalServices", new ExternalServices());
   }
 
-  get mlManager() {
-    return shadow(
-      this,
-      "mlManager",
-      AppOptions.enableML === true ? new MLManager() : undefined,
-    );
-  }
+  //kkkk TOCLEANUP
+  // get mlManager() {
+  //   return shadow(
+  //     this,
+  //     "mlManager",
+  //     AppOptions.enableML === true ? new MLManager() : undefined,
+  //   );
+  // }
 
   get initialized() {
     return this.#initializedCapability.settled;
@@ -1085,18 +1088,21 @@ export class PDFViewerApplication {
     }
     if (isDataScheme(url)) {
       this._hideViewBookmark();
+    } else {
+      /*#static*/ if (MOZCENTRAL || CHROME) {
+        AppOptions.set("docBaseUrl", this.baseUrl);
+      }
     }
     let title = getPdfFilenameFromUrl(url, "");
     if (!title) {
       try {
-        title = decodeURIComponent(getFilenameFromUrl(url)) || url;
+        // title = decodeURIComponent(getFilenameFromUrl(url)) || url;
+        title = decodeURIComponent(getFilenameFromUrl(url));
       } catch {
-        // decodeURIComponent may throw URIError,
-        // fall back to using the unprocessed url in that case
-        title = url;
+        // decodeURIComponent may throw URIError.
       }
     }
-    this.setTitle(title);
+    this.setTitle(title || url); // Always fallback to the raw URL.
   }
 
   setTitle(title = this._title) {
@@ -1172,7 +1178,6 @@ export class PDFViewerApplication {
     this.pdfLinkService.externalLinkEnabled = true;
     this.store = undefined;
     this.isInitialViewSet = false;
-    this.downloadComplete = false;
     this.url = "";
     this.baseUrl = "";
     this._downloadUrl = "";
@@ -1238,21 +1243,6 @@ export class PDFViewerApplication {
         /* downloadUrl = */ args.url,
       );
     }
-    // Always set `docBaseUrl` in development mode, and in the (various)
-    // extension builds.
-    /*#static*/ if (PDFJSDev) {
-      AppOptions.set("docBaseUrl", document.URL.split("#", 1)[0]);
-    } else {
-      /*#static*/ if (MOZCENTRAL || CHROME) {
-        AppOptions.set("docBaseUrl", this.baseUrl);
-      }
-    }
-
-    // On Android, there is almost no chance to have the font we want so we
-    // don't use the system fonts in this case.
-    if (PDFJSDev ? (window as any).isGECKOVIEW : GECKOVIEW) {
-      args.useSystemFonts = false;
-    }
 
     // Set the necessary API parameters, using all the available options.
     const apiParams = AppOptions.getAll(OptionKind.API);
@@ -1309,12 +1299,9 @@ export class PDFViewerApplication {
   async download(options = {}) {
     let data: BlobPart;
     try {
-      if (this.downloadComplete) {
-        data = await this.pdfDocument!.getData();
-      }
+      data = await this.pdfDocument!.getData();
     } catch {
-      // When the PDF document isn't ready, or the PDF file is still
-      // downloading, simply download using the URL.
+      // When the PDF document isn't ready, simply download using the URL.
     }
     this.downloadManager.download(
       data!,
@@ -1431,17 +1418,12 @@ export class PDFViewerApplication {
   }
 
   progress(level: number) {
-    if (!this.loadingBar || this.downloadComplete) {
-      // Don't accidentally show the loading bar again when the entire file has
-      // already been fetched (only an issue when disableAutoFetch is enabled).
-      return;
-    }
     const percent = Math.round(level * 100);
     // When we transition from full request to range requests, it's possible
     // that we discard some of the loaded data. This can cause the loading
     // bar to move backwards. So prevent this by only updating the bar if it
     // increases.
-    if (percent <= this.loadingBar.percent) {
+    if (!this.loadingBar || percent <= this.loadingBar.percent) {
       return;
     }
     this.loadingBar.percent = percent;
@@ -1464,7 +1446,6 @@ export class PDFViewerApplication {
 
     pdfDocument.getDownloadInfo().then(({ length }) => {
       this._contentLength = length; // Ensure that the correct length is used.
-      this.downloadComplete = true;
       this.loadingBar?.hide();
 
       firstPagePromise!.then(() => {
@@ -1911,7 +1892,7 @@ export class PDFViewerApplication {
       }
     };
     annotationStorage.onResetModified = () => {
-      window.removeEventListener("beforeunload", beforeUnload);
+      window.off("beforeunload", beforeUnload);
 
       /*#static*/ if (PDFJSDev || GENERIC) {
         delete this._annotationStorageModified;
@@ -2167,6 +2148,7 @@ export class PDFViewerApplication {
         { signal },
       );
       eventBus._on("reporttelemetry", webViewerReportTelemetry, { signal });
+      eventBus._on("setpreference", webViewerSetPreference, { signal });
     }
   }
 
@@ -2199,7 +2181,6 @@ export class PDFViewerApplication {
     }
     addWindowResolutionChange();
 
-    window.on("visibilitychange", webViewerVisibilityChange, { signal });
     window.on("wheel", webViewerWheel, { passive: false, signal });
     window.on("touchstart", webViewerTouchStart, { passive: false, signal });
     window.on("touchmove", webViewerTouchMove, { passive: false, signal });
@@ -2801,23 +2782,6 @@ function webViewerResolutionChange(evt: MediaQueryListEvent) {
   viewerApp.pdfViewer.refresh();
 }
 
-function webViewerVisibilityChange(evt: unknown) {
-  if (document.visibilityState === "visible") {
-    // Ignore mouse wheel zooming during tab switches (bug 1503412).
-    setZoomDisabledTimeout();
-  }
-}
-
-let zoomDisabledTimeout: number | undefined;
-function setZoomDisabledTimeout() {
-  if (zoomDisabledTimeout) {
-    clearTimeout(zoomDisabledTimeout);
-  }
-  zoomDisabledTimeout = setTimeout(() => {
-    zoomDisabledTimeout = undefined;
-  }, WHEEL_ZOOM_DISABLED_TIMEOUT);
-}
-
 function webViewerWheel(evt: WheelEvent) {
   const {
     pdfViewer,
@@ -2866,7 +2830,6 @@ function webViewerWheel(evt: WheelEvent) {
     // NOTE: this check must be placed *after* preventDefault.
     if (
       viewerApp._isScrolling ||
-      zoomDisabledTimeout ||
       document.visibilityState === "hidden" ||
       viewerApp.overlayManager.active
     ) {
@@ -3427,6 +3390,10 @@ function webViewerAnnotationEditorStatesChanged(
 
 function webViewerReportTelemetry({ details }: EventMap["reporttelemetry"]) {
   viewerApp.externalServices.reportTelemetry(details);
+}
+
+function webViewerSetPreference({ name, value }: EventMap["setpreference"]) {
+  viewerApp.preferences.set(name, value);
 }
 
 //kkkk TOCLEANUP

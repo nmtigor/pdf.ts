@@ -25,6 +25,7 @@ import { Locale } from "@fe-lib/Locale.ts";
 import { D_rp_web, D_rpe_cmap, D_rpe_sfont } from "@fe-src/alias.ts";
 import {
   CHROME,
+  GECKOVIEW,
   GENERIC,
   LIB,
   MOZCENTRAL,
@@ -37,6 +38,7 @@ import {
   AnnotationMode,
   VerbosityLevel,
 } from "../pdf.ts-src/pdf.ts";
+import type { EventName, FirefoxEventBus } from "./event_utils.ts";
 import { LinkTarget } from "./pdf_link_service.ts";
 import {
   CursorTool,
@@ -47,54 +49,52 @@ import {
 } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
+// type _OptionValue1<ON extends OptionName> = _DefaultOptions[ON]["value"];
+export type OptionValue =
+  | null
+  | number
+  | string
+  | boolean
+  | Set<EventName>
+  | { lang: Locale }
+  | Worker;
+type Option = {
+  value: OptionValue | undefined;
+  kind: OptionKind;
+  type?: Type;
+};
+
 export enum OptionKind {
+  UNDEFINED = 0,
   BROWSER = 0x01,
   VIEWER = 0x02,
   API = 0x04,
   WORKER = 0x08,
+  EVENT_DISPATCH = 0x10,
   PREFERENCE = 0x80,
+}
+
+export const enum ToolbarDensity {
+  /** Default value */
+  normal = 0,
+  compact = 1,
+  touch = 2,
 }
 
 export const enum ViewOnLoad {
   UNKNOWN = -1,
-  PREVIOUS = 0, // Default value.
+  /** Default value */
+  PREVIOUS = 0,
   INITIAL = 1,
 }
-/*49-------------------------------------------*/
 
-type _DefaultOptions = typeof defaultOptions;
-export type OptionName = keyof _DefaultOptions;
-// type _OptionType1<ON extends OptionName> = _DefaultOptions[ON]["value"];
-export type OptionType = number | string | boolean | Worker;
-
-export type UserOptions = {
-  [ON in OptionName]?: OptionType | undefined;
-};
-const userOptions: UserOptions = Object.create(null);
-
-/*#static*/ if (PDFJSDev || GENERIC) {
-  // eslint-disable-next-line no-var
-  var compatibilityParams: UserOptions = Object.create(null);
-  /*#static*/ if (LIB) {
-    if (typeof navigator === "undefined") {
-      globalThis.navigator = Object.create(null);
-    }
-  }
-  const userAgent = navigator.userAgent || "";
-  const platform = navigator.platform || "";
-  const maxTouchPoints = navigator.maxTouchPoints || 1;
-
-  const isAndroid = /Android/.test(userAgent);
-  const isIOS = /\b(iPad|iPhone|iPod)(?=;)/.test(userAgent) ||
-    (platform === "MacIntel" && maxTouchPoints > 1);
-
-  // Limit canvas size to 5 mega-pixels on mobile.
-  // Support: Android, iOS
-  (/* checkCanvasSizeLimitation */ () => {
-    if (isIOS || isAndroid) {
-      compatibilityParams.maxCanvasPixels = 5242880;
-    }
-  })();
+/** Should only be used with options that allow multiple types. */
+enum Type {
+  BOOLEAN = 0x01,
+  NUMBER = 0x02,
+  OBJECT = 0x04,
+  STRING = 0x08,
+  UNDEFINED = 0x10,
 }
 
 /**
@@ -103,12 +103,26 @@ const userOptions: UserOptions = Object.create(null);
  *       primitive types and cannot rely on any imported types.
  */
 const defaultOptions = {
+  allowedGlobalEvents: {
+    value: null as Set<EventName> | null,
+    kind: OptionKind.BROWSER,
+  },
   canvasMaxAreaInBytes: {
     value: -1,
     kind: OptionKind.BROWSER + OptionKind.API,
   },
   isInAutomation: {
     value: false,
+    kind: OptionKind.BROWSER,
+  },
+  localeProperties: {
+    value: /*#static*/ PDFJSDev || GENERIC
+      ? { lang: navigator.language as Locale || "en-US" }
+      : null,
+    kind: OptionKind.BROWSER,
+  },
+  nimbusDataStr: {
+    value: "",
     kind: OptionKind.BROWSER,
   },
   supportsCaretBrowsingMode: {
@@ -135,7 +149,17 @@ const defaultOptions = {
     value: true,
     kind: OptionKind.BROWSER,
   },
+  toolbarDensity: {
+    value: ToolbarDensity.normal,
+    kind: OptionKind.BROWSER + OptionKind.EVENT_DISPATCH,
+  },
 
+  altTextLearnMoreUrl: {
+    value: /*#static*/ MOZCENTRAL
+      ? "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/pdf-alt-text"
+      : "",
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
   annotationEditorMode: {
     value: AnnotationEditorType.NONE,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -146,7 +170,7 @@ const defaultOptions = {
   },
   viewerCssTheme: {
     value: undefined as number | undefined,
-    kind: 0 as OptionKind,
+    kind: OptionKind.UNDEFINED,
   },
   cursorToolOnLoad: {
     value: CursorTool.SELECT,
@@ -158,7 +182,7 @@ const defaultOptions = {
   },
   defaultUrl: {
     value: undefined as string | undefined,
-    kind: 0 as OptionKind,
+    kind: OptionKind.UNDEFINED as OptionKind,
   },
   defaultZoomDelay: {
     value: 400,
@@ -176,9 +200,17 @@ const defaultOptions = {
     value: false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
-  disablePreferences: {
+  enableAltText: {
     value: false,
-    kind: 0 as OptionKind,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
+  enableGuessAltText: {
+    value: true,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
+  disablePreferences: {
+    value: false as boolean,
+    kind: OptionKind.UNDEFINED as OptionKind,
   },
   enableHighlightEditor: {
     // We'll probably want to make some experiments before enabling this
@@ -194,10 +226,6 @@ const defaultOptions = {
     value: PDFJSDev || TESTING,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
-  enableML: {
-    value: false,
-    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-  },
   enablePermissions: {
     value: false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -210,11 +238,11 @@ const defaultOptions = {
     value: /*#static*/ PDFJSDev || !CHROME ? true : false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
-  enableStampEditor: {
+  enableUpdatedAddImage: {
     // We'll probably want to make some experiments before enabling this
     // in Firefox release, but it has to be temporary.
     // TODO: remove it when unnecessary.
-    value: true,
+    value: false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   externalLinkRel: {
@@ -243,10 +271,6 @@ const defaultOptions = {
       ? `${AD_gh}/${D_rp_web}/images/`
       : `${AD_gh}/${D_rp_web}/images/`,
     kind: OptionKind.VIEWER,
-  },
-  locale: {
-    value: undefined as Locale | undefined,
-    kind: 0 as OptionKind,
   },
   maxCanvasPixels: {
     value: 2 ** 25,
@@ -327,10 +351,10 @@ const defaultOptions = {
   },
   disableTelemetry: {
     value: false,
-    kind: 0 as OptionKind,
+    kind: OptionKind.UNDEFINED,
   },
   docBaseUrl: {
-    value: undefined as string | undefined,
+    value: /*#static*/ PDFJSDev ? document.URL.split("#", 1)[0] : "",
     kind: OptionKind.API,
   },
   enableHWA: {
@@ -374,6 +398,17 @@ const defaultOptions = {
         : `${AD_gh}/${D_rpe_sfont}/`,
     kind: OptionKind.API,
   },
+  useSystemFonts: {
+    // On Android, there is almost no chance to have the font we want so we
+    // don't use the system fonts in this case (bug 1882613).
+    value: (
+        /*#static*/ PDFJSDev ? (window as any).isGECKOVIEW : GECKOVIEW
+      )
+      ? false
+      : undefined,
+    kind: OptionKind.API,
+    type: Type.BOOLEAN + Type.UNDEFINED,
+  },
   verbosity: {
     value: VerbosityLevel.INFOS,
     // value: VerbosityLevel.WARNINGS,
@@ -381,7 +416,7 @@ const defaultOptions = {
   },
 
   workerPort: {
-    value: undefined as Worker | undefined,
+    value: null as Worker | null,
     kind: OptionKind.WORKER,
   },
   workerSrc: {
@@ -398,9 +433,10 @@ const defaultOptions = {
   },
   sandboxBundleSrc: {
     value: undefined as string | undefined,
-    kind: 0 as OptionKind,
+    kind: OptionKind.UNDEFINED as OptionKind,
   },
-};
+} satisfies Record<string, Option>;
+
 /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
   defaultOptions.defaultUrl = {
     value: /*#static*/ CHROME
@@ -428,10 +464,6 @@ const defaultOptions = {
     value: TESTING ? true : false,
     kind: OptionKind.VIEWER,
   };
-  defaultOptions.locale = {
-    value: navigator.language as Locale || Locale.en_US,
-    kind: OptionKind.VIEWER,
-  };
 } else {
   /*#static*/ if (CHROME) {
     defaultOptions.disableTelemetry = {
@@ -441,18 +473,59 @@ const defaultOptions = {
   }
 }
 
+type _DefaultOptions = typeof defaultOptions;
+export type OptionName = keyof _DefaultOptions;
+
+export type UserOptionMap = Map<OptionName, OptionValue | undefined>;
+export type UserOptions = Record<OptionName, OptionValue | undefined>;
+
 /*#static*/ if (PDFJSDev || GENERIC) {
-  // Apply any compatibility-values to the user-options,
-  // see also `AppOptions.remove` below.
-  for (const name in compatibilityParams!) {
-    userOptions[name as OptionName] = compatibilityParams[name as OptionName];
+  // eslint-disable-next-line no-var
+  var compatParams: UserOptionMap = new Map();
+  /*#static*/ if (LIB) {
+    if (typeof navigator === "undefined") {
+      globalThis.navigator = Object.create(null);
+    }
+  }
+  const userAgent = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const maxTouchPoints = navigator.maxTouchPoints || 1;
+
+  const isAndroid = /Android/.test(userAgent);
+  const isIOS = /\b(iPad|iPhone|iPod)(?=;)/.test(userAgent) ||
+    (platform === "MacIntel" && maxTouchPoints > 1);
+
+  // Limit canvas size to 5 mega-pixels on mobile.
+  // Support: Android, iOS
+  (() => {
+    if (isIOS || isAndroid) {
+      compatParams.set("maxCanvasPixels", 5242880);
+    }
+  })();
+
+  // Don't use system fonts on Android (issue 18210).
+  // Support: Android
+  (() => {
+    if (isAndroid) {
+      compatParams.set("useSystemFonts", false);
+    }
+  })();
+}
+
+const userOptions: UserOptionMap = new Map();
+
+/*#static*/ if (PDFJSDev || GENERIC) {
+  // Apply any compatibility-values to the user-options.
+  for (const [name, value] of compatParams!) {
+    userOptions.set(name, value);
   }
 }
 
 /*#static*/ if (PDFJSDev || TESTING || LIB) {
   // Ensure that the `defaultOptions` are correctly specified.
   for (const name in defaultOptions) {
-    const { value, kind } = defaultOptions[name as OptionName];
+    const { value, kind, type } =
+      (defaultOptions as Record<OptionName, Option>)[name as OptionName];
 
     if (kind & OptionKind.PREFERENCE) {
       if (kind === OptionKind.PREFERENCE) {
@@ -461,9 +534,14 @@ const defaultOptions = {
       if (kind & OptionKind.BROWSER) {
         throw new Error(`Cannot mix "PREFERENCE" and "BROWSER" kind: ${name}`);
       }
+      if (type !== undefined) {
+        throw new Error(
+          `Cannot have \`type\`-field for "PREFERENCE" kind: ${name}`,
+        );
+      }
       if (
-        typeof compatibilityParams! === "object" &&
-        compatibilityParams[name as OptionName] !== undefined
+        typeof compatParams! === "object" &&
+        compatParams.has(name as OptionName)
       ) {
         throw new Error(
           `Should not have compatibility-value for "PREFERENCE" kind: ${name}`,
@@ -477,32 +555,50 @@ const defaultOptions = {
       ) {
         throw new Error(`Invalid value for "PREFERENCE" kind: ${name}`);
       }
+    } else if (kind & OptionKind.BROWSER) {
+      if (type !== undefined) {
+        throw new Error(
+          `Cannot have \`type\`-field for "BROWSER" kind: ${name}`,
+        );
+      }
+      if (
+        typeof compatParams! === "object" &&
+        compatParams.has(name as OptionName)
+      ) {
+        throw new Error(
+          `Should not have compatibility-value for "BROWSER" kind: ${name}`,
+        );
+      }
+      if (value === undefined) {
+        throw new Error(`Invalid value for "BROWSER" kind: ${name}`);
+      }
     }
   }
 }
 
 export abstract class AppOptions {
-  // static get(name: OptionName) {
-  //   return userOptions[name] ?? defaultOptions[name]?.value ?? undefined;
-  // }
+  static eventBus: FirefoxEventBus | undefined;
 
-  static #get(name: OptionName): OptionType | undefined {
-    const userOption = userOptions[name];
-    if (userOption !== undefined) {
-      return userOption;
-    }
-    const defaultOption = defaultOptions[name];
-    if (defaultOption !== undefined) {
-      return compatibilityParams[name] ?? defaultOption.value;
-    }
-    return undefined;
+  static #get<N extends OptionName>(name: N) {
+    return userOptions.has(name)
+      ? userOptions.get(name)
+      : defaultOptions[name]?.value;
   }
 
+  static get allowedGlobalEvents() {
+    return this.#get("allowedGlobalEvents") as Set<EventName> | null;
+  }
   static get canvasMaxAreaInBytes() {
     return this.#get("canvasMaxAreaInBytes") as number;
   }
   static get isInAutomation() {
     return this.#get("isInAutomation") as boolean;
+  }
+  static get localeProperties() {
+    return this.#get("localeProperties") as { lang: Locale } | null;
+  }
+  static get nimbusDataStr() {
+    return this.#get("nimbusDataStr") as string;
   }
   static get supportsCaretBrowsingMode() {
     return this.#get("supportsCaretBrowsingMode") as boolean;
@@ -522,7 +618,13 @@ export abstract class AppOptions {
   static get supportsPinchToZoom() {
     return this.#get("supportsPinchToZoom") as boolean;
   }
+  static get toolbarDensity() {
+    return this.#get("toolbarDensity") as ToolbarDensity;
+  }
 
+  static get altTextLearnMoreUrl() {
+    return this.#get("altTextLearnMoreUrl") as string;
+  }
   static get annotationEditorMode() {
     return this.#get("annotationEditorMode") as AnnotationEditorType;
   }
@@ -553,6 +655,12 @@ export abstract class AppOptions {
   static get disablePageLabels() {
     return this.#get("disablePageLabels") as boolean;
   }
+  static get enableAltText() {
+    return this.#get("enableAltText") as boolean;
+  }
+  static get enableGuessAltText() {
+    return this.#get("enableGuessAltText") as boolean;
+  }
   static get disablePreferences() {
     return this.#get("disablePreferences") as boolean;
   }
@@ -561,9 +669,6 @@ export abstract class AppOptions {
   }
   static get enableHighlightFloatingButton() {
     return this.#get("enableHighlightFloatingButton") as boolean;
-  }
-  static get enableML() {
-    return this.#get("enableML") as boolean;
   }
   static get enablePermissions() {
     return this.#get("enablePermissions") as boolean;
@@ -574,8 +679,8 @@ export abstract class AppOptions {
   static get enableScripting() {
     return this.#get("enableScripting") as boolean;
   }
-  static get enableStampEditor() {
-    return this.#get("enableStampEditor") as boolean;
+  static get enableUpdatedAddImage() {
+    return this.#get("enableUpdatedAddImage") as boolean;
   }
   static get externalLinkRel() {
     return this.#get("externalLinkRel") as string;
@@ -594,9 +699,6 @@ export abstract class AppOptions {
   }
   static get imageResourcesPath() {
     return this.#get("imageResourcesPath") as string;
-  }
-  static get locale() {
-    return this.#get("locale") as Locale | undefined;
   }
   static get maxCanvasPixels() {
     return this.#get("maxCanvasPixels") as number;
@@ -654,7 +756,7 @@ export abstract class AppOptions {
     return this.#get("disableTelemetry") as boolean;
   }
   static get docBaseUrl() {
-    return this.#get("docBaseUrl") as string | undefined;
+    return this.#get("docBaseUrl") as string;
   }
   static get enableHWA() {
     return this.#get("enableHWA") as boolean;
@@ -680,12 +782,15 @@ export abstract class AppOptions {
   static get standardFontDataUrl() {
     return this.#get("standardFontDataUrl") as string;
   }
+  static get useSystemFonts() {
+    return this.#get("useSystemFonts") as boolean | undefined;
+  }
   static get verbosity() {
     return this.#get("verbosity") as VerbosityLevel;
   }
 
   static get workerPort() {
-    return this.#get("workerPort") as Worker | undefined;
+    return this.#get("workerPort") as Worker | null;
   }
   static get workerSrc() {
     return this.#get("workerSrc") as string;
@@ -698,59 +803,83 @@ export abstract class AppOptions {
   static getAll(kind?: OptionKind, defaultOnly = false) {
     const options: UserOptions = Object.create(null);
     for (const name in defaultOptions) {
-      const defaultOption = defaultOptions[name as OptionName];
+      const defaultOpt = defaultOptions[name as OptionName];
 
-      if (kind && !(kind & defaultOption.kind)) {
+      if (kind && !(kind & defaultOpt.kind)) {
         continue;
       }
-      options[name as OptionName] = defaultOnly
-        ? defaultOption.value
-        : userOptions[name as OptionName] ?? defaultOption.value;
+      options[name as OptionName] =
+        !defaultOnly && userOptions.has(name as OptionName)
+          ? userOptions.get(name as OptionName)
+          : defaultOpt.value;
     }
     return options;
   }
 
-  static set<ON extends OptionName>(name: ON, value: OptionType | undefined) {
-    userOptions[name] = value;
+  static set(name: OptionName, value: OptionValue | undefined) {
+    this.setAll({ [name]: value } as UserOptions);
   }
 
-  static setAll(options: UserOptions, init = false) {
-    /*#static*/ if (PDFJSDev || GENERIC) {
-      if (init) {
-        if (this.disablePreferences) {
-          // Give custom implementations of the default viewer a simpler way to
-          // opt-out of having the `Preferences` override existing `AppOptions`.
-          return;
-        }
-        for (const name in userOptions) {
-          // Ignore any compatibility-values in the user-options.
-          if (compatibilityParams[name as OptionName] !== undefined) {
-            continue;
-          }
-          console.warn(
-            "setAll: The Preferences may override manually set AppOptions; " +
-              'please use the "disablePreferences"-option in order to prevent that.',
-          );
-          break;
-        }
-      }
-    }
+  static setAll(options: UserOptions, prefs = false) {
+    let events;
 
     for (const name in options) {
-      userOptions[name as OptionName] = options[name as OptionName];
+      const defaultOpt = defaultOptions[name as OptionName] as Option,
+        userOpt = options[name as OptionName];
+
+      if (
+        !defaultOpt ||
+        !(
+          typeof userOpt === typeof defaultOpt.value ||
+          Type[(typeof userOpt).toUpperCase() as keyof typeof Type] &
+            defaultOpt.type!
+        )
+      ) {
+        continue;
+      }
+      const { kind } = defaultOpt;
+
+      if (
+        prefs &&
+        !(kind & OptionKind.BROWSER || kind & OptionKind.PREFERENCE)
+      ) {
+        continue;
+      }
+      if (this.eventBus && kind & OptionKind.EVENT_DISPATCH) {
+        (events ||= new Map()).set(name, userOpt);
+      }
+      userOptions.set(name as OptionName, userOpt);
     }
-  }
 
-  static remove(name: OptionName) {
-    delete userOptions[name];
-
-    /*#static*/ if (PDFJSDev || GENERIC) {
-      // Re-apply a compatibility-value, if it exists, to the user-options.
-      const val = compatibilityParams[name];
-      if (val !== undefined) {
-        userOptions[name] = val;
+    if (events) {
+      for (const [name, value] of events) {
+        this.eventBus!.dispatch(name.toLowerCase(), { source: this, value });
       }
     }
   }
+
+  static _checkDisablePreferences: () => boolean;
+}
+
+/*#static*/ if (PDFJSDev || GENERIC) {
+  AppOptions._checkDisablePreferences = () => {
+    if (AppOptions.disablePreferences) {
+      // Give custom implementations of the default viewer a simpler way to
+      // opt-out of having the `Preferences` override existing `AppOptions`.
+      return true;
+    }
+    for (const [name] of userOptions) {
+      // Ignore any compatibility-values in the user-options.
+      if (compatParams.has(name)) {
+        continue;
+      }
+      console.warn(
+        "The Preferences may override manually set AppOptions; " +
+          'please use the "disablePreferences"-option to prevent that.',
+      );
+      break;
+    }
+    return false;
+  };
 }
 /*80--------------------------------------------------------------------------*/

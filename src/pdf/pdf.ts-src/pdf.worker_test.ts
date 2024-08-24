@@ -22,7 +22,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
+import { describe, it } from "@std/testing/bdd";
 import { LIB } from "../../global.ts";
 import { WorkerMessageHandler } from "./core/worker.ts";
 /*80--------------------------------------------------------------------------*/

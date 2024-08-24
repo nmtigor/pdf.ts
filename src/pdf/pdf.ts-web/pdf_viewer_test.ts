@@ -21,154 +21,19 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/assert";
-import { describe, it } from "@std/testing/bdd.ts";
-import { PDFPageViewBuffer } from "./pdf_viewer.ts";
+import { see_ui_testing } from "@fe-pdf.ts-test/alias.ts";
+import { describe, it } from "@std/testing/bdd";
 /*80--------------------------------------------------------------------------*/
 
 describe("PDFViewer", () => {
   describe("PDFPageViewBuffer", () => {
-    function createViewsMap(startId: number, endId: number) {
-      const map = new Map();
+    it("handles `push` correctly", see_ui_testing);
 
-      for (let id = startId; id <= endId; id++) {
-        map.set(id, {
-          id,
-          destroy: () => {},
-        });
-      }
-      return map;
-    }
+    it("handles `resize` correctly", see_ui_testing);
 
-    it("handles `push` correctly", () => {
-      const buffer = new PDFPageViewBuffer(3);
+    it("handles `resize` correctly, with `idsToKeep` provided", see_ui_testing);
 
-      const viewsMap = createViewsMap(1, 5),
-        iterator = viewsMap.values();
-
-      for (let i = 0; i < 3; i++) {
-        const view = iterator.next().value;
-        buffer.push(view);
-      }
-      // Ensure that the correct views are inserted.
-      assertEquals([...buffer], [
-        viewsMap.get(1),
-        viewsMap.get(2),
-        viewsMap.get(3),
-      ]);
-
-      for (let i = 3; i < 5; i++) {
-        const view = iterator.next().value;
-        buffer.push(view);
-      }
-      // Ensure that the correct views are evicted.
-      assertEquals([...buffer], [
-        viewsMap.get(3),
-        viewsMap.get(4),
-        viewsMap.get(5),
-      ]);
-    });
-
-    it("handles `resize` correctly", () => {
-      const buffer = new PDFPageViewBuffer(5);
-
-      const viewsMap = createViewsMap(1, 5),
-        iterator = viewsMap.values();
-
-      for (let i = 0; i < 5; i++) {
-        const view = iterator.next().value;
-        buffer.push(view);
-      }
-      // Ensure that keeping the size constant won't evict any views.
-      buffer.resize(5);
-
-      assertEquals([...buffer], [
-        viewsMap.get(1),
-        viewsMap.get(2),
-        viewsMap.get(3),
-        viewsMap.get(4),
-        viewsMap.get(5),
-      ]);
-
-      // Ensure that increasing the size won't evict any views.
-      buffer.resize(10);
-
-      assertEquals([...buffer], [
-        viewsMap.get(1),
-        viewsMap.get(2),
-        viewsMap.get(3),
-        viewsMap.get(4),
-        viewsMap.get(5),
-      ]);
-
-      // Ensure that decreasing the size will evict the correct views.
-      buffer.resize(3);
-
-      assertEquals([...buffer], [
-        viewsMap.get(3),
-        viewsMap.get(4),
-        viewsMap.get(5),
-      ]);
-    });
-
-    it("handles `resize` correctly, with `idsToKeep` provided", () => {
-      const buffer = new PDFPageViewBuffer(5);
-
-      const viewsMap = createViewsMap(1, 5),
-        iterator = viewsMap.values();
-
-      for (let i = 0; i < 5; i++) {
-        const view = iterator.next().value;
-        buffer.push(view);
-      }
-      // Ensure that keeping the size constant won't evict any views,
-      // while re-ordering them correctly.
-      buffer.resize(5, new Set([1, 2]));
-
-      assertEquals([...buffer], [
-        viewsMap.get(3),
-        viewsMap.get(4),
-        viewsMap.get(5),
-        viewsMap.get(1),
-        viewsMap.get(2),
-      ]);
-
-      // Ensure that increasing the size won't evict any views,
-      // while re-ordering them correctly.
-      buffer.resize(10, new Set([3, 4, 5]));
-
-      assertEquals([...buffer], [
-        viewsMap.get(1),
-        viewsMap.get(2),
-        viewsMap.get(3),
-        viewsMap.get(4),
-        viewsMap.get(5),
-      ]);
-
-      // Ensure that decreasing the size will evict the correct views,
-      // while re-ordering the remaining ones correctly.
-      buffer.resize(3, new Set([1, 2, 5]));
-
-      assertEquals([...buffer], [
-        viewsMap.get(1),
-        viewsMap.get(2),
-        viewsMap.get(5),
-      ]);
-    });
-
-    it("handles `has` correctly", () => {
-      const buffer = new PDFPageViewBuffer(3);
-
-      const viewsMap = createViewsMap(1, 2),
-        iterator = viewsMap.values();
-
-      for (let i = 0; i < 1; i++) {
-        const view = iterator.next().value;
-        buffer.push(view);
-      }
-      assertEquals(buffer.has(viewsMap.get(1)), true);
-      assertEquals(buffer.has(viewsMap.get(2)), false);
-    });
+    it("handles `has` correctly", see_ui_testing);
   });
 });
 /*80--------------------------------------------------------------------------*/

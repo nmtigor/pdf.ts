@@ -21,6 +21,7 @@
  * limitations under the License.
  */
 
+import { TESTING } from "@fe-src/global.ts";
 import type { FieldObject } from "./core/annotation.ts";
 import type {
   Destination,
@@ -90,11 +91,7 @@ import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
 import type { FontFaceObject } from "./display/font_loader.ts";
 import type { Metadata } from "./display/metadata.ts";
 import type { OptionalContentConfig } from "./display/optional_content_config.ts";
-import {
-  renderTextLayer,
-  TextLayer,
-  updateTextLayer,
-} from "./display/text_layer.ts";
+import { TextLayer } from "./display/text_layer.ts";
 import { GlobalWorkerOptions } from "./display/worker_options.ts";
 import { XfaLayer } from "./display/xfa_layer.ts";
 import type { AppInfo } from "./scripting_api/app.ts";
@@ -129,6 +126,10 @@ import {
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsBuild =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
+
+/*#static*/ if (TESTING) {
+  (globalThis as any).pdfjsTestingUtils = { Outliner };
+}
 /*80--------------------------------------------------------------------------*/
 
 export {
@@ -184,7 +185,6 @@ export {
   type OptionalContentConfig,
   type Order,
   type OutlineNode,
-  Outliner,
   type PageViewport,
   PasswordResponses,
   PDFDataRangeTransport,
@@ -202,7 +202,6 @@ export {
   RenderingCancelledException,
   type RenderP,
   type RenderTask,
-  renderTextLayer,
   type ScriptingActionName,
   setLayerDimensions,
   type SetOCGState,
@@ -212,7 +211,6 @@ export {
   type TextItem,
   TextLayer,
   UnexpectedResponseException,
-  updateTextLayer,
   Util,
   VerbosityLevel,
   version,

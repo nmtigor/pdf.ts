@@ -10,7 +10,7 @@
       "@fe-pdf.ts-web/*": ["./src/pdf/pdf.ts-web/*"],
       "@fe-src/*": ["./src/*"],
       "@wretch": ["./src/3rd/wretch-2.9.0/dist/index.js"],
-      "@xstate": ["./src/3rd/xstate-5.13.2/xstate.ts"],
+      "@xstate": ["./src/3rd/xstate-5.17.1/xstate.ts"],
       "@zod": ["./src/3rd/zod-3.23.8/lib/index.mjs"]
     },
     "rootDir": "src",

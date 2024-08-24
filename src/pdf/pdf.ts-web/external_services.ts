@@ -51,13 +51,15 @@ export abstract class BaseExternalServices {
     throw new Error("Not implemented: updateEditorStates");
   }
 
-  async getNimbusExperimentData(): Promise<NimbusExperimentData | undefined> {
-    return undefined;
-  }
+  //kkkk TOCLEANUP
+  // async getNimbusExperimentData(): Promise<NimbusExperimentData | undefined> {
+  //   return undefined;
+  // }
 
-  async getGlobalEventNames(): Promise<Set<EventName> | undefined> {
-    return undefined;
-  }
+  //kkkk TOCLEANUP
+  // async getGlobalEventNames(): Promise<Set<EventName> | undefined> {
+  //   return undefined;
+  // }
 
   dispatchGlobalEvent<EN extends EventName>(_event: GlobalEvent<EN>) {}
 }

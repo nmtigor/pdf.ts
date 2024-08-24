@@ -3,8 +3,8 @@
  * @license Apache-2.0
  ******************************************************************************/
 
+import type { uint, uint16 } from "../alias.ts";
 import { scrollO } from "../alias.ts";
-import type { uint } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 /**
@@ -12,15 +12,40 @@ import type { uint } from "../alias.ts";
  */
 export const byteSize = (_x: BlobPart) => new Blob([_x]).size;
 
+/* Not sure if js impls use regexp interning like string. So. */
+// const lt_re_ = /[\n\r\u001C-\u001E\u0085\u2029]/g;
+/**
+ * [Line terminator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#line_terminators)
+ */
+const lt_re_ = /\r\n|\n|\r|\u2028|\u2029/g;
 /**
  * @const @param text_x
  */
-export const linesOf = (text_x: string) =>
-  text_x.split(/[\n\r\u001C-\u001E\u0085\u2029]/g);
+export const linesOf = (text_x: string) => text_x.split(lt_re_);
 // console.log(linesOf("abc\n\n123\n"));
 
+// deno-fmt-ignore
+/**
+ * [\s](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Character_class_escape#s)
+ */
+const ws_a_: uint16[] = [
+  0x9, 0xB, 0xC, 0x20, 0xA0,
+  0x0_1680,
+  0x0_2000, 0x0_2001, 0x0_2002, 0x0_2003, 0x0_2004, 0x0_2005, 
+  0x0_2006, 0x0_2007, 0x0_2008, 0x0_2009, 0x0_200A,
+  0x0_202F, 0x0_205F,
+  0x0_3000,
+  0x0_FEFF,
+];
+/**
+ * @const @param _x the UTF-16 code unit value returned by `String.charCodeAt()`
+ */
+export const isWhitespaceCode = (_x: uint16) => ws_a_.indexOf(_x) >= 0;
+
+/* Not sure if js impls use regexp interning like string. So. */
+const ws_re_ = /^\s+$/;
 /** */
-export const isWhitespace = (_x: string) => /^\s+$/.test(_x);
+export const isWhitespace = (_x: string) => ws_re_.test(_x);
 /*80--------------------------------------------------------------------------*/
 
 export const stopPropagation = (evt_x: Event) => {

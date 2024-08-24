@@ -275,6 +275,7 @@ export class PDFPageView implements IVisibleView {
     | Promise<OptionalContentConfig | undefined>
     | undefined;
   #hasRestrictedScaling = false;
+  #isEditing = false;
   #textLayerMode;
   #annotationMode;
   #enableHWA = false;
@@ -531,6 +532,10 @@ export class PDFPageView implements IVisibleView {
     this.pdfPage?.cleanup();
   }
 
+  hasEditableAnnotations() {
+    return !!this.annotationLayer?.hasEditableAnnotations();
+  }
+
   get _textHighlighter() {
     return shadow(
       this,
@@ -763,6 +768,20 @@ export class PDFPageView implements IVisibleView {
       }
       this.#resetZoomLayer();
     }
+  }
+
+  toggleEditingMode(isEditing: boolean) {
+    if (!this.hasEditableAnnotations()) {
+      return;
+    }
+    this.#isEditing = isEditing;
+    this.reset({
+      keepZoomLayer: true,
+      keepAnnotationLayer: true,
+      keepAnnotationEditorLayer: true,
+      keepXfaLayer: true,
+      keepTextLayer: true,
+    });
   }
 
   /**
@@ -1202,6 +1221,7 @@ export class PDFPageView implements IVisibleView {
       optionalContentConfigPromise: this._optionalContentConfigPromise,
       annotationCanvasMap: this._annotationCanvasMap,
       pageColors,
+      isEditing: this.#isEditing,
     };
     const renderTask = (this.renderTask = pdfPage.render(renderContext));
     renderTask.onContinue = renderContinueCallback;
